@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>mnlite</title>
+</head>
+<body>
+<p>Nodes available:</p>
+<ul>{% for node in nodes %}
+  <li><a href="/{{node.name}}/v2">{{node.name}}</a></li>
+{% endfor %}</ul>
+</body>
+</html>

@@ -21,7 +21,7 @@ def getBaseUrlFromRequest(request):
 
 def getNodeFolder(request):
     node_folder = os.path.join(
-        m_node.root_path, "nodes", getUrlPrefixFromRequest(request)
+        flask.current_app.instance_path, "nodes", getUrlPrefixFromRequest(request)
     )
     return node_folder
 
@@ -149,7 +149,7 @@ def getLogRecords():
     ],
 )
 def monitorPing():
-    #return d1_NotImplemented(description="ping", detail_code=2041)
+    # return d1_NotImplemented(description="ping", detail_code=2041)
     try:
         node = getNodeFromRequest(flask.request)
         schedule = node["schedule"]
@@ -158,9 +158,7 @@ def monitorPing():
         )
         return response, 200
     except Exception as e:
-        return d1_ServiceFailure(
-            detail_code=2042, description="ping", trace=e
-        )
+        return d1_ServiceFailure(detail_code=2042, description="ping", trace=e)
 
 
 # == Read API ==
