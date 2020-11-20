@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<d1:node xmlns:d1="http://ns.dataone.org/service/types/v2.0" replicate="false" synchronize="true" type="mn" state="{{mnode.state}}">
+  <identifier>{{mnode.node_id}}</identifier>
+  <name>{{mnode.name}}</name>
+  <description>{{mnode.description}}</description>
+  <baseURL>{{mnode.base_url}}</baseURL>
+  <services>
+    <service name="MNRead" version="v2" available="true"/>
+    <service name="MNCore" version="v2" available="true"/>
+    <service name="MNAuthorization" version="v2" available="false"/>
+    <service name="MNStorage" version="v2" available="false"/>
+    <service name="MNReplication" version="v2" available="false"/>
+    <service name="MNView" version="v2" available="false"/>
+    <service name="MNQuery" version="v2" available="false"/>
+  </services>
+  <synchronization>
+    <schedule hour="{{schedule.hour}}" mday="{{schedule.day}}" min="{{schedule.min}}" mon="{{schedule.mon}}" sec="{{schedule.sec}}" wday="{{schedule.wday}}" year="{{schedule.year}}"/>
+  </synchronization>
+  <subject>{{mnode.subject}}</subject>
+  <contactSubject>{{mnode.contact_subject}}</contactSubject>
+</d1:node>

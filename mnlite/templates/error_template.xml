@@ -1,0 +1,7 @@
+<error name="{{name}}"
+       errorCode="{{error_code}}"
+       detailCode="{{detail_code}}" {% if pid %}pid="{{pid}}"{% endif %}
+       nodeId="{{node_id}}">
+  <description>{{description}}</description>
+  {% if trace_information %}<traceInformation>{{trace_information}}</traceInformation>{% endif %}
+</error>

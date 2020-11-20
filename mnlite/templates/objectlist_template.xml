@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<d1:objectList xmlns:d1="http://ns.dataone.org/service/types/v2.0" count="{{records_count}}" start="{{records_start}}" total="{{records_total}}">
+  {% for record in record %}<objectInfo>
+        <identifier>{{record.identifier}}</identifier>
+        <formatId>{{record.format_id}}</formatId>
+        <checksum algorithm="{{record.checksum_algorithm}}">{{record.checksum}}</checksum>
+        <dateSysMetadataModified>{{record.date_modified}}</dateSysMetadataModified>
+        <size>record.size_bytes</size>
+    </objectInfo>{% endfor %}
+</d1:objectList>

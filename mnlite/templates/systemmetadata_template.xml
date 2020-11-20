@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<d1:systemMetadata xmlns:d1="http://ns.dataone.org/service/types/v2.0">
+  <serialVersion>{{sysm.serial_version}}</serialVersion>
+  <identifier>{{sysm.identifier}}</identifier>
+  {% if sysm.series_id %}<seriesId>{{ sysm.series_id }}</seriesId>{% endif %}
+  <formatId>{{sysm.format_id}}</formatId>
+  <size>{{sysm.size}}</size>
+  <checksum algoritm="{{sysm.checksum_algorithm}}">{{sysm.checksum}}</checksum>
+  <submitter>{{sysm.submitter}}</submitter>
+  <rightsHolder>{{sysm.rights_holder}}</rightsHolder>
+  <accessPolicy>{% for policy in sysm.access_policy %}
+    <{{policy.rule}}>
+      <subject>{{policy.subject}}</subject>
+      <permission>{{policy.permisson}}</permission>
+    </{{policy.rule}}>
+  {% endfor %}</accessPolicy>
+  <replicationPolicy numberReplicas="{{sysm.number_replicas}}" replicationAllowed="{{sysm.replication_allowed}}">{% for policy in sysm.replication_policy %}
+  {% endfor %}</replicationPolicy>
+  <archived>{{sysm.archived}}</archived>
+  <dateUploaded>{{sysm.date_uploaded}}</dateUploaded>
+  <dateSysMetadataModified>{{sysm.date_sysmetadata_modified}}</dateSysMetadataModified>
+  <originMemberNode>{{sysm.origin_member_node}}</originMemberNode>
+  {% if sysm.obsoletes %}<obsoletes>{{sysm.obsoletes}}</obsoletes>{% endif %}
+  {% if sysm.obsoletes %}<obsoletedBy>{{sysm.obsoleted_by}}</obsoletedBy>{% endif %}
+  {% if sysm.media_type_name %}<mediaType name="{{sysm.media_type_name}}" />{% endif %}
+  {% if sysm.file_name %}<fileName>sysm.file_name</fileName>{% endif %}
+</d1:systemMetadata>

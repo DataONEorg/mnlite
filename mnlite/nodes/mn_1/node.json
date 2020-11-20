@@ -1,0 +1,20 @@
+{
+  "node": {
+    "node_id": "urn:node:mn_1",
+    "state": "up",
+    "name": "node name",
+    "description": "node description",
+    "base_url": null,
+    "schedule": {
+        "hour":"*",
+        "day": "*",
+        "min": "0,10,20,30,40,50",
+        "mon": "*",
+        "sec": "5",
+        "wday": "*",
+        "year": "*"
+    },
+    "subject": "subject",
+    "contact_subject": "contact subject"
+  }
+}

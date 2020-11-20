@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<d1:log xmlns:d1="http://ns.dataone.org/service/types/v2.0" count="{{records_count}}" start="{{records_start}}" total="{{records_total}}">
+  {% for record in records %}<logEntry>
+        <entryId>{{record.entry_id}}</entryId>
+        <identifier>{{record.format_id}}</identifier>
+        <ipAddress>{{record.ip_address}}</ipAddress>
+        <userAgent>{{record.user_agent}}</userAgent>
+        <subject>{{record.subject}}</subject>
+        <event>{{record.event}}</event>
+        <datelogged>{{record.date_logged}}</datelogged>
+        <nodeIdentifier>{{record.node_id}}</nodeIdentifier>
+    </logEntry>{% endfor %}
+</d1:log>
