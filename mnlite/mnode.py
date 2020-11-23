@@ -4,25 +4,10 @@ import json
 import flask
 import datetime
 import dateparser
-
+from . import util
 m_node = flask.Blueprint("m_node", __name__, template_folder="templates")
 
 XML_TYPE = "text/xml"
-
-
-def datetimeFromSomething(V):
-    if V is None:
-        return None
-    if isinstance(V, datetime.datetime):
-        return V
-    if isinstance(V, float) or isinstance(V, int):
-        # asumes this is a timestamp
-        return datetime.datetime.fromtimestamp(V, tz=datetime.timezone.utc)
-    if isinstance(V, str):
-        return dateparser.parse(
-            V, settings={"TIMEZONE": "+0000", "RETURN_AS_TIMEZONE_AWARE": True}
-        )
-    return None
 
 
 def getUrlPrefixFromRequest(request):
@@ -147,8 +132,8 @@ def getCapabilities():
     ],
 )
 def getLogRecords():
-    from_date = datetimeFromSomething(flask.request.args.get("fromDate", None))
-    to_date = datetimeFromSomething(flask.request.args.get("toDate", None))
+    from_date = util.datetimeFromSomething(flask.request.args.get("fromDate", None))
+    to_date = util.datetimeFromSomething(flask.request.args.get("toDate", None))
     event = flask.request.args.get("event", None)
     id_filter = flask.request.args.get("idFilter", None)
     start = flask.request.args.get("start", None)
@@ -193,8 +178,8 @@ def describe(identifier):
 
 # listObjects
 def listObjects():
-    from_date = datetimeFromSomething(flask.request.args.get("fromDate", None))
-    to_date = datetimeFromSomething(flask.request.args.get("toDate", None))
+    from_date = util.datetimeFromSomething(flask.request.args.get("fromDate", None))
+    to_date = util.datetimeFromSomething(flask.request.args.get("toDate", None))
     identifier = flask.request.args.get("identifier", None)
     format_id = flask.request.args.get("formatId", None)
     replica_status = flask.request.args.get("replicaStatus", None)
@@ -287,7 +272,7 @@ def synchronizationFailed():
 def systemMetadataChanged():
     identifier = flask.request.files.get("id", None)
     serial_version = flask.request.files.get("serialVersion", None)
-    date_modified = datetimeFromSomething(flask.request.files.get("dateSysMetaLastModified", None))
+    date_modified = util.datetimeFromSomething(flask.request.files.get("dateSysMetaLastModified", None))
     msg = f"serial_version: {serial_version} date_modified: {date_modified}"
     return d1_NotImplemented(
         description="getReplica", detail_code=1330, pid=identifier, trace=msg
