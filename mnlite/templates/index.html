@@ -7,7 +7,7 @@
 <body>
 <p>Nodes available:</p>
 <ul>{% for node in nodes %}
-  <li><a href="/{{node.name}}/v2">{{node.name}}</a></li>
+  <li><a href="/{{node.name}}/v2">{{node.node_id}}</a> <pre>{{ node.config }}</pre></li>
 {% endfor %}</ul>
 </body>
 </html>
