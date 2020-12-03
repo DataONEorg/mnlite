@@ -27,7 +27,7 @@ def _getConfig(mn_name):
 
 
 # == Subject Management ==
-@m_node.cli.command("subjects")
+@m_node.cli.command("subjects", help="List subjects registered with mn_name")
 @click.argument("mn_name")
 def newSubject(mn_name):
     L = flask.current_app.logger
@@ -37,7 +37,7 @@ def newSubject(mn_name):
         print(subject)
 
 
-@m_node.cli.command("new_subject")
+@m_node.cli.command("new_subject", help="Add a new subject to mn_name")
 @click.argument("mn_name")
 @click.argument("subject")
 def newSubject(mn_name, subject):
@@ -50,7 +50,7 @@ def newSubject(mn_name, subject):
 
 
 # == AccessPolicy Management ==
-@m_node.cli.command("access")
+@m_node.cli.command("access", help="List access policies created for mn_name")
 @click.argument("mn_name")
 def newSubject(mn_name):
     L = flask.current_app.logger
@@ -60,7 +60,7 @@ def newSubject(mn_name):
         print(policy)
 
 
-@m_node.cli.command("new_access")
+@m_node.cli.command("new_access", help="Create new access policy for mn_name")
 @click.argument("mn_name")
 @click.argument("permission")
 @click.argument("subject_id")
@@ -76,7 +76,7 @@ def newSubject(mn_name, permission, subject_id):
 
 
 # == Content Management ==
-@m_node.cli.command("content")
+@m_node.cli.command("content", help="List content in mn_name")
 @click.argument("mn_name")
 def newSubject(mn_name):
     L = flask.current_app.logger
@@ -86,7 +86,7 @@ def newSubject(mn_name):
         print(content)
 
 
-@m_node.cli.command("new_content")
+@m_node.cli.command("new_content", help="Add new object to mn_name")
 @click.argument("mn_name")
 @click.argument("identifier")
 @click.argument("fname")
