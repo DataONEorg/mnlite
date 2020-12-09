@@ -4,6 +4,23 @@ import flask
 import flask_monitoringdashboard
 from . import mnode
 
+def initialize_instance(instance_path):
+    db_path = os.path.join(instance_path, "dashboard")
+    db_config = os.path.join(db_path,"dashboard.cfg")
+    if not os.path.exists(db_config):
+        os.makedirs(db_path)
+        with open(db_config,"wt") as cfg:
+            cfg.write(("[dashboard]\n"
+                       "GIT=/.git/\n\n"
+                       "[authentication]\n"
+                       "USERNAME=admin\n"
+                       "password=admin\n"
+                       "SECUTIY_TOKEN=change_me\n\n"
+                       "[database]\n"
+                       "DATABASE=sqlite:///instance/dashboard/dashboard.db\n\n"
+                       "[visualization]\n"
+                       "TIMEZONE=UTC\n"
+                       ))
 
 def create_app(test_config=None):
     app = flask.Flask(__name__, instance_relative_config=True)
@@ -15,6 +32,7 @@ def create_app(test_config=None):
         os.makedirs(app.instance_path)
     except OSError:
         pass
+    initialize_instance(app.instance_path)
     flask_monitoringdashboard.config.init_from(
         file=os.path.join(app.instance_path, "dashboard/dashboard.cfg")
     )
