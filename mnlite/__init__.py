@@ -1,6 +1,7 @@
 import os
 import pathlib
 import flask
+import flask_monitoringdashboard
 from . import mnode
 
 
@@ -14,6 +15,10 @@ def create_app(test_config=None):
         os.makedirs(app.instance_path)
     except OSError:
         pass
+    flask_monitoringdashboard.config.init_from(
+        file=os.path.join(app.instance_path, "dashboard/dashboard.cfg")
+    )
+    flask_monitoringdashboard.bind(app)
     node_root_paths = app.config.get(
         "NODE_ROOTS",
         [

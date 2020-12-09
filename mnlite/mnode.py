@@ -9,6 +9,7 @@ import sqlalchemy
 import sqlalchemy.orm
 from . import util
 from . import models
+from . import flob
 
 m_node = flask.Blueprint("m_node", __name__, template_folder="templates/mnode")
 
@@ -25,11 +26,22 @@ def _getConfig(mn_name):
         raise (ValueError(msg))
     return config
 
+def _computeMd5Sha1(fname):
+    BLOCKSIZE = 65536
+    sha = hashlib.sha1()
+    md5 = hashlib.md5()
+    with open(fname, 'rb') as fsrc:
+        fb = fsrc.read(BLOCKSIZE)
+        while len(fb) > 0:
+            sha.update(fb)
+            md5.update(fb)
+            fb = fsrc.read(BLOCKSIZE)
+    return md5.hexdigest(), sha.hexdigest()
 
 # == Subject Management ==
 @m_node.cli.command("subjects", help="List subjects registered with mn_name")
 @click.argument("mn_name")
-def newSubject(mn_name):
+def listSubjects(mn_name):
     L = flask.current_app.logger
     conf = _getConfig(mn_name)
     db = conf["db_session"]
@@ -52,7 +64,7 @@ def newSubject(mn_name, subject):
 # == AccessPolicy Management ==
 @m_node.cli.command("access", help="List access policies created for mn_name")
 @click.argument("mn_name")
-def newSubject(mn_name):
+def listAcces(mn_name):
     L = flask.current_app.logger
     conf = _getConfig(mn_name)
     db = conf["db_session"]
@@ -64,7 +76,7 @@ def newSubject(mn_name):
 @click.argument("mn_name")
 @click.argument("permission")
 @click.argument("subject_id")
-def newSubject(mn_name, permission, subject_id):
+def newAccess(mn_name, permission, subject_id):
     L = flask.current_app.logger
     conf = _getConfig(mn_name)
     db = conf["db_session"]
@@ -78,7 +90,7 @@ def newSubject(mn_name, permission, subject_id):
 # == Content Management ==
 @m_node.cli.command("content", help="List content in mn_name")
 @click.argument("mn_name")
-def newSubject(mn_name):
+def listObjects(mn_name):
     L = flask.current_app.logger
     conf = _getConfig(mn_name)
     db = conf["db_session"]
@@ -95,7 +107,7 @@ def newSubject(mn_name):
 @click.option("--submitter_id", default=1)
 @click.option("--owner_id", default=1)
 @click.option("--access_id", default=1)
-def newSubject(
+def newObject(
     mn_name, identifier, fname, formatid, sid, submitter_id, owner_id, access_id
 ):
     L = flask.current_app.logger
@@ -105,19 +117,20 @@ def newSubject(
         raise ValueError(f"Invalid identifier: '{identifier}'")
     if not os.path.exists(fname):
         raise ValueError(f"File not found: {fname}")
-    bytes = open(fname, "rb").read()
-    size_bytes = len(bytes)
+    content_fname = None
+    checksum_sha256 = None
+    with open(fname, "rb") as f_content:
+        fstash = flob.FLOB(conf.get("data_folder", "data"))
+        fldr, checksum_sha256, content_fname = fstash.addFile(f_content)
+    size_bytes = os.stat(content_fname).st_size
     date_added = util.dtnow()
     date_content_modified = date_added
     date_modified = date_added
     date_uploaded = date_added
     node_id = conf["node_id"]
-    checksum_md5 = hashlib.md5(bytes).hexdigest()
-    checksum_sha1 = hashlib.sha1(bytes).hexdigest()
-
+    checksum_md5, checksum_sha1 = _computeMd5Sha1(content_fname)
     # access_policy = db.query(models.AccessPolicy).get(access_id)
     # L.debug(access_policy)
-
     res = models.addContent(
         db,
         {
@@ -128,7 +141,8 @@ def newSubject(
             "date_content_modified": date_content_modified,
             "checksum_md5": checksum_md5,
             "checksum_sha1": checksum_sha1,
-            "content": bytes.decode(encoding="utf-8"),
+            "checksum_sha256": checksum_sha256,
+            "content": content_fname,
             "format_id": formatid,
             "date_modified": date_modified,
             "serial_version": 1,

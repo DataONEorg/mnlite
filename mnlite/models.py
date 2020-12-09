@@ -158,10 +158,13 @@ class Content(Base):
     checksum_sha1 = sqlalchemy.Column(
         sqlalchemy.String, nullable=False, doc="SHA1 checksum of the content"
     )
+    checksum_sha256 = sqlalchemy.Column(
+        sqlalchemy.String, nullable=False, doc="SHA-256 checksum of the content"
+    )
     content = sqlalchemy.Column(
-        sqlalchemy.JSON,
+        sqlalchemy.String,
         nullable=False,
-        doc="The JSON-LD content, normalized for consistent checksum",
+        doc="Relative path to the object described by this entry",
     )
     # format_id
     format_id = sqlalchemy.Column(
@@ -268,6 +271,7 @@ class Content(Base):
             "date_uploaded": util.datetimeToJsonStr(self.date_uploaded),
             "checksum_md5": self.checksum_md5,
             "checksum_sha1": self.checksum_sha1,
+            "checksum_sha256": self.checksum_sha256,
             "format_id": self.format_id,
             "serial_version": self.serial_version,
             "series_id": self.series_id,

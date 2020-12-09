@@ -20,7 +20,7 @@
     </blockedMemberNode>{% endfor %}
   </replicationPolicy>
   <archived>{{sysm.archived|lower}}</archived>
-  <dateUploaded>{{sysm.date_uploaded.strftime("%Y-%m-%dT%H:%M:%SZ")}}</dateUploaded>
+  <dateUploaded>{{sysm.date_uploaded}}</dateUploaded>
   <dateSysMetadataModified>{{sysm.date_modified}}</dateSysMetadataModified>
   <originMemberNode>{{sysm.origin_member_node}}</originMemberNode>
   {% if sysm.obsoletes %}<obsoletes>{{sysm.obsoletes}}</obsoletes>{% endif %}

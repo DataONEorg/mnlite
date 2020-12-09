@@ -24,6 +24,9 @@ def pushd(new_dir):
 def datetimeToJsonStr(dt):
     if dt is None:
         return None
+    if dt.tzinfo is None or dt.tzinfo.utcoffset(dt) is None:
+        # Naive timestamp, convention is this must be UTC
+        return f"{dt.strftime(JSON_TIME_FORMAT)}Z"
     return dt.strftime(JSON_TIME_FORMAT)
 
 def datetimeFromSomething(V):
