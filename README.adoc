@@ -12,3 +12,84 @@ flask run
 ----
 
 
+## Model
+
+
+### Thing
+
+A digital entity. The persistent identifier is the Sha256 hash of the
+bytes. A Thing may have more than one identifier. An instance of Thing
+may be any digital object such as metadata, data, and so forth.
+
+A Thing may have multiple Identifiers.
+
+A Thing has only one unique Sha256 hash. It has single Sha1 and MD5
+hashes that are unique within the constraints of those hashing
+algorithms.
+
+### Identifier
+
+Captures metadata associated with a minted identifier. Note that this
+is about the identifier, it's creation, and other management aspects.
+The content referenced by an identifier is described by the Thing.
+
+An Identifier may be associated with more than one Thing. There are at
+least three situations where this can happen:
+
+1. Different representations of the same thing. For example a digital
+entity may be conceptually the same though serialized differently.
+
+2. Different aspects of the same thing. For example, a DOI may resolve to
+a landing page that describes a Thing.
+
+3. Erroneous duplication, the Identifier is used to reference two or more
+distinct, unrelated entities.
+
+Identifiers generated from a hash of the content of a Thing will be unique,
+subject to the contraints of the hashing algorithm. It is assumed here
+for all practical purposes that a Sha256 identifier will always refer
+to exactly one digital entity.
+
+Identifiers may refer to a physical thing. Physical things do not exist
+digitally. Hence, any digital entity can only be associated with a physical
+thing, it can not be that thing. As such, where an identifier is used to
+refer to a physical thing and a digital thing, the digital thing must
+result from some observation of the physical thing. The outcomes of such
+observation may be manifest in many different forms such as metadata, data
+records, images, and other digital entities.
+
+
+### Relation
+
+Documents a relationship between two identifiers.
+
+Where identifiers refer to specific digital entities, the relation is
+unambiguous.
+
+Ambiguous relationships arise where identifiers may refer to more than one
+Thing. The degree of ambiguity varies with the precision of the identifiers.
+
+A relationship between physical things implies a physical association. E.g.
+a sub-sample, a sibling sample from a batch, geographcally co-located, and
+so forth.
+
+Relations exist within a Context. As of this writing, Contexts are
+defined by a label.
+
+
+### AccessRule
+
+Defines how Subjects may interact with a Thing.
+
+A Thing may have multiple AccessRules.
+
+An AccessRule may have multiple Subjects.
+
+### Subject
+
+Identifies an actor that may interact with a Thing.
+
+### Request
+
+Holds metadata associated with a request such as a HTTP request resolving
+an Identifier or retrieving a Thing.
