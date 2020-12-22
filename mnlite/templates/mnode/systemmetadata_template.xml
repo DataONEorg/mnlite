@@ -6,11 +6,11 @@
   <formatId>{{sysm.format_id}}</formatId>
   <size>{{sysm.size_bytes}}</size>
   <checksum algoritm="{{sysm.checksum_algorithm}}">{{sysm.checksum}}</checksum>
-  <submitter>{{sysm.submitter}}</submitter>
-  <rightsHolder>{{sysm.rights_holder}}</rightsHolder>
+  <submitter>{{sysm.submitter.subject}}</submitter>
+  <rightsHolder>{{sysm.rights_holder.subject}}</rightsHolder>
   <accessPolicy>{% for policy in sysm.access_policy %}
     <allow>
-      <subject>{{policy.subject}}</subject>
+      {% for subject in policy.subjects %}<subject>{{subject.subject}}</subject>{% endfor %}
       <permission>{{policy.permission}}</permission>
     </allow>
   {% endfor %}</accessPolicy>
@@ -23,6 +23,7 @@
   <dateUploaded>{{sysm.date_uploaded}}</dateUploaded>
   <dateSysMetadataModified>{{sysm.date_modified}}</dateSysMetadataModified>
   <originMemberNode>{{sysm.origin_member_node}}</originMemberNode>
+  <authoritativeMemberNode>{{sysm.origin_member_node}}</authoritativeMemberNode>
   {% if sysm.obsoletes %}<obsoletes>{{sysm.obsoletes}}</obsoletes>{% endif %}
   {% if sysm.obsoletes %}<obsoletedBy>{{sysm.obsoleted_by}}</obsoletedBy>{% endif %}
   {% if sysm.media_type_name %}<mediaType name="{{sysm.media_type_name}}" />{% endif %}

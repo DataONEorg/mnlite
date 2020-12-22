@@ -2,29 +2,70 @@ import os
 import re
 import json
 import logging
-import hashlib
 import flask
-import click
 import sqlalchemy
 import sqlalchemy.orm
-from . import util
-from . import models
-from . import flob
+import opersist
+import opersist.utils
+import opersist.models
 
 m_node = flask.Blueprint("m_node", __name__, template_folder="templates/mnode")
 
 XML_TYPE = "text/xml"
 PAGE_SIZE = 100
 
+def getMNodeNameFromRequest():
+    '''
+    Get MN name from request URL path
+
+    Returns: node name
+    '''
+    match = re.match(r"/(.*)/v2/", flask.request.url_rule.rule)
+    return match.group(1)
+
+def getBaseUrlFromRequest():
+    base_url = f"{flask.request.url_root}{getMNodeNameFromRequest()}"
+    return base_url
+
+def getNode(config_path):
+    node_config = json.load(open(config_path, "r"))
+    if node_config["node"].get("base_url", None) is None:
+        try:
+            node_config["node"]["base_url"] = getBaseUrlFromRequest()
+        except:
+            pass
+    return node_config
+
+def getPersistence(abs_path, node_config):
+    op = opersist.OPersist(abs_path, db_url=node_config["content_database"], config_file="node.json")
+    op.open()
+    return op
+
+'''
+def getMNodeConfig(mn_name=None):
+    if mn_name is None:
+        mn_name = getMNodeNameFromRequest()
+    mn_config = flask.current_app.config["m_nodes"].get(mn_name, None)
+    return mn_config
+
 
 def _getConfig(mn_name):
-    L = flask.current_app.logger
     config = getMNodeConfig(mn_name)
     if config is None:
         names = ",".join(flask.current_app.config["m_nodes"].keys())
         msg = f"Unknown mn_name: {mn_name}. \nAvailable node names: {names}"
         raise (ValueError(msg))
     return config
+
+def setupDB(config_path):
+    config = json.load(open(config_path, "r"))
+    db_url = config.get("content_database")
+    with util.pushd(os.path.dirname(config_path)):
+        engine = opersist.models.getEngine(db_url)
+        # session here is an instance of sqlalchemy.orm.scoped_session
+        session = opersist.models.getSession(engine)
+    return (engine, session)
+
 
 def _computeMd5Sha1(fname):
     BLOCKSIZE = 65536
@@ -38,15 +79,6 @@ def _computeMd5Sha1(fname):
             fb = fsrc.read(BLOCKSIZE)
     return md5.hexdigest(), sha.hexdigest()
 
-# == Subject Management ==
-@m_node.cli.command("subjects", help="List subjects registered with mn_name")
-@click.argument("mn_name")
-def listSubjects(mn_name):
-    L = flask.current_app.logger
-    conf = _getConfig(mn_name)
-    db = conf["db_session"]
-    for subject in db.query(models.Subject).all():
-        print(subject)
 
 
 @m_node.cli.command("new_subject", help="Add a new subject to mn_name")
@@ -156,17 +188,19 @@ def newObject(
         },
     )
     L.info("content: %s", res)
+'''
 
+# == Subject Management ==
+#@m_node.cli.command("subjects", help="List subjects registered with mn_name")
+#@click.argument("mn_name")
+#def listSubjects(mn_name):
+#    L = flask.current_app.logger
+#    conf = _getConfig(mn_name)
+#    db = conf["db_session"]
+#    for subject in db.query(models.Subject).all():
+#        print(subject)
 
-def setupDB(config_path):
-    config = json.load(open(config_path, "r"))
-    db_url = config.get("content_database")
-    with util.pushd(os.path.dirname(config_path)):
-        engine = models.getEngine(db_url)
-        session = models.getSession(engine)
-    return (engine, session)
-
-
+# Instance management
 @m_node.record
 def record(state):
     """
@@ -181,44 +215,51 @@ def record(state):
     name = state.options.get("mnode_name")
     L.debug("MNODE name = %s", name)
 
+@m_node.before_request
+def mnodeBeforeRequest():
+    '''
+    Opens the persistence store for the mnode associated with request.
 
-def getMNodeNameFromRequest():
-    match = re.match(r"/(.*)/v2/", flask.request.url_rule.rule)
-    return match.group(1)
-
-
-def getMNodeConfig(mn_name=None):
+    Call this before trying to use anything that uses the
+    persistence store (database or disk).
+    '''
     L = flask.current_app.logger
-    if mn_name is None:
-        mn_name = getMNodeNameFromRequest()
-    mn_config = flask.current_app.config["m_nodes"].get(mn_name, None)
-    return mn_config
+    L.debug("mnodeBeforeRequest")
+    flask.g.mn_name = getMNodeNameFromRequest()
+    flask.g.mn_config = flask.current_app.config["m_nodes"].get(flask.g.mn_name, None)
+    if flask.g.mn_config is not None:
+        flask.g.op = flask.g.mn_config["persistence"]
+        flask.g.op.open()
+    else:
+        L.error("No configuration for mnode = %s", flask.g.mn_name)
 
 
-def getBaseUrlFromRequest():
-    base_url = f"{flask.request.url_root}{getMNodeNameFromRequest()}"
-    return base_url
+@m_node.after_request
+def mnodeAfterRequest(response):
+    '''
+    Closes the persistence layer associated with this mnode request
 
+    Args:
+        response: The response
 
-def getNode(config_path):
-    node_config = json.load(open(config_path, "r"))
-    node = node_config["node"]
-    if node.get("base_url", None) is None:
+    Returns:
+        The response
+    '''
+    L = flask.current_app.logger
+    L.debug("mnodeAfterRequest")
+    if "op" in flask.g:
         try:
-            node["base_url"] = getBaseUrlFromRequest()
-        except:
-            pass
-    return node
+            flask.g.op.close()
+        except Exception as e:
+            L.error(e)
+    return response
 
-
-def getContentDB(mn_name=None):
-    config = getMNodeConfig(mn_name=mn_name)
-    return config.get("db_session")
 
 
 def d1_exception(name, error_code, detail_code, description, pid=None, trace=None):
-    match = re.match(r"/(.*)/v2/", flask.request.url_rule.rule)
-    node_id = f"urn:node:{match.group(1)}"
+    #match = re.match(r"/(.*)/v2/", flask.request.url_rule.rule)
+    #node_id = f"urn:node:{match.group(1)}"
+    node_id = flask.g.mn_config["node_id"]
     params = {
         "name": name,
         "error_code": error_code,
@@ -269,10 +310,10 @@ def d1_ServiceFailure(
 
 def getCapabilitiesImpl():
     L = flask.current_app.logger
-    mn_config = getMNodeConfig()
-    L.debug("MN CONFIG = %s", mn_config)
+    #mn_config = getMNodeConfig()
+    L.debug("MN CONFIG = %s", flask.g.mn_config)
     try:
-        node = getNode(mn_config["config"])
+        node = getNode(flask.g.mn_config["config"])["node"]
         schedule = node["schedule"]
         response = flask.make_response(
             flask.render_template("node_template.xml", mnode=node, schedule=schedule)
@@ -316,14 +357,15 @@ def getCapabilities():
 )
 def getLogRecords():
     L = flask.current_app.logger
-    from_date = util.datetimeFromSomething(flask.request.args.get("fromDate", None))
-    to_date = util.datetimeFromSomething(flask.request.args.get("toDate", None))
+    from_date = opersist.utils.datetimeFromSomething(flask.request.args.get("fromDate", None))
+    to_date = opersist.utils.datetimeFromSomething(flask.request.args.get("toDate", None))
     event = flask.request.args.get("event", None)
     id_filter = flask.request.args.get("idFilter", None)
     start = flask.request.args.get("start", None)
     count = flask.request.args.get("count", None)
     msg = f"getLogRecords: {from_date} {to_date} {event} {id_filter} {start} {count}"
     L.debug("params = %s", msg)
+    #TODO: implement getLogRecords
     return d1_NotImplemented(description="getLogRecords", detail_code=1461, trace=msg)
 
 
@@ -337,9 +379,8 @@ def getLogRecords():
 def monitorPing():
     # return d1_NotImplemented(description="ping", detail_code=2041)
     L = flask.current_app.logger
-    mn_config = getMNodeConfigFromRequest()
     try:
-        node = getNode(mn_config["config"])
+        node = getNode(flask.g.mn_config["config"])["node"]
         schedule = node["schedule"]
         response = flask.make_response(
             flask.render_template("ping_template.html", mnode=node)
@@ -360,8 +401,8 @@ def monitorPing():
     ],
 )
 def describe(identifier):
+    #TODO: implement describe
     L = flask.current_app.logger
-    db = flask.current_app.config.get("m_node.db")
     return d1_NotImplemented(description="describe", detail_code=1361, pid=identifier)
 
 
@@ -376,8 +417,8 @@ def streamTemplate(template_name, **context):
 # listObjects
 def listObjects(db):
     L = flask.current_app.logger
-    from_date = util.datetimeFromSomething(flask.request.args.get("fromDate", None))
-    to_date = util.datetimeFromSomething(flask.request.args.get("toDate", None))
+    from_date = opersist.utils.datetimeFromSomething(flask.request.args.get("fromDate", None))
+    to_date = opersist.utils.datetimeFromSomething(flask.request.args.get("toDate", None))
     identifier = flask.request.args.get("identifier", None)
     format_id = flask.request.args.get("formatId", None)
     replica_status = flask.request.args.get("replicaStatus", None)
@@ -398,24 +439,24 @@ def listObjects(db):
     if count > PAGE_SIZE:
         count = PAGE_SIZE
 
-    columns = ["identifier", "format_id", "checksum_md5", "date_modified", "size_bytes"]
-    db = getContentDB()
-    olist = db.query(models.Content).options(sqlalchemy.orm.load_only(*columns))
+    columns = ["identifier", "checksum_md5", "date_modified", "size_bytes", "format_id", ]
+    db = flask.g.op.getSession()
+    olist = db.query(opersist.models.thing.Thing).options(sqlalchemy.orm.load_only(*columns))
     if from_date is not None:
-        olist = olist.filter(models.Content.date_modified >= from_date)
+        olist = olist.filter(opersist.models.thing.Thing.date_modified >= from_date)
     if to_date is not None:
-        olist = olist.filter(models.Content.date_modified < to_date)
+        olist = olist.filter(opersist.models.thing.Thing.date_modified < to_date)
     if identifier is not None:
         olist = olist.filter(
             sqlalchemy.or_(
-                models.Content.identifier.like(identifier + "%"),
-                models.Content.series_id.like(identifier + "%"),
+                opersist.models.thing.Thing.identifier.like(identifier + "%"),
+                opersist.models.thing.Thing.series_id.like(identifier + "%"),
             )
         )
     if format_id is not None:
-        olist = olist.filter(models.Content.format_id.like(format_id + "%"))
+        olist = olist.filter(opersist.models.thing.Thing.format_id.like(format_id + "%"))
     total_records = olist.count()
-    records = olist.order_by(models.Content.date_modified)[start : start + count]
+    records = olist.order_by(opersist.models.thing.Thing.date_modified.desc())[start : start + count]
     return flask.Response(
         streamTemplate(
             "mnode/objectlist_template.xml",
@@ -446,15 +487,25 @@ def listObjects(db):
 @m_node.route("/object/<path:identifier>")
 def getObject(identifier):
     L = flask.current_app.logger
-    db = getContentDB()
+    db = flask.g.op.getSession()
     if identifier is None:
         return listObjects(db)
-    obj = db.query(models.Content).get(identifier)
+    obj = flask.g.op.getThingPIDorSID(identifier)
     if obj is None:
         return d1_NotFound(pid=identifier, detail_code=1002)
     response = flask.make_response(obj.content)
     response.mimetype = obj.media_type_name
-    return response, 200
+    obj_path = flask.g.op.contentAbsPath(obj.content)
+    fldr = os.path.dirname(obj_path)
+    fname = os.path.basename(obj_path)
+    return flask.send_from_directory(
+        fldr,
+        fname,
+        mimetype=obj.media_type_name,
+        as_attachment=True,
+        attachment_filename=obj.file_name,
+        last_modified=obj.t_content_modified
+    )
 
 
 # getChecksum
@@ -494,13 +545,19 @@ def getReplica(identifier):
 )
 def getMeta(identifier):
     L = flask.current_app.logger
-    db = getContentDB()
-    obj = db.query(models.Content).get(identifier)
+    #db = flask.g.op.getSession()
+    obj = flask.g.op.getThingPIDorSID(identifier)
     if obj is None:
         return d1_NotFound(pid=identifier, detail_code=1041)
     sysm = obj.asJsonDict()
     sysm["checksum_algorithm"] = "MD5"
     sysm["checksum"] = obj.checksum_md5
+    if sysm["format_id"] is None:
+        sysm["format_id"] = "application/octet-stream"
+    if sysm["origin_member_node"] is None:
+        sysm["origin_member_node"] = flask.g.mn_config["node_id"]
+    if sysm["authoritative_member_node"] is None:
+        sysm["authoritative_member_node"] = flask.g.mn_config["node_id"]
     response = flask.make_response(
         flask.render_template("systemmetadata_template.xml", sysm=sysm)
     )
@@ -532,7 +589,7 @@ def systemMetadataChanged():
     L = flask.current_app.logger
     identifier = flask.request.files.get("id", None)
     serial_version = flask.request.files.get("serialVersion", None)
-    date_modified = util.datetimeFromSomething(
+    date_modified = opersist.utils.datetimeFromSomething(
         flask.request.files.get("dateSysMetaLastModified", None)
     )
     msg = f"serial_version: {serial_version} date_modified: {date_modified}"

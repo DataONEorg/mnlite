@@ -3,27 +3,35 @@ import pathlib
 import flask
 import flask_monitoringdashboard
 from . import mnode
+import opersist.utils
+
 
 def initialize_instance(instance_path):
     db_path = os.path.join(instance_path, "dashboard")
-    db_config = os.path.join(db_path,"dashboard.cfg")
+    db_config = os.path.join(db_path, "dashboard.cfg")
     if not os.path.exists(db_config):
         os.makedirs(db_path)
-        with open(db_config,"wt") as cfg:
-            cfg.write(("[dashboard]\n"
-                       "GIT=/.git/\n\n"
-                       "[authentication]\n"
-                       "USERNAME=admin\n"
-                       "password=admin\n"
-                       "SECUTIY_TOKEN=change_me\n\n"
-                       "[database]\n"
-                       "DATABASE=sqlite:///instance/dashboard/dashboard.db\n\n"
-                       "[visualization]\n"
-                       "TIMEZONE=UTC\n"
-                       ))
+        with open(db_config, "wt") as cfg:
+            cfg.write(
+                (
+                    "[dashboard]\n"
+                    "GIT=/.git/\n\n"
+                    "[authentication]\n"
+                    "USERNAME=admin\n"
+                    "password=admin\n"
+                    "SECUTIY_TOKEN=change_me\n\n"
+                    "[database]\n"
+                    "DATABASE=sqlite:///instance/dashboard/dashboard.db\n\n"
+                    "[visualization]\n"
+                    "TIMEZONE=UTC\n"
+                )
+            )
+
 
 def create_app(test_config=None):
     app = flask.Flask(__name__, instance_relative_config=True)
+    L = app.logger
+    L.info("create_app")
     if test_config is None:
         app.config.from_pyfile("config.py", silent=True)
     else:
@@ -54,24 +62,50 @@ def create_app(test_config=None):
         for path in node_path.iterdir():
             if path.is_dir():
                 mn_name = path.name.lower()
+                abs_path = path.absolute()
                 mn_config = {
-                    "config": os.path.abspath(
-                        os.path.join(path.absolute(), "node.json")
-                    ),
+                    "config": os.path.abspath(os.path.join(abs_path, "node.json")),
                     "node_id": None,
-                    "db_engine": None,
-                    "db_session": None,
+                    "persistence": None,
                 }
                 options = {"mnode_name": mn_name, "config_path": mn_config["config"]}
                 app.register_blueprint(
                     mnode.m_node, url_prefix=f"/{mn_name}/v2", **options
                 )
                 node_info = mnode.getNode(mn_config["config"])
-                mn_config["node_id"] = node_info["node_id"]
-                db_engine, db_session = mnode.setupDB(mn_config["config"])
-                mn_config["db_engine"] = db_engine
-                mn_config["db_session"] = db_session
+                mn_config["node_id"] = node_info["node"]["node_id"]
+                mn_config["persistence"] = mnode.getPersistence(abs_path, node_info)
+                # The persistence layer is returned open and initialized
+                # Close it since it will be used on a different thread
+                # when services requests
+                mn_config["persistence"].close()
+
+                # db_engine, db_session = mnode.setupDB(mn_config["config"])
+                # mn_config["db_engine"] = db_engine
+                # mn_config["db_session"] = db_session
                 app.config["m_nodes"][mn_name] = mn_config
+
+    @app.teardown_appcontext
+    def shutdownSession(exception=None):
+        # L = app.logger
+        # L.debug("teardown appcontext")
+        pass
+
+    @app.before_request
+    def beforeRequest():
+        # L = app.logger
+        # L.debug("beforeRequest")
+        pass
+
+    @app.teardown_request
+    def afterRequest(exception=None):
+        # L = app.logger
+        # L.debug("afterRequest")
+        pass
+
+    @app.template_filter()
+    def datetimeToJsonStr(dt):
+        return opersist.utils.datetimeToJsonStr(dt)
 
     @app.route("/")
     def inventory():

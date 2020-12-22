@@ -4,7 +4,7 @@
         <identifier>{{record.identifier}}</identifier>
         <formatId>{{record.format_id}}</formatId>
         <checksum algorithm="MD5">{{record.checksum_md5}}</checksum>
-        <dateSysMetadataModified>{{record.date_modified}}</dateSysMetadataModified>
+        <dateSysMetadataModified>{{record.date_modified | datetimeToJsonStr}}</dateSysMetadataModified>
         <size>{{record.size_bytes}}</size>
     </objectInfo>{% endfor %}
 </d1:objectList>
