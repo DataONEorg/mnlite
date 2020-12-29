@@ -21,6 +21,7 @@ LOG_LEVELS = {
 LOG_DATE_FORMAT = "%Y-%m-%dT%H:%M:%S"
 LOG_FORMAT = "%(asctime)s %(name)s:%(levelname)s: %(message)s"
 
+
 def getOpersistInstance(folder, db_url=None):
     op = opersist.OPersist(folder, db_url=db_url)
     op.open()
@@ -209,7 +210,10 @@ def accessRules(ctx, perm, subj, ar_id, operation):
 @click.option("-f", "--fname", help="Path to file to add")
 @click.option("--sha256", default=None, help="SHA256 value identifying a thing")
 @click.option(
-    "-i", "--identifier", default=None, help="PID for object, unique in store"
+    "-i",
+    "--identifier",
+    default=None,
+    help="PID for object, unique in store, defaults to file name",
 )
 @click.option(
     "-t", "--format_id", default="application/octet-stream", help="FormatId of object"
@@ -230,6 +234,9 @@ def things(ctx, operation, fname, sha256, identifier, format_id, series_id):
     if operation in ["c", "create"]:
         if not os.path.exists(fname):
             raise ValueError(f"The specified file does not exist: {fname}")
+        if identifier is None:
+            identifier = os.path.basename(fname)
+            L.warning("Identifier not provided, using filename %s", identifier)
         the_thing = op.addThing(
             fname, identifier=identifier, format_id=format_id, series_id=series_id
         )

@@ -33,8 +33,8 @@ Captures metadata associated with a minted identifier. Note that this
 is about the identifier, it's creation, and other management aspects.
 The content referenced by an identifier is described by the Thing.
 
-An Identifier may be associated with more than one Thing. There are at
-least three situations where this can happen:
+An Identifier may be associated with more than one Thing. There are
+situations where this can happen:
 
 1. Different representations of the same thing. For example a digital
 entity may be conceptually the same though serialized differently.
@@ -44,6 +44,14 @@ a landing page that describes a Thing.
 
 3. Erroneous duplication, the Identifier is used to reference two or more
 distinct, unrelated entities.
+
+4. The identifier refers to a conceptualization of a thing. For example a
+series identifer in the DataONE system refers to the most recent version of
+some thing.
+
+In practice, while an identifier may be intended to be a globally unique
+reference to a specific digital thing, the most reliable mechanism to achieve
+this is using an identifier derived from the content of the thing.
 
 Identifiers generated from a hash of the content of a Thing will be unique,
 subject to the contraints of the hashing algorithm. It is assumed here

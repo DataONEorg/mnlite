@@ -1,11 +1,11 @@
-
 import ojson as json
 import sqlalchemy
 import opersist.utils
 import opersist.models
 
+
 class Identifier(opersist.models.Base):
-    '''
+    """
     An identifier is used to reference things. This table
     holds information about identifiers, not the things they
     reference.
@@ -15,14 +15,27 @@ class Identifier(opersist.models.Base):
     one thing only.
 
     Where iden
-    '''
+    """
 
     __tablename__ = "identifier"
 
+    _id = sqlalchemy.Column(
+        sqlalchemy.Integer,
+        primary_key=True,
+        autoincrement=True,
+        doc="Unique id for row.",
+    )
+    scheme = sqlalchemy.Column(
+        sqlalchemy.String,
+        index=True,
+        default=None,
+        nullable=True,
+        doc = "The identifier scheme"
+    )
     id = sqlalchemy.Column(
         sqlalchemy.String,
-        primary_key=True,
-        doc="id is the identifier scheme:value, must be unique in the datastore",
+        index=True,
+        doc="The identifier value",
     )
     t = sqlalchemy.Column(
         sqlalchemy.DateTime(timezone=True),
@@ -35,10 +48,8 @@ class Identifier(opersist.models.Base):
         onupdate=opersist.utils.dtnow,
         doc="When this entry was modified in this datastore, UTC datetime",
     )
-    is_singular = sqlalchemy.Column(
-        sqlalchemy.Boolean,
-        default=True,
-        doc="If true, then can be applied to one entity only."
+    source = sqlalchemy.Column(
+        sqlalchemy.String, default="Manual", doc="The source of the identifier."
     )
     provider_id = sqlalchemy.Column(
         sqlalchemy.String,
@@ -76,7 +87,7 @@ class Identifier(opersist.models.Base):
         sqlalchemy.JSON,
         nullable=True,
         default=None,
-        doc="Set labels, e.g. OAI-PMH set names"
+        doc="Set labels, e.g. OAI-PMH set names",
     )
 
     def asJsonDict(self):

@@ -3,6 +3,7 @@ import re
 import json
 import logging
 import flask
+import click
 import sqlalchemy
 import sqlalchemy.orm
 import opersist
@@ -13,6 +14,34 @@ m_node = flask.Blueprint("m_node", __name__, template_folder="templates/mnode")
 
 XML_TYPE = "text/xml"
 PAGE_SIZE = 100
+
+DEFAULT_NODE_CONFIG = {
+    "node": {
+        "node_id": None,
+        "state": "up",
+        "name": None,
+        "description": None,
+        "base_url": None,
+        "schedule": {
+            "hour": "*",
+            "day": "*",
+            "min": "0,10,20,30,40,50",
+            "mon": "*",
+            "sec": "5",
+            "wday": "*",
+            "year": "*"
+        },
+        "subject": None,
+        "contact_subject": None
+    },
+    "content_database": "sqlite:///content.db",
+    "log_database": "sqlite:///eventlog.db",
+    "data_folder": "data",
+    "created": None,
+    "default_submitter": None,
+    "default_owner": None
+}
+
 
 def getMNodeNameFromRequest():
     '''
@@ -40,6 +69,40 @@ def getPersistence(abs_path, node_config):
     op = opersist.OPersist(abs_path, db_url=node_config["content_database"], config_file="node.json")
     op.open()
     return op
+
+
+@m_node.cli.command("new_node", help="Create a new MNode instance")
+@click.argument("mn_name")
+def createMNode(mn_name):
+    mn_name = mn_name.lower().strip()
+    the_app = flask.current_app
+    L = the_app.logger
+    path_id = 0;
+    node_root_paths = the_app.config.get(
+        "NODE_ROOTS",
+        [
+            "nodes",
+        ],
+    )
+    config_path = os.path.join(the_app.instance_path, node_root_paths[path_id],mn_name)
+    if os.path.exists(config_path):
+        L.error("Path %s already exists. Remove before creating.", config_path)
+        return
+    L.info("Creating instance in %s", config_path)
+    os.makedirs(config_path, exist_ok=True)
+    config_name = os.path.join(config_path, "node.json")
+    cfg = DEFAULT_NODE_CONFIG
+    cfg["node"]["node_id"] = f"urn:node:{mn_name}"
+    cfg["node"]["name"] = f"Unnamed member node: {mn_name}"
+    cfg["node"]["description"] = "No description available for this node."
+    cfg["created"] = opersist.utils.datetimeToJsonStr(opersist.utils.dtnow())
+    with open(config_name, "w") as config_dest:
+        config_dest.write(json.dumps(cfg, indent="  "))
+    op = getPersistence(config_path, cfg)
+    op.close()
+    L.info("New node %s created at %s", mn_name, config_path)
+
+
 
 '''
 def getMNodeConfig(mn_name=None):

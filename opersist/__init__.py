@@ -3,6 +3,7 @@ import logging
 import ojson as json
 import sqlalchemy.exc
 import sqlalchemy.orm.exc
+import sqlalchemy.event
 from . import utils
 from . import flob
 from . import models
@@ -60,6 +61,9 @@ class OPersist(object):
         with open(self._conf_path, "w") as conf_dest:
             conf_dest.write(json.dumps(conf, indent="  "))
 
+    def _on_pickle(self, target, state_dict):
+        self._L.debug("On pickle, target: %s", target)
+
     def open(self, allow_create=True):
         if self._engine is None:
             # Setup everything, possibly initializing
@@ -80,14 +84,16 @@ class OPersist(object):
             with utils.pushd(self._path_root):
                 self._engine = models.getEngine(conf["content_database"])
                 self._session = models.getSession(self._engine)
+                # sqlalchemy.event.listen(models.thing.Thing, 'pickle', self._on_pickle)
                 self._ostore = flob.FLOB(conf["data_folder"])
-            #Ensure the public subject is available
+            # Ensure the public subject is available
             subj = self.getPublicReadAccessRule()
         else:
             conf = self.getConfig()
             with utils.pushd(self._path_root):
                 if self._session is None:
                     self._session = models.getSession(self._engine)
+                    # sqlalchemy.event.listen(models.thing.Thing, 'pickle', self._on_pickle)
                 if self._ostore is None:
                     self._ostore = flob.FLOB(conf["data_folder"])
 
@@ -97,15 +103,19 @@ class OPersist(object):
 
     def removeSession(self):
         pass
-        #self.close()
-        #print("Remove Session")
-        #if not self._session is None:
+        # self.close()
+        # print("Remove Session")
+        # if not self._session is None:
         #    self._session.remove()
+
+    def commit(self):
+        self._session.flush()
+        self._session.commit()
 
     def close(self):
         if not self._session is None:
             self._session.remove()
-            #self._session.close()
+            # self._session.close()
             self._session = None
         if not self._ostore is None:
             self._ostore.close()
@@ -136,8 +146,7 @@ class OPersist(object):
             created = getattr(model, create_method, model)(**kwargs)
             try:
                 self._session.add(created)
-                self._session.flush()
-                self._session.commit()
+                self.commit()
                 return created, True
             except sqlalchemy.exc.IntegrityError:
                 self._session.rollback()
@@ -247,8 +256,7 @@ class OPersist(object):
         ar = accessrule.AccessRule(permission=permission)
         ar.subjects = subjects
         self._session.add(ar)
-        self._session.flush()
-        self._session.commit()
+        self.commit()
         self._L.info("Added access rule '%s'", ar)
         return ar
 
@@ -268,7 +276,7 @@ class OPersist(object):
         the_ar.permission = the_perm
         the_ar.subjects.append(the_subj)
         self._session.add(the_ar)
-        self._session.commit()
+        self.commit()
         self._L.info("Public read access rule added.")
         return the_ar
 
@@ -338,8 +346,35 @@ class OPersist(object):
         fldr_dest, sha256, fn_dest = self._ostore.addFilePath(
             fname, hash=hashes["sha256"], metadata=blob_metadata
         )
+
         # Add to database
         try:
+            # Check content state before creating
+            # Ensure identifier is not used as a series id
+            # assert count thing where series_id = value == 0
+            if identifier is not None:
+                match = (
+                    self._session.query(models.thing.Thing)
+                    .filter_by(series_id=identifier)
+                    .one_or_none()
+                )
+                if match is not None:
+                    raise ValueError(
+                        f"Identifier '{identifier}' is used as a series_id"
+                    )
+            # Ensure identifier is not used as a pid
+            # assert count thing where identifier = value == 0
+            if series_id is not None:
+                match = (
+                    self._session.query(models.thing.Thing)
+                    .filter_by(identifier=series_id)
+                    .one_or_none()
+                )
+                if match is not None:
+                    raise ValueError(
+                        f"series_id '{series_id}' is used as an identifier"
+                    )
+
             blob_fname = os.path.join(self._path_root, self._blob_path, fn_dest)
             the_thing = models.thing.Thing(checksum_sha256=sha256, content=fn_dest)
             the_thing.size_bytes = os.stat(blob_fname).st_size
@@ -374,7 +409,7 @@ class OPersist(object):
                 the_thing.access_policy = access_rules
             self._L.info(the_thing)
             self._session.add(the_thing)
-            self._session.commit()
+            self.commit()
             return the_thing
         except Exception as e:
             self._L.error("Failed to store entry in database.")
@@ -382,6 +417,65 @@ class OPersist(object):
             status = self._ostore.remove(sha256)
             self._L.debug("Remove status = %s", status)
         return None
+
+    def registerIdentifier(
+        self,
+        s,
+        v,
+        source,
+        provider_id=None,
+        provider_time=None,
+        id_time=None,
+        registrant=None,
+        related=None,
+    ):
+        res = self._session.query(models.identifier.Identifier).filter_by(id=v).first()
+        if res is not None:
+            return False
+        the_id = models.identifier.Identifier()
+        the_id.scheme = s
+        the_id.id = v
+        the_id.source = source
+        the_id.provider_id = provider_id
+        the_id.provider_time = provider_time
+        the_id.id_time = id_time
+        the_id.registrant = registrant
+        the_id.related = related
+        self._session.add(the_id)
+        self.commit()
+
+
+    def registerIdentifiers(self, the_thing):
+        """
+        Ensures that identifiers used by the_thing are recorded in the identifier table.
+
+        Note that entries in the identifier table are not distinct by identifier value, so there
+        may not be a direct association between an identifier entry and the_thing.
+
+        If an identifier entry already exits, then it will not be touched. New identifier entries
+        are made where the identifier does not exist in the database, in which case the source of the
+        identifier will be set to "thing:<sha_256>:<field>" where sha_256 is the Thing sha_256 hash,
+        and field is the field name of the identifier.
+
+        Returns:
+            int, the number of identifiers added to identifier table
+
+        """
+        assert self._session is not None
+        nadded = 0
+        if the_thing.identifier is not None:
+            source = f"thing:{the_thing.checksum_sha256}:identifier"
+            self.registerIdentifier(the_thing.identifier, source)
+            nadded += 1
+        if the_thing.series_id is not None:
+            source = f"thing:{the_thing.checksum_sha256}:series_id"
+            self.registerIdentifier(the_thing.series_id, source)
+            nadded += 1
+        for _id in the_thing.identifiers:
+            source = f"thing:{_id}:identifiers"
+            self.registerIdentifier(_id, source)
+            nadded += 1
+        return nadded
 
     def contentAbsPath(self, content_path):
         return os.path.abspath(os.path.join(self._blob_path, content_path))
@@ -409,17 +503,23 @@ class OPersist(object):
         return o
 
     def getThingSha1(self, sha1):
-        pass
+        assert self._session is not None
+        Q = self._session.query(models.thing.Thing).filter_by(checksum_sha1=sha1)
+        return Q.first()
 
     def getThingMD5(self, md5):
-        pass
+        assert self._session is not None
+        Q = self._session.query(models.thing.Thing).filter_by(checksum_md5=md5)
+        return Q.first()
 
     def things(self):
         Q = self._session.query(models.thing.Thing)
         return Q.order_by(models.thing.Thing.t_added)
 
     def getThingsSID(self, series_id):
-        pass
+        Q = self._session.query(models.thing.Thing).filter_by(series_id=series_id)
+        return Q.order_by(models.thing.Thing.date_modified)
 
     def getThingsIdentifier(self, identifier):
+        # TODO: match PID or SID or related identifiers, order by date_modified
         pass

@@ -7,6 +7,7 @@ import sqlalchemy
 import sqlalchemy.ext.declarative
 import sqlalchemy.orm
 import sqlalchemy.exc
+import sqlalchemy.event
 import opersist.models
 import opersist.models.accessrule
 
@@ -26,15 +27,16 @@ class Thing(opersist.models.Base):
         sqlalchemy.String,
         index=True,
         nullable=True,
+        unique=True,
         default=None,
-        doc="Persistent identifier for thing",
+        doc="Persistent identifier for thing. Must be unique if set.",
     )
     series_id = sqlalchemy.Column(
         sqlalchemy.String,
         index=True,
         nullable=True,
         default=None,
-        doc="Series identifier",
+        doc="Series identifier.",
     )
     size_bytes = sqlalchemy.Column(
         sqlalchemy.Integer, nullable=False, doc="Size in bytes of the content"
@@ -48,7 +50,7 @@ class Thing(opersist.models.Base):
     identifiers = sqlalchemy.Column(
         sqlalchemy.JSON,
         default=[],
-        doc="List of other identifiers referencing this thing",
+        doc="List of other identifiers associated with this thing, not including PID or SID",
     )
     t_added = sqlalchemy.Column(
         sqlalchemy.DateTime(timezone=True),
@@ -174,6 +176,9 @@ class Thing(opersist.models.Base):
             value = value.strip()
             if opersist.utils.stringHasSpace(value):
                 raise ValueError(f"An identifier must not contain spaces: '{value}'")
+            if key == 'series_id':
+                if self.identifier is None:
+                    raise ValueError(f"series_id can not be set without a persistent identifier")
         return value
 
     def asJsonDict(self):
@@ -226,3 +231,8 @@ class Thing(opersist.models.Base):
 
     def __repr__(self):
         return json.dumps(self.asJsonDict())
+
+
+@sqlalchemy.event.listens_for(Thing, 'before_insert')
+def doThingChecks(mapper, connect, target):
+    logging.debug("At doThingChecks: %s", target)
