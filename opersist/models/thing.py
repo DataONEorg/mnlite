@@ -165,7 +165,12 @@ class Thing(opersist.models.Base):
     access_policy = sqlalchemy.orm.relationship(
         "AccessRule", secondary=opersist.models.accessrule.thing_accessrule_table
     )
-
+    _meta = sqlalchemy.Column(
+        sqlalchemy.JSON,
+        nullable=True,
+        default=None,
+        doc="Additional information pertinent to this record",
+    )
     __table_args__ = (
         sqlalchemy.CheckConstraint("identifier != series_id"),
     )

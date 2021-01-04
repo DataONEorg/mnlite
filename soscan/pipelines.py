@@ -48,19 +48,35 @@ class SoscanNormalizePipeline:
         )
 
     def normalizeSchemaOrg(self, source):
+        '''
+        Normalize schema.org JSON-LD namespace for consistency.
+
+        Resulting document uses "https://schema.org/"
+
+        Args:
+            source: python dict from json-ld
+
+        Returns:
+            dict of normalized json-ld
+
+        '''
         try:
+            # first expand the json-ld to remove namespace abbreviations
             options = None
             expanded = self._processor.expand(source, options)
 
+            # Create a copy of the expanded graph, then compact it with the SO context document
             # Context document should not be modified in the .compact method, but it is
             # Send a copy of the context instead of the original.
+            options = {"graph": True}
             normalized = self._processor.compact(
-                expanded, copy.deepcopy(SO_HTTP_CONTEXT), {"graph": True}
+                expanded, copy.deepcopy(SO_HTTP_CONTEXT), options
             )
+
             # Switch the namespace to use https
             normalized["@context"]["@vocab"] = "https://schema.org/"
             finalized = self._processor.compact(
-                normalized, copy.deepcopy(SO_HTTPS_CONTEXT), {"graph": True}
+                normalized, copy.deepcopy(SO_HTTPS_CONTEXT), options
             )
             return finalized
         except Exception as e:
