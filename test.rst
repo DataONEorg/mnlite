@@ -8,6 +8,5 @@ Literal include does not work:
 Does docutils include work?
 
 .. include:: pyproject.toml
-   :code: text
 
 More text.
