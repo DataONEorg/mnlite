@@ -65,8 +65,9 @@ DOWNLOADER_MIDDLEWARES = {
 # Configure item pipelines
 # See https://docs.scrapy.org/en/latest/topics/item-pipeline.html
 ITEM_PIPELINES = {
-    'soscan.pipelines.SoscanNormalizePipeline': 500,
-    'soscan.pipelines.SoscanPersistPipeline': 1000,
+    'soscan.sonormalizepipeline.SoscanNormalizePipeline': 500,
+    'soscan.opersistpipeline.OPersistPipeline': 1000,
+    #'soscan.pipelines.SoscanPersistPipeline': 1000,
 }
 
 # Enable and configure the AutoThrottle extension (disabled by default)

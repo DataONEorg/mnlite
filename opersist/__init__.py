@@ -1,6 +1,7 @@
 import os
 import logging
-import ojson as json
+import json
+import tempfile
 import sqlalchemy.exc
 import sqlalchemy.orm.exc
 import sqlalchemy.event
@@ -59,7 +60,7 @@ class OPersist(object):
 
     def setConfig(self, conf):
         with open(self._conf_path, "w") as conf_dest:
-            conf_dest.write(json.dumps(conf, indent="  "))
+            conf_dest.write(json.dumps(conf, indent=2))
 
     def _on_pickle(self, target, state_dict):
         self._L.debug("On pickle, target: %s", target)
@@ -304,7 +305,8 @@ class OPersist(object):
     def addThing(
         self,
         fname: str,
-        identifier: str = None,
+        identifier: str,
+        hashes: dict = None,
         format_id: str = None,
         submitter: str = None,
         owner: str = None,
@@ -312,19 +314,32 @@ class OPersist(object):
         series_id: str = None,
         alt_identifiers: list = None,
         media_type: str = None,
+        source: str = None,
+        metadata: dict = None,
+        obsoletes=None,
     ):
         """
-        Add a thing to the store.
+        Add a thing file to the store.
+
+        The file is copied to the store. The file fname must exist and the identifier
+        must be provided and must be unique in the store. Hashes are computed if not
+        provided.
 
         Args:
-            fname: Path to the file to be added. Will be copied to the store and named by sha256 hash
-            identifier: Identifier of the thing
+            fname: Required. Path to the file to be added. Will be copied to the store and
+                   named by sha256 hash
+            identifier: Required. Identifier of the thing
+            hashes: dict of {sha256, sha1, md5} values, computed if not provided
             format_id: The DataONE formatId of the thing
             submitter: Subject of the submitter
             owner: Subject of the owner, default to submitter
             access_rules: Access rules to be applied, public-read is default.
             series_id: Series identifier
             alt_identifiers: List of additional identifiers for this thing
+            media_type: The mime type of the item
+            source: origin of the content, e.g. full file path or absolute URL
+            metadata: dictionary of additional stuff
+            obsoletes: PID (identifier) of thing the new one will obsolete
 
         Returns:
             instance of thing
@@ -332,21 +347,28 @@ class OPersist(object):
         assert self._session is not None
         assert os.path.exists(fname)
         # Add to blob
+        self._L.info("Persisting %s", identifier)
+        self._L.info("Path = %s", fname)
         blob_metadata = {
             "file_name": os.path.basename(fname),
             "media_type": media_type,
             "identifier": identifier,
         }
-        hashes = utils.computeFileHashes(
-            fname,
-            calc_md5=True,
-            calc_sha1=True,
-            calc_sha256=True,
-        )
+        if source is not None:
+            blob_metadata["file_name"] = source
+        if hashes is None:
+            hashes = utils.computeChecksumsFile(
+                fname,
+                calc_md5=True,
+                calc_sha1=True,
+                calc_sha256=True,
+            )
         fldr_dest, sha256, fn_dest = self._ostore.addFilePath(
             fname, hash=hashes["sha256"], metadata=blob_metadata
         )
-
+        self._L.info("Adding database entry...")
+        if source is None:
+            source = os.path.abspath(fname)
         # Add to database
         try:
             # Check content state before creating
@@ -362,7 +384,7 @@ class OPersist(object):
                     raise ValueError(
                         f"Identifier '{identifier}' is used as a series_id"
                     )
-            # Ensure identifier is not used as a pid
+            # Ensure series_id is not used as a pid
             # assert count thing where identifier = value == 0
             if series_id is not None:
                 match = (
@@ -374,6 +396,32 @@ class OPersist(object):
                     raise ValueError(
                         f"series_id '{series_id}' is used as an identifier"
                     )
+            # get obsolete Thing if series_id is not None
+            # if obsoletes doesn't match obsolete Thing then fail
+            #
+            if obsoletes is not None:
+                # check obsoletes does not refer to a series_id
+                match = (
+                    self._session.query(models.thing.Thing)
+                    .filter_by(series_id=obsoletes)
+                    .one_or_none()
+                )
+                if match is not None:
+                    raise ValueError(
+                        f"Value of obsoletes must not be a series_id, {obsoletes}"
+                    )
+                # Get the thing being obsoleted
+                match = (
+                    self._session.query(models.thing.Thing)
+                    .filter_by(identifier=obsoletes)
+                    .one_or_none()
+                )
+                # verify that the series_id is not being changed
+                if series_id is not None:
+                    if match.series_id is not None:
+                        assert match.series_id == series_id
+                # Set here - will be comitted later or rolled back on error
+                match.obsoleted_by = identifier
 
             blob_fname = os.path.join(self._path_root, self._blob_path, fn_dest)
             the_thing = models.thing.Thing(checksum_sha256=sha256, content=fn_dest)
@@ -392,8 +440,9 @@ class OPersist(object):
             self._L.info("Using rights_holder: %s", owner)
             the_thing.checksum_md5 = hashes["md5"]
             the_thing.checksum_sha1 = hashes["sha1"]
+            the_thing.source = source
             the_thing.file_name = blob_metadata["file_name"]
-            the_thing.media_type = blob_metadata["media_type"]
+            the_thing.media_type_name = blob_metadata["media_type"]
             the_thing.identifier = blob_metadata["identifier"]
             the_thing.format_id = format_id
             the_thing.submitter = submitter
@@ -401,6 +450,8 @@ class OPersist(object):
             the_thing.series_id = series_id
             the_thing.identifiers = []
             the_thing.access_policy = []
+            the_thing._meta = metadata
+            the_thing.obsoletes = obsoletes
             if alt_identifiers is not None:
                 self.identifiers = alt_identifiers
             if access_rules is None:
@@ -418,9 +469,71 @@ class OPersist(object):
             self._L.debug("Remove status = %s", status)
         return None
 
+    def addThingBytes(
+        self,
+        obj: bytes,
+        identifier: str,
+        hashes: dict = None,
+        format_id: str = None,
+        submitter: str = None,
+        owner: str = None,
+        access_rules: list = None,
+        series_id: str = None,
+        alt_identifiers: list = None,
+        media_type: str = None,
+        source: str = None,
+        metadata: dict = None,
+        obsoletes=None,
+    ):
+        """
+        Adds the thing of bytes to the store.
+
+        Ths implementation saves to a temporary file and delegates
+        remaining operations to addThing.
+
+        Args:
+            obj:
+            identifier:
+            hashes:
+            format_id:
+            submitter:
+            owner:
+            access_rules:
+            series_id:
+            alt_identifiers:
+            media_type:
+            source:
+            metadata:
+            obsoletes:
+
+        Returns:
+
+        """
+        ftmp = tempfile.NamedTemporaryFile(delete=False)
+        ftmp_path = ftmp.name
+        ftmp.write(obj)
+        ftmp.close()
+        try:
+            return self.addThing(
+                ftmp_path,
+                identifier=identifier,
+                hashes=hashes,
+                format_id=format_id,
+                submitter=submitter,
+                owner=owner,
+                access_rules=access_rules,
+                series_id=series_id,
+                alt_identifiers=alt_identifiers,
+                media_type=media_type,
+                source=source,
+                metadata=metadata,
+                obsoletes=obsoletes,
+            )
+        finally:
+            os.unlink(ftmp_path)
+
     def registerIdentifier(
         self,
-        s,
         v,
         source,
         provider_id=None,
@@ -433,7 +546,6 @@ class OPersist(object):
         if res is not None:
             return False
         the_id = models.identifier.Identifier()
-        the_id.scheme = s
         the_id.id = v
         the_id.source = source
         the_id.provider_id = provider_id
@@ -443,7 +555,6 @@ class OPersist(object):
         the_id.related = related
         self._session.add(the_id)
         self.commit()
-
 
     def registerIdentifiers(self, the_thing):
         """

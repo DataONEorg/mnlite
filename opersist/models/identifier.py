@@ -25,13 +25,6 @@ class Identifier(opersist.models.Base):
         autoincrement=True,
         doc="Unique id for row.",
     )
-    scheme = sqlalchemy.Column(
-        sqlalchemy.String,
-        index=True,
-        default=None,
-        nullable=True,
-        doc = "The identifier scheme"
-    )
     id = sqlalchemy.Column(
         sqlalchemy.String,
         index=True,
@@ -98,9 +91,11 @@ class Identifier(opersist.models.Base):
             dict
         """
         d = {
+            "_id": self._id,
             "id": self.id,
             "t": opersist.utils.datetimeToJsonStr(self.t),
             "t_mod": opersist.utils.datetimeToJsonStr(self.t),
+            "source": self.source,
             "provider_id": self.provider_id,
             "service_id": self.service_id,
             "provider_time": opersist.utils.datetimeToJsonStr(self.provider_time),

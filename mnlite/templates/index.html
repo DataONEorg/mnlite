@@ -5,9 +5,19 @@
   <title>mnlite</title>
 </head>
 <body>
-<p>Nodes available:</p>
-<ul>{% for node in nodes %}
-  <li><a href="/{{node.name}}/v2">{{node.node_id}}</a> <pre>{{ node.config }}</pre></li>
-{% endfor %}</ul>
+  <section id="nodes">
+    <p>Nodes available:</p>
+    <ul>{% for node in nodes %}
+      <li><a href="/{{node.name}}/v2">{{node.node_id}}</a> <pre>{{ node.config }}</pre></li>
+    {% endfor %}</ul>
+  </section>
+
+  <section id="diagnostics">
+    <p>Diagnostics:</p>
+    <ul>
+      <li><a href="/jldex">JSON-LD Extract</a></li>
+      <li><a href="/dashboard">Dashboard</a></li>
+    </ul>
+  </section>
 </body>
 </html>

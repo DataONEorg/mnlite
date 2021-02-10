@@ -3,8 +3,8 @@ import email.utils
 import dateparser
 import soscan.spiders.ldsitemapspider
 import soscan.items
-import soscan.utils
-
+import opersist.utils
+import opersist.rdfutils
 
 class JsonldSpider(soscan.spiders.ldsitemapspider.LDSitemapSpider):
 
@@ -79,7 +79,21 @@ class JsonldSpider(soscan.spiders.ldsitemapspider.LDSitemapSpider):
             jsonld = pyld.jsonld.load_html(
                 response.body, response.url, None, {"extractAllScripts": True}
             )
+            #for j_item in jsonld:
+            #    item = soscan.items.SoscanItem()
+            #    item["source"] = response.url
+            #    item["checksum"] = opersist.rdfutils.computeJSONLDChecksum(j_item, response.url)
+
             if len(jsonld) > 0:
+                # These values are set in the opersistpiteline and sonormalizepipeline
+                # checksum
+                # identifier
+                # series_id
+                # filename
+                # source
+                # alt_identifiers
+                # format_id
+
                 item = soscan.items.SoscanItem()
                 item["url"] = response.url
                 item["status"] = response.status
@@ -96,7 +110,7 @@ class JsonldSpider(soscan.spiders.ldsitemapspider.LDSitemapSpider):
                         self.logger.error(
                             "Could not parse time: %s. %s", response_date, e
                         )
-                item["time_retrieved"] = soscan.utils.dtnow()
+                item["time_retrieved"] = opersist.utils.dtnow()
                 yield item
         except Exception as e:
             self.logger.error("parse : %s", e)

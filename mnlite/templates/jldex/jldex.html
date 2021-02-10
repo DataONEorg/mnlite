@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Extract JSON-LD</title>
+</head>
+<body>
+<section id="main">
+  <form >
+    <p>Source URL: <input type="text" id="url" name="url" value="https://datadryad.org/stash/dataset/doi:10.5061/dryad.m8s2r36"></input></p>
+    <p><input type="submit" value="Go"></input></p>
+  </form>
+</section>
+<section id="result">
+  <pre>{{data.url}}</pre>
+  <hr />
+  <pre id="jsonld">{{data.ids}}</pre>
+  <hr />
+  <pre id="hashes">{{data.hashes}}</pre>
+  <hr />
+  <pre id="bytes">{{data.bytes}}</pre>
+  <hr />
+  <p>Structured:</p>
+  <pre id="jsonld_st">{{data.jsonld_st}}</pre>
+  <hr />
+  <p>Namespaced:</p>
+  <pre id="jsonld_ns">{{data.jsonld_ns}}</pre>
+  <hr />
+  <p>Original:</p>
+  <pre id="jsonld">{{data.jsonld}}</pre>
+</section>
+</body>
+</html>

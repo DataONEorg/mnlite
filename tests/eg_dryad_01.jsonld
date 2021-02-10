@@ -1,0 +1,85 @@
+{
+  "@context": "http://schema.org",
+  "@type": "Dataset",
+  "@id": "https://doi.org/10.5061/dryad.m8s2r36",
+  "name": "Context-dependent costs and benefits of a heterospecific nesting association",
+  "description": [
+    "The costs and benefits of interactions among species can vary spatially or temporally, making them context-dependent. For example, benefits associated with nesting near species that deter predators may give way to costs if the association increases the risk of predation during other stages of reproduction. We examined the extent to which the costs and benefits of heterospecific aggregations between a declining shorebird, the Hudsonian Godwit (Limosa haemastica), and a potential protector and predator, the Mew Gull (Larus canus), varied with breeding stage. Specifically, we assessed the spatial distribution and fate of 43 godwit and 262 gull nests in Beluga, Alaska, from 2014 – 2016. We then evaluated the effect of habitat and proximity to gulls on daily survival rates of 120 godwit nests from 2009 – 2016. We also examined the relationship between the proximity to gulls and survival of godwit chicks to five days old, the period when they are vulnerable to gull predation. Nests of godwits and gulls were significantly clustered across the landscape, a pattern that habitat heterogeneity failed to explain. Hatching success of godwit nests improved with proximity to the gull colony and increasing numbers of gull nests within 200m. In contrast, survival of godwit chicks to five days improved with increasing distance to the gull colony. The costs and benefits that godwits derived from associating with Mew Gulls were thus context-dependent, with benefits pre-hatch and costs post-hatch. Our results show how spatiotemporal variation in species interactions preclude simple generalizations about the nature of their outcomes.",
+    "<div class=\"o-metadata__file-usage-entry\"><h4 class=\"o-heading__level3-file-title\">Nest Locations for Hudsonian Godwits and Mew Gulls</h4><div class=\"o-metadata__file-description\">Nest locations (Latitude & Longitude, Easting & Northing both given) for two species (SPP: Hudsonian Godwit (HUGO) and Mew Gull (MEGU)) from 2009-2016 (godwits) and 2014-2016 (gulls) in Beluga River, AK. Godwit nest fate (HATCH = nest successfully hatched, FAIL = nest did not hatch - usually predated) is also included.</div><div class=\"o-metadata__file-name\">NorthPlot_Nests_HUGO_MEGU.csv</br></div></div><div class=\"o-metadata__file-usage-entry\"><h4 class=\"o-heading__level3-file-title\">Hudsonian Godwit nest survival 2009-2016</h4><div class=\"o-metadata__file-description\">Hudsonian Godwit nest survival from 2009-2016. Data is organized for analysis in program MARK. Individual covariates: DIST_MEGUCOLONY: distance to the gull colony; DIST_H20: distance to pond; PER_30CM_1M: percent vegetation between 30cm and 1m tall; PER_BARE: percent circle bare ground (e.g., mud, water, or rocks); PER_SEDGE_GRASS: percent circle covered by grass and sedge species; PER_FORB: percent circle covered by herbaceous forb species; NUM_SPECIES: number of plant species within circle.  All vegetation metrics taken within a 1m diameter circle-plot at nest</div><div class=\"o-metadata__file-name\">HUGO_Nests_09-16_gull_habitat.csv</br></div></div><div class=\"o-metadata__file-usage-entry\"><h4 class=\"o-heading__level3-file-title\">Hudsonian Godwit nest survival 2014-2016</h4><div class=\"o-metadata__file-description\">Hudsonian Godwit nest survival from 2014-2016. Data is organized for analysis in program MARK. Individual covariates: DIST_MEGU: distance to the closest Mew Gull nest; DIST_MEGUCOLONY: distance to the gull colony; DIST_H20: distance to pond; NUM_MEGU_NESTS: number of Mew Gull nests within 200m radius; PER_30CM_1M: percent vegetation between 30cm and 1m tall; PER_BARE: percent circle bare ground (e.g., mud, water, or rocks); PER_SEDGE_GRASS: percent circle covered by grass and sedge species; PER_FORB: percent circle covered by herbaceous forb species; NUM_SPECIES: number of plant species within circle.  All vegetation metrics taken within a 1m diameter circle-plot at nest</div><div class=\"o-metadata__file-name\">HUGO_Nests_14-16_gull_habitat.csv</br></div></div><div class=\"o-metadata__file-usage-entry\"><h4 class=\"o-heading__level3-file-title\">Moran's I all points</h4><div class=\"o-metadata__file-description\">Data for use in Moran's I analysis. For each Hudsonian Godwit nest located between 2014-2016 and 25 associated random points, the locations (Latitude & Longitude, Easting & Northing) of the vegetation survey and the first two principal components (PC1 & PC2) of vegetation metrics (Distance to water, percent cover between 30cm and 1m tall, percent bare ground, percent covered by sedges and grasses, percent covered by herbaceous forbs, and number of plant species).</div><div class=\"o-metadata__file-name\">MoransI_allpoints_PCs.csv</br></div></div><div class=\"o-metadata__file-usage-entry\"><h4 class=\"o-heading__level3-file-title\">Moran's I nests only</h4><div class=\"o-metadata__file-description\">Data for use in Moran's I analysis. For each Hudsonian Godwit nest located between 2014-2016 only, the locations (Latitude & Longitude, Easting & Northing) of the vegetation survey and the first two principal components (PC1 & PC2) of vegetation metrics (Distance to water, percent cover between 30cm and 1m tall, percent bare ground, percent covered by sedges and grasses, percent covered by herbaceous forbs, and number of plant species).</div><div class=\"o-metadata__file-name\">MoransI_nestsonly_PCs.csv</br></div></div><div class=\"o-metadata__file-usage-entry\"><h4 class=\"o-heading__level3-file-title\">Hudsonian Godwit Chick Survival</h4><div class=\"o-metadata__file-description\">Hudsonian Godwit chick survival from 2014-2016 in Beluga River, Alaska. Data consists of triangulated locations of 29 individuals from 25 broods during the first 5 days post-hatch (period when prone to Mew Gull predation). SURV_D5: survival of chick to day 5. DIST_COLONY: distance of triangulated location of chick to the Mew Gull colony. DIST_MEGU_NEST: distance of triangulated location of chick to the closest Mew Gull nest; NUM_MEGU_NESTS: number of Mew Gull nests within a 200m radius of triangulated location of chick. DIST_POND: distance to edge of closest pond of triangulated location of chick. DIST_NEST_COLONY: distance to the Mew Gull colony of the nest the chick hatched from.</div><div class=\"o-metadata__file-name\">HUGO_Chick_gull.csv</br></div></div>"
+  ],
+  "url": "http://datadryad.org/stash/dataset/doi%253A10.5061%252Fdryad.m8s2r36",
+  "identifier": "https://doi.org/10.5061/dryad.m8s2r36",
+  "version": 1,
+  "isAccessibleForFree": true,
+  "keywords": [
+    "Limosa haemastica",
+    "predation",
+    "Hudsonian Godwit",
+    "Mew Gull",
+    "protective nesting association",
+    "Larus canus"
+  ],
+  "creator": [
+    {
+      "@type": "Person",
+      "name": "Rose J Swift",
+      "givenName": "Rose J",
+      "familyName": "Swift",
+      "affiliation": {
+        "@type": "Organization",
+        "name": "Cornell Lab of Ornithology and Department of Natural Resources, Ithaca, NY"
+      }
+    },
+    {
+      "@type": "Person",
+      "name": "Amanda D Rodewald",
+      "givenName": "Amanda D",
+      "familyName": "Rodewald",
+      "affiliation": {
+        "@type": "Organization",
+        "sameAs": "https://ror.org/0078xmk34",
+        "name": "University of Montana"
+      }
+    },
+    {
+      "@type": "Person",
+      "name": "Nathan R Senner",
+      "givenName": "Nathan R",
+      "familyName": "Senner",
+      "affiliation": {
+        "@type": "Organization",
+        "sameAs": "https://ror.org/0078xmk34",
+        "name": "University of Montana"
+      }
+    }
+  ],
+  "distribution": {
+    "@type": "DataDownload",
+    "encodingFormat": "application/zip",
+    "contentUrl": "http://datadryad.org/api/v2/datasets/doi%253A10.5061%252Fdryad.m8s2r36/download"
+  },
+  "temporalCoverage": [
+    "2018",
+    "2018-03-05T15:54:47Z"
+  ],
+  "spatialCoverage": [
+    "Alaska",
+    "Beluga River"
+  ],
+  "citation": "http://doi.org/10.1093/beheco/ary042",
+  "license": {
+    "@type": "CreativeWork",
+    "name": "CC0 1.0 Universal (CC0 1.0) Public Domain Dedication",
+    "license": "https://creativecommons.org/publicdomain/zero/1.0/"
+  },
+  "publisher": {
+    "@id": "https://datadryad.org",
+    "@type": "Organization",
+    "legalName": "Dryad Digital Repository",
+    "name": "Dryad",
+    "url": "https://datadryad.org"
+  },
+  "provider": {
+    "@id": "https://datadryad.org"
+  }
+}

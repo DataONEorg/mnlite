@@ -3,6 +3,7 @@ import pathlib
 import flask
 import flask_monitoringdashboard
 from . import mnode
+from . import jldextract
 import opersist.utils
 
 
@@ -45,6 +46,8 @@ def create_app(test_config=None):
         file=os.path.join(app.instance_path, "dashboard/dashboard.cfg")
     )
     flask_monitoringdashboard.bind(app)
+    options = {}
+    app.register_blueprint(jldextract.jldex, url_prefix="/jldex", **options)
     node_root_paths = app.config.get(
         "NODE_ROOTS",
         [

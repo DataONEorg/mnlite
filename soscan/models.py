@@ -8,6 +8,9 @@ import soscan.utils
 
 _L = logging.getLogger("soscan.models")
 
+raise(Exception("Don't use this"))
+##################################################################
+
 Base = sqlalchemy.ext.declarative.declarative_base()
 
 

@@ -5,12 +5,21 @@ Light weight read-only DataONE member node in Python Flask
 
 ## Development Notes
 
+The `mnlite` service:
+
 ----
+workon mnlite
 export FLASK_APP=mnlite
 export FLASK_ENV=development
 flask run
 ----
 
+The `soscan` service:
+
+----
+workon mnlite
+
+----
 
 ## Model
 

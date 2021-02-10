@@ -60,7 +60,21 @@ class Thing(opersist.models.Base):
     t_content_modified = sqlalchemy.Column(
         sqlalchemy.DateTime(timezone=True),
         default=opersist.utils.dtnow,
-        doc="When the content was modified",
+        doc="When the content was modified. Should be equal or older than t_added",
+    )
+    # date_modified
+    date_modified = sqlalchemy.Column(
+        sqlalchemy.DateTime(timezone=True),
+        index=True,
+        default=opersist.utils.dtnow,
+        doc="When this record was modified, like system metadata date modified",
+    )
+    # date_uploaded
+    date_uploaded = sqlalchemy.Column(
+        sqlalchemy.DateTime(timezone=True),
+        nullable=True,
+        default=None,
+        doc="When the content was added to the DataONE system",
     )
     content = sqlalchemy.Column(
         sqlalchemy.String,
@@ -80,7 +94,13 @@ class Thing(opersist.models.Base):
         sqlalchemy.String,
         nullable=True,
         index=True,
-        doc="Original file name of this thing",
+        doc="Original file name of this thing, excluding path",
+    )
+    source = sqlalchemy.Column(
+        sqlalchemy.String,
+        nullable=False,
+        index=True,
+        doc="Source of this thing, such as full path or URL"
     )
     # DataONE sysmetadata specific stuff
     format_id = sqlalchemy.Column(
@@ -88,19 +108,6 @@ class Thing(opersist.models.Base):
         index=True,
         default="application/octet-stream",
         doc="DataONE formatId for thing",
-    )
-    # date_modified
-    date_modified = sqlalchemy.Column(
-        sqlalchemy.DateTime(timezone=True),
-        index=True,
-        default=opersist.utils.dtnow,
-        doc="When this record was modified",
-    )
-    # date_uploaded
-    date_uploaded = sqlalchemy.Column(
-        sqlalchemy.DateTime(timezone=True),
-        default=opersist.utils.dtnow,
-        doc="When the content was added to the DataONE system",
     )
     # serial_version
     serial_version = sqlalchemy.Column(
