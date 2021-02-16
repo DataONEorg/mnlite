@@ -16,7 +16,8 @@ JSON_TIME_FORMAT = "%Y-%m-%dT%H:%M:%S%z"
 """datetime format string for generating JSON content
 """
 
-RE_SPACE = re.compile('\s')
+RE_SPACE = re.compile("\s")
+
 
 def stringHasSpace(s):
     return RE_SPACE.search(s)
@@ -24,10 +25,10 @@ def stringHasSpace(s):
 
 @contextlib.contextmanager
 def pushd(new_dir):
-    '''
+    """
     with pushd(new_dir):
       do stuff
-    '''
+    """
     previous_dir = os.getcwd()
     os.chdir(new_dir)
     try:
@@ -45,11 +46,7 @@ def computeChecksumsBytes(b, sha256=True, sha1=True, md5=True):
     Returns:
         hashes
     """
-    hashes = {
-        "sha256": None,
-        "sha1": None,
-        "md5": None
-    }
+    hashes = {"sha256": None, "sha1": None, "md5": None}
     if sha256:
         hashes["sha256"] = hashlib.sha256(b).hexdigest()
     if sha1:
@@ -78,7 +75,7 @@ def jsonChecksums(doc):
         dict of hashes, bytes
 
     """
-    b = json.dumps(doc,separators=(",", ":"), sort_keys=True).encode("UTF-8")
+    b = json.dumps(doc, separators=(",", ":"), sort_keys=True, indent=2).encode("UTF-8")
     return computeChecksumsBytes(b)
 
 
@@ -93,11 +90,7 @@ def computeChecksumsFLO(flo, sha256=True, sha1=True, md5=True):
         dict of md5, sha1, sha256 hashes.
 
     """
-    hashes = {
-        "sha256": None,
-        "sha1": None,
-        "md5": None
-    }
+    hashes = {"sha256": None, "sha1": None, "md5": None}
     hsha256 = None
     hsha1 = None
     hmd5 = None

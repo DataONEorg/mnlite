@@ -1,11 +1,12 @@
 import os
 import pathlib
+import json
 import flask
 import flask_monitoringdashboard
 from . import mnode
 from . import jldextract
 import opersist.utils
-
+import jnius
 
 def initialize_instance(instance_path):
     db_path = os.path.join(instance_path, "dashboard")
@@ -33,6 +34,7 @@ def create_app(test_config=None):
     app = flask.Flask(__name__, instance_relative_config=True)
     L = app.logger
     L.info("create_app")
+    app.config['JSONIFY_PRETTYPRINT_REGULAR'] = True
     if test_config is None:
         app.config.from_pyfile("config.py", silent=True)
     else:
@@ -92,6 +94,7 @@ def create_app(test_config=None):
     def shutdownSession(exception=None):
         # L = app.logger
         # L.debug("teardown appcontext")
+        jnius.detach()
         pass
 
     @app.before_request
@@ -109,6 +112,12 @@ def create_app(test_config=None):
     @app.template_filter()
     def datetimeToJsonStr(dt):
         return opersist.utils.datetimeToJsonStr(dt)
+
+    @app.template_filter()
+    def asjson(jobj):
+        if jobj is not None:
+            return json.dumps(jobj, indent=2)
+        return ""
 
     @app.route("/")
     def inventory():
