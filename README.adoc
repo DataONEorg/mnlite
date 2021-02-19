@@ -21,6 +21,18 @@ workon mnlite
 
 ----
 
+Collecting content from a source.
+
+Implemented as a scrapy based crawler. Given a sitemap, crawls
+and adds discovered SO:Dataset entries to the persistence store.
+
+Settings are in `settings.py`
+
+----
+workon mnlite
+scrapy crawl JsonldSpider -a sitemap_urls='https://datadryad.org/sitemap.xml'
+----
+
 ## Model
 
 

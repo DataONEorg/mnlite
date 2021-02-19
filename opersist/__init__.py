@@ -452,6 +452,8 @@ class OPersist(object):
             the_thing.access_policy = []
             the_thing._meta = metadata
             the_thing.obsoletes = obsoletes
+            # TODO: should this be now or when the thing was added to the original location?
+            the_thing.date_uploaded = opersist.utils.dtnow()
             if alt_identifiers is not None:
                 self.identifiers = alt_identifiers
             if access_rules is None:

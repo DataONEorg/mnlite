@@ -73,7 +73,7 @@ class Thing(opersist.models.Base):
     date_uploaded = sqlalchemy.Column(
         sqlalchemy.DateTime(timezone=True),
         nullable=True,
-        default=None,
+        default=opersist.utils.dtnow,
         doc="When the content was added to the DataONE system",
     )
     content = sqlalchemy.Column(
