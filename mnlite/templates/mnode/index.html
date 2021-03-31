@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <title>MN View</title>
+  <link href="{{url_for('static', filename='tabulator/css/tabulator_simple.css')}}" rel="stylesheet">
+  <script type="text/javascript" src="{{url_for('static', filename='tabulator/js/tabulator.min.js')}}"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xml-beautify@1.1.1/dist/XmlBeautify.js"></script>
+
+  <link rel=stylesheet href=https://cdn.jsdelivr.net/npm/pretty-print-json@1.0/dist/pretty-print-json.css>
+  <script src=https://cdn.jsdelivr.net/npm/pretty-print-json@1.0/dist/pretty-print-json.min.js></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jsonld/4.0.1/jsonld.min.js" integrity="sha512-x6RPQmoCygJ9KL51kZSU6Eq6kEFyERnhJDx8AoSKi64T6ARFhHsULMcTmbsmSSQ+dcbttp+GL0ljK9IPClmYaw==" crossorigin="anonymous"></script>
+
+  <link rel="stylesheet" href="{{url_for('static', filename='common.css')}}">
+  <script src="{{url_for('static', filename='common.js')}}"></script>
+</head>
+<body>
+<p>Total records: 
+    <span id="total_records">0</span>
+    <span> SID:</span>
+    <input id="sid_filter" size="40"></input>
+    <button id="bt_filter" onclick="doSidFilter('sid_filter')">?</button>
+</p>
+<div id="object_table" style="height:300px"></div>
+<div class="tab">
+  <button id="defaultOpen" class="tablinks" onclick="openTab(event,'sysmeta_tab')">Sysmeta</button>
+  <button class="tablinks" onclick="openTab(event,'object_tab')">Object</button>
+  <button class="tablinks" onclick="openTab(event,'dsframe_tab')">DS Frame</button>
+</div>
+<div id="data">
+    <div class="tabcontent section" id="sysmeta_tab">
+        <a class="copybtn" onclick="copyToClipboard('sysmeta_show')">Copy</a>
+        <pre id="sysmeta_show"></pre>
+    </div>
+    <div class="tabcontent section" id="object_tab">
+        <p>Stored object. Format?<input id="cb_object_format" type="checkbox" onclick="setObjectFormat()" checked="1"></input></p>
+        <a class="copybtn" onclick="copyToClipboard('object_show')">Copy</a>
+        <pre id="object_show"></pre>
+    </div>
+    <div class="tabcontent section" id="dsframe_tab">
+        <p>Object framed for schema.org/Dataset view.</p>
+        <a class="copybtn" onclick="copyToClipboard('dsframe_show')">Copy</a>
+        <pre id="dsframe_show"></pre>
+    </div>
+</div>
+<script>
+var _show_canonical = false;
+var _format_json = true;
+
+const compact_context = {};
+const dataset_frame = {
+    "@context": {
+        "@vocab":"https://schema.org/"
+    },
+    "@type":"Dataset",
+    "identifier":{},
+    "creator":{}
+};
+
+document.getElementById("defaultOpen").click();
+
+function setObjectFormat() {
+    var ele = document.getElementById("cb_object_format");
+    _format_json = ele.checked;
+    var selected_rows = _table.getSelectedRows();
+    if (selected_rows.length > 0) {
+        var identifier=selected_rows[0]._row.data.identifier;
+        showObject(identifier);
+    }
+}
+
+function copyToClipboard(_id) {
+    const ele = document.getElementById(_id);
+    const cc = document.createElement('textarea');
+    cc.style.cssText = "position:absolute;left:-100%;"
+    cc.textContent = ele.textContent;
+    document.body.append(cc);
+    cc.select();
+    document.execCommand('copy')
+    document.body.removeChild(cc);
+}
+
+async function showSysMeta(pid) {
+    var url = "meta/" + pid;
+    fetch(url)
+    .then(response => response.text())
+    .then(sysmeta => {
+        var ele = document.getElementById("sysmeta_show");
+        const bxml = new XmlBeautify().beautify(sysmeta);
+        ele.innerText = bxml;
+    });
+}
+
+async function doFrame(jdoc) {
+    var opts = {}
+    jsonld.frame(jdoc, dataset_frame, opts)
+    .then(fdoc => {
+        var ele = document.getElementById("dsframe_show");
+        opts = {indent:2}
+        ele.innerHTML = prettyPrintJson.toHtml(fdoc, opts);
+    })
+}
+
+async function showObject(pid) {
+    var url = "object/" + pid;
+    fetch(url)
+    .then(response => response.json())
+    .then(cjdoc => {
+        doFrame(cjdoc);
+        var ele = document.getElementById("object_show");
+        opts = {indent:0}
+        if (_format_json) {
+            opts.indent=2
+        }
+        ele.innerHTML = prettyPrintJson.toHtml(cjdoc, opts);
+    });
+}
+
+function rowClicked(e, row) {
+    console.log(row)
+    var identifier=row._row.data.identifier;
+    showSysMeta(identifier);
+    showObject(identifier);
+}
+
+function onDataLoaded(url, params, response) {
+    var ele = document.getElementById("total_records");
+    console.log(response);
+    ele.innerText = response.total_rows;
+    return response;
+}
+
+
+var _table = new Tabulator("#object_table",{
+    layout:"fitColumns",
+    placeholder:"No data available",
+    ajaxURL:"_page",
+    ajaxProgressiveLoad:"scroll",
+    paginationSize:50,
+    columns:[
+        {"title":"PID", field:"identifier", width:200},
+        {"title":"SID", field:"series_id"},
+        {"title":"URL", field:"source"},
+        {"title":"Mod", field:"date_modified"},
+        {"title":"Created", field:"date_uploaded"}
+    ],
+    rowClick: rowClicked,
+    ajaxResponse: onDataLoaded,
+    ajaxFiltering:true,
+    ajaxSorting: true,
+    selectable: 1
+})
+
+
+function doSidFilter(eid) {
+    var ele = document.getElementById(eid);
+    var flt = ele.value;
+    console.log("FILTER = " + flt);
+    _table.setFilter("series_id","like",flt);    
+}
+
+
+</script>
+</body>
