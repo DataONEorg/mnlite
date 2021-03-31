@@ -5,7 +5,6 @@ import flask
 import flask_cors
 from mnlite import mnode
 import opersist.utils
-import jnius
 
 def initialize_instance(instance_path):
     db_path = os.path.join(instance_path, "dashboard")
@@ -98,7 +97,7 @@ def create_app(test_config=None):
     def shutdownSession(exception=None):
         # L = app.logger
         # L.debug("teardown appcontext")
-        jnius.detach()
+        #jnius.detach()
         pass
 
     @app.before_request
