@@ -27,6 +27,7 @@ class JsonldSpider(soscan.spiders.ldsitemapspider.LDSitemapSpider):
                          to or older are excluded.
                 settings_file: JSON node config file
         """
+        kwargs.setdefault("count_only", False)
         super(JsonldSpider, self).__init__(*args, **kwargs)
 
         sonormal.installDocumentLoader(expire_existing=False)
@@ -52,8 +53,6 @@ class JsonldSpider(soscan.spiders.ldsitemapspider.LDSitemapSpider):
             self.lastmod_filter = dateparser.parse(
                 self.lastmod_filter, settings={"RETURN_AS_TIMEZONE_AWARE": True}
             )
-        #If set, then don't download the target
-        self._count_only = kwargs.get("count_only", False)
 
 
     @classmethod
@@ -124,9 +123,20 @@ class JsonldSpider(soscan.spiders.ldsitemapspider.LDSitemapSpider):
 
         Returns: yields the item or None
         """
+        #TODO: set this from configuration
+        json_parse_strict = False
+        if response.flags is not None:
+            if len(response.flags) > 0:
+                if response.flags[0]:
+                    self.logger.info("Count only: %s", response.url)
+                    return
         try:
+            options = {
+                "extractAllScripts": True,
+                "json_parse_strict": json_parse_strict
+            }
             jsonld = pyld.jsonld.load_html(
-                response.body, response.url, None, {"extractAllScripts": True}
+                response.body, response.url, None, options
             )
             #for j_item in jsonld:
             #    item = soscan.items.SoscanItem()
@@ -163,5 +173,5 @@ class JsonldSpider(soscan.spiders.ldsitemapspider.LDSitemapSpider):
                 item["jsonld"] = jsonld
                 yield item
         except Exception as e:
-            self.logger.error("parse : %s", e)
+            self.logger.error("parse: url:  %s, error: %s", response.url, e)
         yield None
