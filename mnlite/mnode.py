@@ -297,8 +297,9 @@ def mnodeBeforeRequest():
     persistence store (database or disk).
     """
     L = flask.current_app.logger
-    L.debug("mnodeBeforeRequest")
+    L.debug("mnodeBeforeRequest rule=%s", flask.request.url_rule.rule)
     flask.g.mn_name = getMNodeNameFromRequest()
+    #L.debug("Got mn_name = %s", flask.g.mn_name)
     flask.g.mn_config = flask.current_app.config["m_nodes"].get(flask.g.mn_name, None)
     if flask.g.mn_config is not None:
         flask.g.op = flask.g.mn_config["persistence"]
@@ -649,19 +650,17 @@ def listObjects(db):
 # get
 @m_node.route(
     "/object",
-    defaults={"identifier": None},
+    strict_slashes=False,
     methods=[
         "GET",
     ],
 )
-@m_node.route(
-    "/object/",
-    defaults={"identifier": None},
-    methods=[
-        "GET",
-    ],
-)
-@m_node.route("/object/<path:identifier>")
+def _listObjects():
+    L = flask.current_app.logger
+    db = flask.g.op.getSession()
+    return listObjects(db)
+
+@m_node.route("/object/<path:identifier>", strict_slashes=False)
 def getObject(identifier):
     L = flask.current_app.logger
     db = flask.g.op.getSession()

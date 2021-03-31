@@ -60,12 +60,14 @@ def create_app(test_config=None):
     app.config['m_nodes'][node_name]['config']
     """
     app.config["m_nodes"] = {}
+    app.url_map.strict_slashes = False
     for node_root in node_root_paths:
         node_path = pathlib.Path(os.path.join(app.instance_path, node_root))
         node_path.mkdir(parents=True, exist_ok=True)
         for path in node_path.iterdir():
             if path.is_dir():
                 mn_name = path.name
+                L.debug("MN_NAME = %s", mn_name)
                 abs_path = path.absolute()
                 mn_config = {
                     "config": os.path.abspath(os.path.join(abs_path, "node.json")),
@@ -73,8 +75,10 @@ def create_app(test_config=None):
                     "persistence": None,
                 }
                 options = {"mnode_name": mn_name, "config_path": mn_config["config"]}
+                url_prefix = f"/{mn_name}/v2"
+                L.debug("URL PREFIX = %s", url_prefix)
                 app.register_blueprint(
-                    mnode.m_node, url_prefix=f"/{mn_name}/v2", **options
+                    mnode.m_node, url_prefix=url_prefix, **options
                 )
                 node_info = mnode.getNode(mn_config["config"])
                 if node_info is not None:
@@ -131,6 +135,24 @@ def create_app(test_config=None):
                 }
             )
         return flask.render_template("index.html", nodes=nodes)
+
+
+    def has_no_empty_params(rule):
+        defaults = rule.defaults if rule.defaults is not None else ()
+        arguments = rule.arguments if rule.arguments is not None else ()
+        return len(defaults) >= len(arguments)
+
+
+    @app.route("/site-map")
+    def site_map():
+        links = []
+        for rule in app.url_map.iter_rules():
+            # Filter out rules we can't navigate to in a browser
+            # and rules that require parameters
+            if "GET" in rule.methods and has_no_empty_params(rule):
+                url = flask.url_for(rule.endpoint, **(rule.defaults or {}))
+                links.append((url, rule.endpoint))
+        return "<pre>" + json.dumps(links, indent=2) + "</pre>"
 
     return app
 
