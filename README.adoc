@@ -5,6 +5,58 @@ Light weight read-only DataONE member node in Python Flask
 
 ## Development Notes
 
+Creating a MN with node identifier `urn:node:mn_1`:
+
+----
+workon mnlite
+export FLASK_APP=mnlite
+mkdir -p instance/nodes/mn_1
+flask m_node new_node mn_1
+----
+
+Add a subject to the MN:
+
+----
+opersist -f instance/nodes/mn_1 sub -o create -n "Dave" -s 'https://orcid.org/0000-0002-6513-4996'
+----
+
+Adjust the node configuration to specify `default_submitter`, `default_owner`, `base_url`, `subject`, and `contact_subject`:
+
+----
+{
+  "node": {
+    "node_id": "urn:node:mn_1",
+    "state": "up",
+    "name": "Unnamed member node: mn_1",
+    "description": "No description available for this node.",
+    "base_url": "http://localhost:5000/mn_1/",
+    "schedule": {
+      "hour": "*",
+      "day": "*",
+      "min": "0,10,20,30,40,50",
+      "mon": "*",
+      "sec": "5",
+      "wday": "*",
+      "year": "*"
+    },
+    "subject": "http://localhost:5000/mn_1",
+    "contact_subject": "https://orcid.org/0000-0002-6513-4996"
+  },
+  "content_database": "sqlite:///content.db",
+  "log_database": "sqlite:///eventlog.db",
+  "data_folder": "data",
+  "created": "2021-02-19T15:17:09+0000",
+  "default_submitter": "https://orcid.org/0000-0002-6513-4996",
+  "default_owner": "https://orcid.org/0000-0002-6513-4996"
+  "spider":{
+    "sitemap_urls":[
+      "https://datadryad.org/sitemap.xml"
+    ]
+  }
+}
+----
+
+
 The `mnlite` service:
 
 ----
@@ -30,7 +82,7 @@ Settings are in `settings.py`
 
 ----
 workon mnlite
-scrapy crawl JsonldSpider -a sitemap_urls='https://datadryad.org/sitemap.xml'
+scrapy crawl JsonldSpider  -s STORE_PATH=instance/nodes/mn_3
 ----
 
 ## Model

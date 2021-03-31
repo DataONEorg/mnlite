@@ -17,6 +17,7 @@ class SoscanItem(scrapy.Item):
     time_modified = scrapy.Field() # From the HTTP response header, if available
     time_dsmodified = scrapy.Field() #dateModified value in JSON-LD object, if availale
     jsonld = scrapy.Field() # The JSON-LD object (de-serialized)
+    normalized = scrapy.Field() # the normalized JSON-LD object
     identifier = scrapy.Field() # PID to be used for the item
     series_id = scrapy.Field() # Series ID to be used for the item
     alt_identifiers = scrapy.Field() # alternative identifiers extracted from the item

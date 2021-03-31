@@ -7,6 +7,124 @@ import pytest
 import opersist.utils
 import opersist.rdfutils
 
+
+test_identifiers_data = [
+    [
+        {
+            "@context": "https://schema.org/",
+            "@id": "#test_id_01",
+            "@type": "Dataset",
+            "identifier": "test_id_01",
+        },
+        [
+            {
+                "@id": [
+                    "#test_id_01",
+                ],
+                "identifier": [
+                    "test_id_01",
+                ],
+            },
+        ],
+    ],
+    [
+        {
+            "@context": "https://schema.org/",
+            "@id": "#test_id_02",
+            "@type": "Dataset",
+            "identifier": ["test_id_01", "test_id_02"],
+        },
+        [
+            {
+                "@id": [
+                    "#test_id_02",
+                ],
+                "identifier": ["test_id_01", "test_id_02"],
+            },
+        ],
+    ],
+    [
+        {
+            "@context": "https://schema.org/",
+            "@id": "#test_id_03",
+            "@type": "Dataset",
+            "identifier": {"@type": "PropertyValue", "value": "test_id_03"},
+        },
+        [
+            {
+                "@id": [
+                    "#test_id_03",
+                ],
+                "identifier": ["test_id_03"],
+            },
+        ],
+    ],
+    [
+        {
+            "@context": "https://schema.org/",
+            "@id": "#test_id_03",
+            "@type": "Dataset",
+            "identifier": [
+                {"@type": "PropertyValue", "value": "test_id_03"},
+                "test_id_03b",
+            ],
+        },
+        [
+            {
+                "@id": [
+                    "#test_id_03",
+                ],
+                "identifier": ["test_id_03", "test_id_03b"],
+            },
+        ],
+    ],
+    [
+        {
+            "@context": "https://schema.org/",
+            "@graph": [
+                {
+                    "@id": "#test_id_04",
+                    "@type": "Dataset",
+                    "identifier": [
+                        {"@id": "#test_id_04_identifier"},
+                        "test_id_04b",
+                    ],
+                },
+                {
+                    "@id": "#test_id_04_identifier",
+                    "@type": "PropertyValue",
+                    "value": "test_id_04",
+                },
+            ],
+        },
+        [
+            {
+                "@id": [
+                    "#test_id_04",
+                ],
+                "identifier": ["test_id_04", "test_id_04b"],
+            },
+        ],
+    ],
+]
+
+
+@pytest.mark.parametrize("doc, expected", test_identifiers_data)
+def test_datasetIdentifiers(doc, expected):
+    L = logging.getLogger("test_datasetIdentifiers")
+    fdoc = opersist.rdfutils.frameJsondldDataset(doc)
+    edoc = opersist.rdfutils.normalizeJsonLd(fdoc)
+    result = opersist.rdfutils.getDatasetsIdentifiers(edoc)
+    L.info(json.dumps(result, indent=2))
+    assert len(result) == len(expected)
+    for i in range(len(expected)):
+        iex = expected[i]
+        ires = result[i]
+        for k, v in iex.items():
+            for iv in v:
+                assert iv in ires.get(k, [])
+
+
 test_ctx = [
     ["https://schema.org/", "https://schema.org/"],
     ["http://schema.org/", "http://schema.org/"],
@@ -71,7 +189,10 @@ test_docs = [
         },
         [
             {
-                "@context": [opersist.rdfutils.EXAMPLE_CONTEXT_URL, "http://schema.org/"],
+                "@context": [
+                    opersist.rdfutils.EXAMPLE_CONTEXT_URL,
+                    "http://schema.org/",
+                ],
                 "@id": "test_1a",
                 "@type": "Thing",
             }
@@ -199,31 +320,31 @@ test_docs = [
 
 @pytest.mark.parametrize("doc, expected, ignore", test_docs)
 def test_normalizeSONamespace(doc, expected, ignore):
-    L = logging.getLogger('test_normalizeSONamespace')
+    L = logging.getLogger("test_normalizeSONamespace")
     res = opersist.rdfutils.normalizeSONamespace(doc)
-    L.info(json.dumps(res,indent=2))
+    L.info(json.dumps(res, indent=2))
     assert res == expected
 
 
 @pytest.mark.parametrize("doc, ignore, expected", test_docs)
 def test_normalizeStructure(doc, ignore, expected):
-    L = logging.getLogger('test_normalizeStructure')
+    L = logging.getLogger("test_normalizeStructure")
     L.info("DOC = %s", json.dumps(doc, indent=2))
     ndoc = opersist.rdfutils.normalizeSONamespace(doc)
     res = opersist.rdfutils.normalizeJSONLDStructure(ndoc)
     types = []
     for g in res.get("@graph", []):
-        for k,v in g.items():
+        for k, v in g.items():
             if k == "@type":
                 types.append(v)
     L.info("RES = %s", json.dumps(res, indent=2))
-    assert len(types) == len(expected['types'])
+    assert len(types) == len(expected["types"])
     for t in types:
-        assert t in expected['types']
+        assert t in expected["types"]
 
 
 def test_ns_normalize_multi():
-    L = logging.getLogger('test_ns_normalize_multi')
+    L = logging.getLogger("test_ns_normalize_multi")
     doc = {
         "@context": {"@vocab": "https://example.net", "SO": "http://schema.org/"},
         "@id": "multi_1",
@@ -238,7 +359,7 @@ def test_ns_normalize_multi():
 def test_ns_normalize_multi_2():
     # Should not change a list of referenced contexts since it is not possible
     # to know what the contexts are referring to without resolving them.
-    L = logging.getLogger('test_ns_normalize_multi_2')
+    L = logging.getLogger("test_ns_normalize_multi_2")
     doc = {
         "@context": [
             opersist.rdfutils.EXAMPLE_CONTEXT_URL,
@@ -249,7 +370,7 @@ def test_ns_normalize_multi_2():
     }
     res = opersist.rdfutils.normalizeSONamespace(doc)
     L.info(json.dumps(res, indent=2))
-    expected = [opersist.rdfutils.EXAMPLE_CONTEXT_URL,"https://schema.org/"]
+    expected = [opersist.rdfutils.EXAMPLE_CONTEXT_URL, "https://schema.org/"]
     ns = res[0].get("@context", [])
     assert ns == expected
 
@@ -307,9 +428,7 @@ def test_identifiers(doc, expected):
         res,
         base="https://example.net/test/",
         context=None,
-        force_lists=[
-            "http://schema.org/identifier"
-        ],
+        force_lists=["http://schema.org/identifier"],
     )
     ids = opersist.rdfutils.extractIdentifiers(res)
     L.info("CTX-normal: %s", json.dumps(res, indent=2))
@@ -333,14 +452,14 @@ test_hashes = [
         {
             "sha256": "096b1811d6c6160c2ef4ea6ed5a5f48befb915e0460a3be06c4e9904467d42a0",
             "sha1": "b70ff4099c73bf4845ab8e1c2ab0372707250b48",
-            "md5": "c35ba0b78643119ea4dfff1c24d495c3"
-        }
+            "md5": "c35ba0b78643119ea4dfff1c24d495c3",
+        },
     ],
     [
         {
             "@context": [
                 "https://schema.org/",
-                {"identifier":{"@container":"@list"}}
+                {"identifier": {"@container": "@list"}},
             ],
             "@id": "test_1",
             "@type": "Dataset",
@@ -349,15 +468,12 @@ test_hashes = [
         {
             "sha256": "096b1811d6c6160c2ef4ea6ed5a5f48befb915e0460a3be06c4e9904467d42a0",
             "sha1": "b70ff4099c73bf4845ab8e1c2ab0372707250b48",
-            "md5": "c35ba0b78643119ea4dfff1c24d495c3"
-        }
+            "md5": "c35ba0b78643119ea4dfff1c24d495c3",
+        },
     ],
     [
         {
-            "@context": [
-                "http://schema.org/",
-                {"identifier": {"@container": "@list"}}
-            ],
+            "@context": ["http://schema.org/", {"identifier": {"@container": "@list"}}],
             "identifier": ["test_1", "test_2"],
             "@id": "test_1",
             "@type": "Dataset",
@@ -365,17 +481,18 @@ test_hashes = [
         {
             "sha256": "096b1811d6c6160c2ef4ea6ed5a5f48befb915e0460a3be06c4e9904467d42a0",
             "sha1": "b70ff4099c73bf4845ab8e1c2ab0372707250b48",
-            "md5": "c35ba0b78643119ea4dfff1c24d495c3"
-        }
-    ]
+            "md5": "c35ba0b78643119ea4dfff1c24d495c3",
+        },
+    ],
 ]
+
 
 @pytest.mark.parametrize("doc,expected", test_hashes)
 def test_jdonldChecksum(doc, expected):
-    L = logging.getLogger('test_jsonldChecksum')
+    L = logging.getLogger("test_jsonldChecksum")
     res = opersist.rdfutils.normalizeSONamespace(doc)
     res = opersist.rdfutils.normalizeJSONLDStructure(res)
-    #L.info("Normalized: %s", json.dumps(res, indent=2))
+    # L.info("Normalized: %s", json.dumps(res, indent=2))
     hashes, _ = opersist.utils.jsonChecksums(res)
-    #L.info("Hashes = %s", json.dumps(hashes, indent=2))
+    # L.info("Hashes = %s", json.dumps(hashes, indent=2))
     assert hashes["sha256"] == expected["sha256"]

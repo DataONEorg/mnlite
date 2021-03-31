@@ -2,9 +2,8 @@ import os
 import pathlib
 import json
 import flask
-import flask_monitoringdashboard
-from . import mnode
-from . import jldextract
+import flask_cors
+from mnlite import mnode
 import opersist.utils
 import jnius
 
@@ -32,9 +31,9 @@ def initialize_instance(instance_path):
 
 def create_app(test_config=None):
     app = flask.Flask(__name__, instance_relative_config=True)
+    flask_cors.CORS(app)
     L = app.logger
     L.info("create_app")
-    app.config['JSONIFY_PRETTYPRINT_REGULAR'] = True
     if test_config is None:
         app.config.from_pyfile("config.py", silent=True)
     else:
@@ -43,13 +42,12 @@ def create_app(test_config=None):
         os.makedirs(app.instance_path)
     except OSError:
         pass
-    initialize_instance(app.instance_path)
-    flask_monitoringdashboard.config.init_from(
-        file=os.path.join(app.instance_path, "dashboard/dashboard.cfg")
-    )
-    flask_monitoringdashboard.bind(app)
-    options = {}
-    app.register_blueprint(jldextract.jldex, url_prefix="/jldex", **options)
+    #initialize_instance(app.instance_path)
+    #flask_monitoringdashboard.config.init_from(
+    #    file=os.path.join(app.instance_path, "dashboard/dashboard.cfg")
+    #)
+    #flask_monitoringdashboard.bind(app)
+
     node_root_paths = app.config.get(
         "NODE_ROOTS",
         [
@@ -64,9 +62,10 @@ def create_app(test_config=None):
     app.config["m_nodes"] = {}
     for node_root in node_root_paths:
         node_path = pathlib.Path(os.path.join(app.instance_path, node_root))
+        node_path.mkdir(parents=True, exist_ok=True)
         for path in node_path.iterdir():
             if path.is_dir():
-                mn_name = path.name.lower()
+                mn_name = path.name
                 abs_path = path.absolute()
                 mn_config = {
                     "config": os.path.abspath(os.path.join(abs_path, "node.json")),
@@ -78,17 +77,18 @@ def create_app(test_config=None):
                     mnode.m_node, url_prefix=f"/{mn_name}/v2", **options
                 )
                 node_info = mnode.getNode(mn_config["config"])
-                mn_config["node_id"] = node_info["node"]["node_id"]
-                mn_config["persistence"] = mnode.getPersistence(abs_path, node_info)
-                # The persistence layer is returned open and initialized
-                # Close it since it will be used on a different thread
-                # when services requests
-                mn_config["persistence"].close()
+                if node_info is not None:
+                    mn_config["node_id"] = node_info["node"]["node_id"]
+                    mn_config["persistence"] = mnode.getPersistence(abs_path, node_info)
+                    # The persistence layer is returned open and initialized
+                    # Close it since it will be used on a different thread
+                    # when services requests
+                    mn_config["persistence"].close()
 
-                # db_engine, db_session = mnode.setupDB(mn_config["config"])
-                # mn_config["db_engine"] = db_engine
-                # mn_config["db_session"] = db_session
-                app.config["m_nodes"][mn_name] = mn_config
+                    # db_engine, db_session = mnode.setupDB(mn_config["config"])
+                    # mn_config["db_engine"] = db_engine
+                    # mn_config["db_session"] = db_session
+                    app.config["m_nodes"][mn_name] = mn_config
 
     @app.teardown_appcontext
     def shutdownSession(exception=None):
@@ -133,3 +133,4 @@ def create_app(test_config=None):
         return flask.render_template("index.html", nodes=nodes)
 
     return app
+

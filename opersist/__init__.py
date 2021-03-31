@@ -8,9 +8,6 @@ import sqlalchemy.event
 from . import utils
 from . import flob
 from . import models
-from .models import request
-from .models import identifier
-from .models import relation
 from .models import subject
 from .models import accessrule
 from .models import thing
@@ -302,6 +299,7 @@ class OPersist(object):
         self._session.commit()
         self._L.info("Object %s removed.", sha256)
 
+
     def addThing(
         self,
         fname: str,
@@ -317,6 +315,7 @@ class OPersist(object):
         source: str = None,
         metadata: dict = None,
         obsoletes=None,
+        date_uploaded=None,
     ):
         """
         Add a thing file to the store.
@@ -349,13 +348,12 @@ class OPersist(object):
         # Add to blob
         self._L.info("Persisting %s", identifier)
         self._L.info("Path = %s", fname)
-        blob_metadata = {
-            "file_name": os.path.basename(fname),
-            "media_type": media_type,
-            "identifier": identifier,
-        }
+        blob_metadata = metadata
+        blob_metadata["file_name"] =  os.path.basename(fname)
+        blob_metadata["media_type"] = media_type
+        blob_metadata["identifier"] = identifier
         if source is not None:
-            blob_metadata["file_name"] = source
+            blob_metadata["source"] = source
         if hashes is None:
             hashes = utils.computeChecksumsFile(
                 fname,
@@ -410,6 +408,17 @@ class OPersist(object):
                     raise ValueError(
                         f"Value of obsoletes must not be a series_id, {obsoletes}"
                     )
+            else:
+                if not series_id is None:
+                    # look for matches
+                    #
+                    #series_id = "https://doi.org/10.5061/dryad.hm55b"
+                    _things = self.getThingsSID(series_id)
+                    _obsoleted = _things.first()
+                    if _obsoleted is not None:
+                        obsoletes = _obsoleted.identifier
+            
+            if obsoletes is not None:
                 # Get the thing being obsoleted
                 match = (
                     self._session.query(models.thing.Thing)
@@ -422,6 +431,7 @@ class OPersist(object):
                         assert match.series_id == series_id
                 # Set here - will be comitted later or rolled back on error
                 match.obsoleted_by = identifier
+                self._L.warning("OBSOLETED = %s", match)
 
             blob_fname = os.path.join(self._path_root, self._blob_path, fn_dest)
             the_thing = models.thing.Thing(checksum_sha256=sha256, content=fn_dest)
@@ -430,20 +440,21 @@ class OPersist(object):
                 submitter = self.getDefaultSubmitter()
             elif isinstance(submitter, str):
                 submitter = self.getSubject(submitter)
-            self._L.info("Using submitter: %s", submitter)
+            self._L.debug("Using submitter: %s", submitter)
             if owner is None:
                 owner = self.getDefaultOwner()
             elif isinstance(owner, str):
                 owner = self.getSubject(owner)
             if owner is None:
                 owner = submitter
-            self._L.info("Using rights_holder: %s", owner)
+            self._L.debug("Using rights_holder: %s", owner)
             the_thing.checksum_md5 = hashes["md5"]
             the_thing.checksum_sha1 = hashes["sha1"]
             the_thing.source = source
             the_thing.file_name = blob_metadata["file_name"]
             the_thing.media_type_name = blob_metadata["media_type"]
             the_thing.identifier = blob_metadata["identifier"]
+            the_thing.date_uploaded = date_uploaded
             the_thing.format_id = format_id
             the_thing.submitter = submitter
             the_thing.rights_holder = owner
@@ -452,15 +463,15 @@ class OPersist(object):
             the_thing.access_policy = []
             the_thing._meta = metadata
             the_thing.obsoletes = obsoletes
-            # TODO: should this be now or when the thing was added to the original location?
-            the_thing.date_uploaded = opersist.utils.dtnow()
+            if date_uploaded is None:
+                the_thing.date_uploaded = utils.dtnow()
             if alt_identifiers is not None:
                 self.identifiers = alt_identifiers
             if access_rules is None:
                 the_thing.access_policy.append(self.getPublicReadAccessRule())
             else:
                 the_thing.access_policy = access_rules
-            self._L.info(the_thing)
+            self._L.debug(the_thing)
             self._session.add(the_thing)
             self.commit()
             return the_thing
@@ -486,6 +497,7 @@ class OPersist(object):
         source: str = None,
         metadata: dict = None,
         obsoletes=None,
+        date_uploaded=None,
     ):
         """
         Adds the thing of bytes to the store.
@@ -530,6 +542,7 @@ class OPersist(object):
                 source=source,
                 metadata=metadata,
                 obsoletes=obsoletes,
+                date_uploaded=date_uploaded,
             )
         finally:
             os.unlink(ftmp_path)
@@ -631,7 +644,7 @@ class OPersist(object):
 
     def getThingsSID(self, series_id):
         Q = self._session.query(models.thing.Thing).filter_by(series_id=series_id)
-        return Q.order_by(models.thing.Thing.date_modified)
+        return Q.order_by(models.thing.Thing.date_modified.desc())
 
     def getThingsIdentifier(self, identifier):
         # TODO: match PID or SID or related identifiers, order by date_modified

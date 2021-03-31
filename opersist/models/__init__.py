@@ -16,6 +16,7 @@ __all__ = [
     "subject",
     "accessrule",
     "thing",
+    "crawlstatus",
 ]
 
 _L = logging.getLogger("opersist.models")

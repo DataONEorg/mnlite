@@ -8,14 +8,20 @@ import contextlib
 import json
 import hashlib
 
+# For splitting HTTP header values
 HEADER_VALUE_SPLIT = re.compile('(?:["<].*?[">]|[^,])+')
 
+# block size when reading files for hashing
 BLOCK_SIZE = 65536
 
+# datetime format string for generating JSON content
 JSON_TIME_FORMAT = "%Y-%m-%dT%H:%M:%S%z"
-"""datetime format string for generating JSON content
-"""
 
+# Indent this much when computing hash on JSON
+# None means no space and no new lines
+JSON_HASH_INDENT = None
+
+# Match a space
 RE_SPACE = re.compile("\s")
 
 
@@ -37,7 +43,7 @@ def pushd(new_dir):
         os.chdir(previous_dir)
 
 
-def computeChecksumsBytes(b, sha256=True, sha1=True, md5=True):
+def bytesChecksums(b, sha256=True, sha1=True, md5=True):
     """
     Computes hashes for the provided Bytes
     Args:
@@ -56,9 +62,9 @@ def computeChecksumsBytes(b, sha256=True, sha1=True, md5=True):
     return hashes, b
 
 
-def computeChecksumsString(s, encoding="UTF-8", sha256=True, sha1=True, md5=True):
+def stringChecksums(s, encoding="UTF-8", sha256=True, sha1=True, md5=True):
     b = s.encode(encoding)
-    return computeChecksumsBytes(b, sha256=sha256, sha1=sha1, md5=md5)
+    return bytesChecksums(b, sha256=sha256, sha1=sha1, md5=md5)
 
 
 def jsonChecksums(doc):
@@ -75,11 +81,13 @@ def jsonChecksums(doc):
         dict of hashes, bytes
 
     """
-    b = json.dumps(doc, separators=(",", ":"), sort_keys=True, indent=2).encode("UTF-8")
-    return computeChecksumsBytes(b)
+    b = json.dumps(
+        doc, separators=(",", ":"), sort_keys=True, indent=JSON_HASH_INDENT
+    ).encode("UTF-8")
+    return bytesChecksums(b)
 
 
-def computeChecksumsFLO(flo, sha256=True, sha1=True, md5=True):
+def floChecksums(flo, sha256=True, sha1=True, md5=True):
     """
     Computes hashes for object in file stream.
 
@@ -118,9 +126,12 @@ def computeChecksumsFLO(flo, sha256=True, sha1=True, md5=True):
     return hashes
 
 
-def computeChecksumsFile(fname, sha256=True, sha1=True, md5=True):
+def fileChecksums(fname, sha256=True, sha1=True, md5=True):
+    """
+    Compute checksums for a file on disk
+    """
     with open(fname, "rb") as flo:
-        return computeChecksumsFLO(flo, sha256=sha256, sha1=sha1, md5=md5)
+        return floChecksums(flo, sha256=sha256, sha1=sha1, md5=md5)
 
 
 def generateUUID():

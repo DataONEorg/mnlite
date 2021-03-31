@@ -52,29 +52,34 @@ class Thing(opersist.models.Base):
         default=[],
         doc="List of other identifiers associated with this thing, not including PID or SID",
     )
+    # When the item was added to this collection
     t_added = sqlalchemy.Column(
         sqlalchemy.DateTime(timezone=True),
         default=opersist.utils.dtnow,
         doc="When the content was added to the database",
     )
+
+    # when the actual thing was last modified
     t_content_modified = sqlalchemy.Column(
         sqlalchemy.DateTime(timezone=True),
         default=opersist.utils.dtnow,
         doc="When the content was modified. Should be equal or older than t_added",
     )
-    # date_modified
+    # used to populate system metadata dateModified
+    # indicates when properties of this record entry were last changed
     date_modified = sqlalchemy.Column(
         sqlalchemy.DateTime(timezone=True),
         index=True,
         default=opersist.utils.dtnow,
         doc="When this record was modified, like system metadata date modified",
     )
-    # date_uploaded
+    # Identifies when the thing was created. For harvested content, this is the age of 
+    # the content as identified by the origin - so sitemap loc_timestamp for example
     date_uploaded = sqlalchemy.Column(
         sqlalchemy.DateTime(timezone=True),
         nullable=True,
         default=opersist.utils.dtnow,
-        doc="When the content was added to the DataONE system",
+        doc="When the content was created and/or made accessible by the provider",
     )
     content = sqlalchemy.Column(
         sqlalchemy.String,
@@ -202,6 +207,7 @@ class Thing(opersist.models.Base):
             "checksum_sha1": self.checksum_sha1,
             "checksum_md5": self.checksum_md5,
             "identifiers": self.identifiers,
+            #whe
             "t_added": opersist.utils.datetimeToJsonStr(self.t_added),
             "t_content_modified": opersist.utils.datetimeToJsonStr(
                 self.t_content_modified
@@ -209,8 +215,11 @@ class Thing(opersist.models.Base):
             "content": self.content,
             "media_type_name": self.media_type_name,
             "file_name": self.file_name,
+            "source":self.source,
             "format_id": self.format_id,
+            #used for system metadata dateModified
             "date_modified": opersist.utils.datetimeToJsonStr(self.date_modified),
+
             "date_uploaded": opersist.utils.datetimeToJsonStr(self.date_uploaded),
             "serial_version": self.serial_version,
             "replication_allowed": self.replication_allowed,
