@@ -59,7 +59,7 @@ def create_app(test_config=None):
     app.config['m_nodes'][node_name]['config']
     """
     app.config["m_nodes"] = {}
-    app.url_map.strict_slashes = False
+    app.url_map.strict_slashes = True
     for node_root in node_root_paths:
         node_path = pathlib.Path(os.path.join(app.instance_path, node_root))
         node_path.mkdir(parents=True, exist_ok=True)

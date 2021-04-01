@@ -417,6 +417,7 @@ class OPersist(object):
                     _obsoleted = _things.first()
                     if _obsoleted is not None:
                         obsoletes = _obsoleted.identifier
+                        _obsoleted.obsoleted_by = identifier
             
             if obsoletes is not None:
                 # Get the thing being obsoleted
@@ -622,7 +623,7 @@ class OPersist(object):
         if o is None:
             Q = (
                 self._session.query(models.thing.Thing)
-                .filter_by(identifier=identifier)
+                .filter_by(series_id=identifier)
                 .order_by(models.thing.Thing.date_modified.desc())
             )
             o = Q.first()

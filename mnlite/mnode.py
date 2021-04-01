@@ -650,7 +650,6 @@ def listObjects(db):
 # get
 @m_node.route(
     "/object",
-    strict_slashes=False,
     methods=[
         "GET",
     ],

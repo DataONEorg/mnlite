@@ -25,7 +25,7 @@
   <originMemberNode>{{sysm.origin_member_node}}</originMemberNode>
   <authoritativeMemberNode>{{sysm.origin_member_node}}</authoritativeMemberNode>
   {% if sysm.obsoletes %}<obsoletes>{{sysm.obsoletes}}</obsoletes>{% endif %}
-  {% if sysm.obsoletes %}<obsoletedBy>{{sysm.obsoleted_by}}</obsoletedBy>{% endif %}
+  {% if sysm.obsoleted_by %}<obsoletedBy>{{sysm.obsoleted_by}}</obsoletedBy>{% endif %}
   {% if sysm.media_type_name %}<mediaType name="{{sysm.media_type_name}}" />{% endif %}
   {% if sysm.file_name %}<fileName>{{sysm.file_name}}</fileName>{% endif %}
 </d1:systemMetadata>
