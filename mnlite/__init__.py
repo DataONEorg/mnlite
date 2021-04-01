@@ -126,13 +126,28 @@ def create_app(test_config=None):
     def inventory():
         nodes = []
         for mn_name, mn_config in app.config["m_nodes"].items():
-            nodes.append(
-                {
+            node_info = mnode.getNode(mn_config["config"])
+            entry = {
                     "name": mn_name,
                     "node_id": mn_config["node_id"],
                     "config": mn_config["config"],
+                    "sitemap": node_info["spider"]["sitemap_urls"][0],
+                    "oldest": "",
+                    "newest": "",
+                    "count": 0
                 }
-            )
+            op = None
+            try:
+                op = mn_config["persistence"]
+                op.open()
+                stats = op.basicStatsThings()
+                #entry["numrecords"] = op.countThings()
+                entry.update(stats)
+            except Exception as e:
+                app.logger.error(e)
+            finally:
+                op.close()
+            nodes.append(entry)
         return flask.render_template("index.html", nodes=nodes)
 
 
@@ -152,6 +167,39 @@ def create_app(test_config=None):
                 url = flask.url_for(rule.endpoint, **(rule.defaults or {}))
                 links.append((url, rule.endpoint))
         return "<pre>" + json.dumps(links, indent=2) + "</pre>"
+
+    @app.route("/sha256/<sha_256>")
+    def getItemBySha256(sha_256):
+        #def getPersistence(abs_path, node_config):
+        sha_256 = sha_256.replace("sha256:", "")
+        for mn_name, mn_config in app.config["m_nodes"].items():
+            op = None
+            app.logger.info("Item %s from %s", sha_256, mn_name)
+            try:
+                op = mn_config["persistence"]
+                op.open()
+                obj = op.getThingSha256(sha_256)
+                if obj is not None:
+                    response = flask.make_response(obj.content)
+                    response.mimetype = obj.media_type_name
+                    obj_path = op.contentAbsPath(obj.content)
+                    fldr = os.path.dirname(obj_path)
+                    fname = os.path.basename(obj_path)
+                    return flask.send_from_directory(
+                        fldr,
+                        fname,
+                        mimetype=obj.media_type_name,
+                        as_attachment=False,
+                        attachment_filename=obj.file_name,
+                        last_modified=obj.t_content_modified,
+                    )
+            except Exception as e:
+                app.logger.error(e)
+            finally:
+                if op is not None:
+                    op.close()
+        flask.abort(404)
+
 
     return app
 

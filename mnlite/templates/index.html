@@ -8,7 +8,14 @@
   <section id="nodes">
     <p>Nodes available:</p>
     <ul>{% for node in nodes %}
-      <li><a href="/{{node.name}}/v2">{{node.node_id}}</a> <pre>{{ node.config }}</pre></li>
+      <li><a href="/{{node.name}}/v2">{{node.node_id}}</a>
+        <dl>
+          <dt>Sitemap:</dt><dd><code>{{ node.sitemap }}</code></dd>
+          <dt>Oldest: </dt><dd><code>{{ node.oldest }}</code></dd>
+          <dt>Newest: </dt><dd><code>{{ node.newest }}</code></dd>
+          <dt>Total: </dt><dd><code>{{ node.count }}</code></dd>
+        </dl>
+      </li>
     {% endfor %}</ul>
   </section>
 
