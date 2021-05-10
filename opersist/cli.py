@@ -201,6 +201,7 @@ def accessRules(ctx, perm, subj, ar_id, operation):
             "update",
             "d",
             "delete",
+            "purge",
         ],
         case_sensitive=False,
     ),
@@ -229,6 +230,16 @@ def things(ctx, operation, fname, sha256, identifier, format_id, series_id):
             L.error("SHA256 hash value is required to remove an entry")
             return
         op.removeThing(sha256)
+        return
+
+    if operation == "purge":
+        # Remove all the things
+        c = 0
+        for t in op.things():
+            L.warning("DELETING: %s", t.identifier)
+            op.removeThing(t.checksum_sha256)
+            c += 1
+        L.warning("Deleted %s things.", c)
         return
 
     if operation in ["c", "create"]:

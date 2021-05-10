@@ -52,15 +52,34 @@ class Thing(opersist.models.Base):
         default=[],
         doc="List of other identifiers associated with this thing, not including PID or SID",
     )
+    # When the item was added to this collection
     t_added = sqlalchemy.Column(
         sqlalchemy.DateTime(timezone=True),
         default=opersist.utils.dtnow,
         doc="When the content was added to the database",
     )
+
+    # when the actual thing was last modified
     t_content_modified = sqlalchemy.Column(
         sqlalchemy.DateTime(timezone=True),
         default=opersist.utils.dtnow,
-        doc="When the content was modified",
+        doc="When the content was modified. Should be equal or older than t_added",
+    )
+    # used to populate system metadata dateModified
+    # indicates when properties of this record entry were last changed
+    date_modified = sqlalchemy.Column(
+        sqlalchemy.DateTime(timezone=True),
+        index=True,
+        default=opersist.utils.dtnow,
+        doc="When this record was modified, like system metadata date modified",
+    )
+    # Identifies when the thing was created. For harvested content, this is the age of 
+    # the content as identified by the origin - so sitemap loc_timestamp for example
+    date_uploaded = sqlalchemy.Column(
+        sqlalchemy.DateTime(timezone=True),
+        nullable=True,
+        default=opersist.utils.dtnow,
+        doc="When the content was created and/or made accessible by the provider",
     )
     content = sqlalchemy.Column(
         sqlalchemy.String,
@@ -80,7 +99,13 @@ class Thing(opersist.models.Base):
         sqlalchemy.String,
         nullable=True,
         index=True,
-        doc="Original file name of this thing",
+        doc="Original file name of this thing, excluding path",
+    )
+    source = sqlalchemy.Column(
+        sqlalchemy.String,
+        nullable=False,
+        index=True,
+        doc="Source of this thing, such as full path or URL"
     )
     # DataONE sysmetadata specific stuff
     format_id = sqlalchemy.Column(
@@ -88,19 +113,6 @@ class Thing(opersist.models.Base):
         index=True,
         default="application/octet-stream",
         doc="DataONE formatId for thing",
-    )
-    # date_modified
-    date_modified = sqlalchemy.Column(
-        sqlalchemy.DateTime(timezone=True),
-        index=True,
-        default=opersist.utils.dtnow,
-        doc="When this record was modified",
-    )
-    # date_uploaded
-    date_uploaded = sqlalchemy.Column(
-        sqlalchemy.DateTime(timezone=True),
-        default=opersist.utils.dtnow,
-        doc="When the content was added to the DataONE system",
     )
     # serial_version
     serial_version = sqlalchemy.Column(
@@ -165,7 +177,12 @@ class Thing(opersist.models.Base):
     access_policy = sqlalchemy.orm.relationship(
         "AccessRule", secondary=opersist.models.accessrule.thing_accessrule_table
     )
-
+    _meta = sqlalchemy.Column(
+        sqlalchemy.JSON,
+        nullable=True,
+        default=None,
+        doc="Additional information pertinent to this record",
+    )
     __table_args__ = (
         sqlalchemy.CheckConstraint("identifier != series_id"),
     )
@@ -190,6 +207,7 @@ class Thing(opersist.models.Base):
             "checksum_sha1": self.checksum_sha1,
             "checksum_md5": self.checksum_md5,
             "identifiers": self.identifiers,
+            #whe
             "t_added": opersist.utils.datetimeToJsonStr(self.t_added),
             "t_content_modified": opersist.utils.datetimeToJsonStr(
                 self.t_content_modified
@@ -197,8 +215,11 @@ class Thing(opersist.models.Base):
             "content": self.content,
             "media_type_name": self.media_type_name,
             "file_name": self.file_name,
+            "source":self.source,
             "format_id": self.format_id,
+            #used for system metadata dateModified
             "date_modified": opersist.utils.datetimeToJsonStr(self.date_modified),
+
             "date_uploaded": opersist.utils.datetimeToJsonStr(self.date_uploaded),
             "serial_version": self.serial_version,
             "replication_allowed": self.replication_allowed,

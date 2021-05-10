@@ -1,15 +1,13 @@
 import os
 import logging
-import ojson as json
+import json
+import tempfile
 import sqlalchemy.exc
 import sqlalchemy.orm.exc
 import sqlalchemy.event
 from . import utils
 from . import flob
 from . import models
-from .models import request
-from .models import identifier
-from .models import relation
 from .models import subject
 from .models import accessrule
 from .models import thing
@@ -59,7 +57,7 @@ class OPersist(object):
 
     def setConfig(self, conf):
         with open(self._conf_path, "w") as conf_dest:
-            conf_dest.write(json.dumps(conf, indent="  "))
+            conf_dest.write(json.dumps(conf, indent=2))
 
     def _on_pickle(self, target, state_dict):
         self._L.debug("On pickle, target: %s", target)
@@ -301,10 +299,12 @@ class OPersist(object):
         self._session.commit()
         self._L.info("Object %s removed.", sha256)
 
+
     def addThing(
         self,
         fname: str,
-        identifier: str = None,
+        identifier: str,
+        hashes: dict = None,
         format_id: str = None,
         submitter: str = None,
         owner: str = None,
@@ -312,19 +312,33 @@ class OPersist(object):
         series_id: str = None,
         alt_identifiers: list = None,
         media_type: str = None,
+        source: str = None,
+        metadata: dict = None,
+        obsoletes=None,
+        date_uploaded=None,
     ):
         """
-        Add a thing to the store.
+        Add a thing file to the store.
+
+        The file is copied to the store. The file fname must exist and the identifier
+        must be provided and must be unique in the store. Hashes are computed if not
+        provided.
 
         Args:
-            fname: Path to the file to be added. Will be copied to the store and named by sha256 hash
-            identifier: Identifier of the thing
+            fname: Required. Path to the file to be added. Will be copied to the store and
+                   named by sha256 hash
+            identifier: Required. Identifier of the thing
+            hashes: dict of {sha256, sha1, md5} values, computed if not provided
             format_id: The DataONE formatId of the thing
             submitter: Subject of the submitter
             owner: Subject of the owner, default to submitter
             access_rules: Access rules to be applied, public-read is default.
             series_id: Series identifier
             alt_identifiers: List of additional identifiers for this thing
+            media_type: The mime type of the item
+            source: origin of the content, e.g. full file path or absolute URL
+            metadata: dictionary of additional stuff
+            obsoletes: PID (identifier) of thing the new one will obsolete
 
         Returns:
             instance of thing
@@ -332,21 +346,27 @@ class OPersist(object):
         assert self._session is not None
         assert os.path.exists(fname)
         # Add to blob
-        blob_metadata = {
-            "file_name": os.path.basename(fname),
-            "media_type": media_type,
-            "identifier": identifier,
-        }
-        hashes = utils.computeFileHashes(
-            fname,
-            calc_md5=True,
-            calc_sha1=True,
-            calc_sha256=True,
-        )
+        self._L.info("Persisting %s", identifier)
+        self._L.info("Path = %s", fname)
+        blob_metadata = metadata
+        blob_metadata["file_name"] =  os.path.basename(fname)
+        blob_metadata["media_type"] = media_type
+        blob_metadata["identifier"] = identifier
+        if source is not None:
+            blob_metadata["source"] = source
+        if hashes is None:
+            hashes = utils.computeChecksumsFile(
+                fname,
+                calc_md5=True,
+                calc_sha1=True,
+                calc_sha256=True,
+            )
         fldr_dest, sha256, fn_dest = self._ostore.addFilePath(
             fname, hash=hashes["sha256"], metadata=blob_metadata
         )
-
+        self._L.info("Adding database entry...")
+        if source is None:
+            source = os.path.abspath(fname)
         # Add to database
         try:
             # Check content state before creating
@@ -362,7 +382,7 @@ class OPersist(object):
                     raise ValueError(
                         f"Identifier '{identifier}' is used as a series_id"
                     )
-            # Ensure identifier is not used as a pid
+            # Ensure series_id is not used as a pid
             # assert count thing where identifier = value == 0
             if series_id is not None:
                 match = (
@@ -374,6 +394,45 @@ class OPersist(object):
                     raise ValueError(
                         f"series_id '{series_id}' is used as an identifier"
                     )
+            # get obsolete Thing if series_id is not None
+            # if obsoletes doesn't match obsolete Thing then fail
+            #
+            if obsoletes is not None:
+                # check obsoletes does not refer to a series_id
+                match = (
+                    self._session.query(models.thing.Thing)
+                    .filter_by(series_id=obsoletes)
+                    .one_or_none()
+                )
+                if match is not None:
+                    raise ValueError(
+                        f"Value of obsoletes must not be a series_id, {obsoletes}"
+                    )
+            else:
+                if not series_id is None:
+                    # look for matches
+                    #
+                    #series_id = "https://doi.org/10.5061/dryad.hm55b"
+                    _things = self.getThingsSID(series_id)
+                    _obsoleted = _things.first()
+                    if _obsoleted is not None:
+                        obsoletes = _obsoleted.identifier
+                        _obsoleted.obsoleted_by = identifier
+            
+            if obsoletes is not None:
+                # Get the thing being obsoleted
+                match = (
+                    self._session.query(models.thing.Thing)
+                    .filter_by(identifier=obsoletes)
+                    .one_or_none()
+                )
+                # verify that the series_id is not being changed
+                if series_id is not None:
+                    if match.series_id is not None:
+                        assert match.series_id == series_id
+                # Set here - will be comitted later or rolled back on error
+                match.obsoleted_by = identifier
+                self._L.warning("OBSOLETED = %s", match)
 
             blob_fname = os.path.join(self._path_root, self._blob_path, fn_dest)
             the_thing = models.thing.Thing(checksum_sha256=sha256, content=fn_dest)
@@ -382,32 +441,38 @@ class OPersist(object):
                 submitter = self.getDefaultSubmitter()
             elif isinstance(submitter, str):
                 submitter = self.getSubject(submitter)
-            self._L.info("Using submitter: %s", submitter)
+            self._L.debug("Using submitter: %s", submitter)
             if owner is None:
                 owner = self.getDefaultOwner()
             elif isinstance(owner, str):
                 owner = self.getSubject(owner)
             if owner is None:
                 owner = submitter
-            self._L.info("Using rights_holder: %s", owner)
+            self._L.debug("Using rights_holder: %s", owner)
             the_thing.checksum_md5 = hashes["md5"]
             the_thing.checksum_sha1 = hashes["sha1"]
+            the_thing.source = source
             the_thing.file_name = blob_metadata["file_name"]
-            the_thing.media_type = blob_metadata["media_type"]
+            the_thing.media_type_name = blob_metadata["media_type"]
             the_thing.identifier = blob_metadata["identifier"]
+            the_thing.date_uploaded = date_uploaded
             the_thing.format_id = format_id
             the_thing.submitter = submitter
             the_thing.rights_holder = owner
             the_thing.series_id = series_id
             the_thing.identifiers = []
             the_thing.access_policy = []
+            the_thing._meta = metadata
+            the_thing.obsoletes = obsoletes
+            if date_uploaded is None:
+                the_thing.date_uploaded = utils.dtnow()
             if alt_identifiers is not None:
                 self.identifiers = alt_identifiers
             if access_rules is None:
                 the_thing.access_policy.append(self.getPublicReadAccessRule())
             else:
                 the_thing.access_policy = access_rules
-            self._L.info(the_thing)
+            self._L.debug(the_thing)
             self._session.add(the_thing)
             self.commit()
             return the_thing
@@ -418,9 +483,73 @@ class OPersist(object):
             self._L.debug("Remove status = %s", status)
         return None
 
+    def addThingBytes(
+        self,
+        obj: bytes,
+        identifier: str,
+        hashes: dict = None,
+        format_id: str = None,
+        submitter: str = None,
+        owner: str = None,
+        access_rules: list = None,
+        series_id: str = None,
+        alt_identifiers: list = None,
+        media_type: str = None,
+        source: str = None,
+        metadata: dict = None,
+        obsoletes=None,
+        date_uploaded=None,
+    ):
+        """
+        Adds the thing of bytes to the store.
+
+        Ths implementation saves to a temporary file and delegates
+        remaining operations to addThing.
+
+        Args:
+            obj:
+            identifier:
+            hashes:
+            format_id:
+            submitter:
+            owner:
+            access_rules:
+            series_id:
+            alt_identifiers:
+            media_type:
+            source:
+            metadata:
+            obsoletes:
+
+        Returns:
+
+        """
+        ftmp = tempfile.NamedTemporaryFile(delete=False)
+        ftmp_path = ftmp.name
+        ftmp.write(obj)
+        ftmp.close()
+        try:
+            return self.addThing(
+                ftmp_path,
+                identifier=identifier,
+                hashes=hashes,
+                format_id=format_id,
+                submitter=submitter,
+                owner=owner,
+                access_rules=access_rules,
+                series_id=series_id,
+                alt_identifiers=alt_identifiers,
+                media_type=media_type,
+                source=source,
+                metadata=metadata,
+                obsoletes=obsoletes,
+                date_uploaded=date_uploaded,
+            )
+        finally:
+            os.unlink(ftmp_path)
+
     def registerIdentifier(
         self,
-        s,
         v,
         source,
         provider_id=None,
@@ -433,7 +562,6 @@ class OPersist(object):
         if res is not None:
             return False
         the_id = models.identifier.Identifier()
-        the_id.scheme = s
         the_id.id = v
         the_id.source = source
         the_id.provider_id = provider_id
@@ -443,7 +571,6 @@ class OPersist(object):
         the_id.related = related
         self._session.add(the_id)
         self.commit()
-
 
     def registerIdentifiers(self, the_thing):
         """
@@ -496,7 +623,7 @@ class OPersist(object):
         if o is None:
             Q = (
                 self._session.query(models.thing.Thing)
-                .filter_by(identifier=identifier)
+                .filter_by(series_id=identifier)
                 .order_by(models.thing.Thing.date_modified.desc())
             )
             o = Q.first()
@@ -518,8 +645,22 @@ class OPersist(object):
 
     def getThingsSID(self, series_id):
         Q = self._session.query(models.thing.Thing).filter_by(series_id=series_id)
-        return Q.order_by(models.thing.Thing.date_modified)
+        return Q.order_by(models.thing.Thing.date_modified.desc())
 
     def getThingsIdentifier(self, identifier):
         # TODO: match PID or SID or related identifiers, order by date_modified
         pass
+
+    def countThings(self):
+        Q = self._session.query(models.thing.Thing)
+        return Q.count()
+
+    def basicStatsThings(self):
+        stats = {}
+        Q = self._session.query(models.thing.Thing)
+        stats["count"] = Q.count()
+        newest = Q.order_by(models.thing.Thing.date_uploaded.desc()).limit(1).first()
+        oldest = Q.order_by(models.thing.Thing.date_uploaded.asc()).limit(1).first()
+        stats["newest"] = utils.datetimeToJsonStr(newest.date_uploaded)
+        stats["oldest"] = utils.datetimeToJsonStr(oldest.date_uploaded)
+        return stats

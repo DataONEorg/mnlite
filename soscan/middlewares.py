@@ -4,6 +4,7 @@
 # https://docs.scrapy.org/en/latest/topics/spider-middleware.html
 
 from scrapy import signals
+import scrapy.http
 
 # useful for handling different item types with a single interface
 from itemadapter import is_item, ItemAdapter
@@ -78,6 +79,14 @@ class SoscanDownloaderMiddleware:
         # - or return a Request object
         # - or raise IgnoreRequest: process_exception() methods of
         #   installed downloader middleware will be called
+
+        # This request processor is for targetting JSON-LD.
+        if request.flags is not None:
+            if len(request.flags) > 0:
+                if request.flags[0]:
+                    #This is a count only operation
+                    #return a fake response.
+                    return scrapy.http.Response(request.url, flags=[True, ])
         return None
 
     def process_response(self, request, response, spider):

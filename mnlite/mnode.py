@@ -29,34 +29,38 @@ DEFAULT_NODE_CONFIG = {
             "mon": "*",
             "sec": "5",
             "wday": "*",
-            "year": "*"
+            "year": "*",
         },
         "subject": None,
-        "contact_subject": None
+        "contact_subject": None,
     },
     "content_database": "sqlite:///content.db",
     "log_database": "sqlite:///eventlog.db",
     "data_folder": "data",
     "created": None,
     "default_submitter": None,
-    "default_owner": None
+    "default_owner": None,
 }
 
 
 def getMNodeNameFromRequest():
-    '''
+    """
     Get MN name from request URL path
 
     Returns: node name
-    '''
+    """
     match = re.match(r"/(.*)/v2/", flask.request.url_rule.rule)
     return match.group(1)
+
 
 def getBaseUrlFromRequest():
     base_url = f"{flask.request.url_root}{getMNodeNameFromRequest()}"
     return base_url
 
+
 def getNode(config_path):
+    if not os.path.exists(config_path):
+        return None
     node_config = json.load(open(config_path, "r"))
     if node_config["node"].get("base_url", None) is None:
         try:
@@ -65,8 +69,11 @@ def getNode(config_path):
             pass
     return node_config
 
+
 def getPersistence(abs_path, node_config):
-    op = opersist.OPersist(abs_path, db_url=node_config["content_database"], config_file="node.json")
+    op = opersist.OPersist(
+        abs_path, db_url=node_config["content_database"], config_file="node.json"
+    )
     op.open()
     return op
 
@@ -74,19 +81,22 @@ def getPersistence(abs_path, node_config):
 @m_node.cli.command("new_node", help="Create a new MNode instance")
 @click.argument("mn_name")
 def createMNode(mn_name):
-    mn_name = mn_name.lower().strip()
+    mn_name = mn_name.strip()
     the_app = flask.current_app
     L = the_app.logger
-    path_id = 0;
+    path_id = 0
     node_root_paths = the_app.config.get(
         "NODE_ROOTS",
         [
             "nodes",
         ],
     )
-    config_path = os.path.join(the_app.instance_path, node_root_paths[path_id],mn_name)
-    if os.path.exists(config_path):
-        L.error("Path %s already exists. Remove before creating.", config_path)
+    config_path = os.path.join(the_app.instance_path, node_root_paths[path_id], mn_name)
+    if os.path.exists(os.path.join(config_path, "node.json")):
+        L.error(
+            "Node config %s already exists. Remove before creating.",
+            os.path.join(config_path, "node.json"),
+        )
         return
     L.info("Creating instance in %s", config_path)
     os.makedirs(config_path, exist_ok=True)
@@ -103,8 +113,7 @@ def createMNode(mn_name):
     L.info("New node %s created at %s", mn_name, config_path)
 
 
-
-'''
+"""
 def getMNodeConfig(mn_name=None):
     if mn_name is None:
         mn_name = getMNodeNameFromRequest()
@@ -251,12 +260,12 @@ def newObject(
         },
     )
     L.info("content: %s", res)
-'''
+"""
 
 # == Subject Management ==
-#@m_node.cli.command("subjects", help="List subjects registered with mn_name")
-#@click.argument("mn_name")
-#def listSubjects(mn_name):
+# @m_node.cli.command("subjects", help="List subjects registered with mn_name")
+# @click.argument("mn_name")
+# def listSubjects(mn_name):
 #    L = flask.current_app.logger
 #    conf = _getConfig(mn_name)
 #    db = conf["db_session"]
@@ -278,17 +287,19 @@ def record(state):
     name = state.options.get("mnode_name")
     L.debug("MNODE name = %s", name)
 
+
 @m_node.before_request
 def mnodeBeforeRequest():
-    '''
+    """
     Opens the persistence store for the mnode associated with request.
 
     Call this before trying to use anything that uses the
     persistence store (database or disk).
-    '''
+    """
     L = flask.current_app.logger
-    L.debug("mnodeBeforeRequest")
+    L.debug("mnodeBeforeRequest rule=%s", flask.request.url_rule.rule)
     flask.g.mn_name = getMNodeNameFromRequest()
+    #L.debug("Got mn_name = %s", flask.g.mn_name)
     flask.g.mn_config = flask.current_app.config["m_nodes"].get(flask.g.mn_name, None)
     if flask.g.mn_config is not None:
         flask.g.op = flask.g.mn_config["persistence"]
@@ -299,7 +310,7 @@ def mnodeBeforeRequest():
 
 @m_node.after_request
 def mnodeAfterRequest(response):
-    '''
+    """
     Closes the persistence layer associated with this mnode request
 
     Args:
@@ -307,7 +318,7 @@ def mnodeAfterRequest(response):
 
     Returns:
         The response
-    '''
+    """
     L = flask.current_app.logger
     L.debug("mnodeAfterRequest")
     if "op" in flask.g:
@@ -318,10 +329,9 @@ def mnodeAfterRequest(response):
     return response
 
 
-
 def d1_exception(name, error_code, detail_code, description, pid=None, trace=None):
-    #match = re.match(r"/(.*)/v2/", flask.request.url_rule.rule)
-    #node_id = f"urn:node:{match.group(1)}"
+    # match = re.match(r"/(.*)/v2/", flask.request.url_rule.rule)
+    # node_id = f"urn:node:{match.group(1)}"
     node_id = flask.g.mn_config["node_id"]
     params = {
         "name": name,
@@ -373,7 +383,7 @@ def d1_ServiceFailure(
 
 def getCapabilitiesImpl():
     L = flask.current_app.logger
-    #mn_config = getMNodeConfig()
+    # mn_config = getMNodeConfig()
     L.debug("MN CONFIG = %s", flask.g.mn_config)
     try:
         node = getNode(flask.g.mn_config["config"])["node"]
@@ -397,7 +407,88 @@ def getCapabilitiesImpl():
     ],
 )
 def default():
-    return getCapabilitiesImpl()
+    params = {}
+    response = flask.make_response(flask.render_template("mnode/index.html", **params))
+    return response, 200
+
+
+@m_node.route("/_page", methods=["GET", "HEAD"])
+def _page():
+    L = flask.current_app.logger
+    from_date = opersist.utils.datetimeFromSomething(
+        flask.request.args.get("fromDate", None)
+    )
+    to_date = opersist.utils.datetimeFromSomething(
+        flask.request.args.get("toDate", None)
+    )
+    identifier = flask.request.args.get("identifier", None)
+    format_id = flask.request.args.get("formatId", None)
+    replica_status = flask.request.args.get("replicaStatus", None)
+    
+    _filter = {"field":None, "op": None, "val": None}
+    _filter["field"] = flask.request.args.get("filters[0][field]", None)
+    _filter["op"] = flask.request.args.get("filters[0][type]", None)
+    _filter["val"] = flask.request.args.get("filters[0][value]", None)
+    L.info("FILTERS = %s", json.dumps(_filter, indent=2))
+    page = 1
+    try:
+        page = int(flask.request.args.get("page", 1))
+    except ValueError as e:
+        return d1_InvalidRequest(
+            detail_code=1540, description="start must be integer", trace=str(e)
+        )
+    try:
+        count = int(flask.request.args.get("size", PAGE_SIZE))
+    except ValueError as e:
+        return d1_InvalidRequest(
+            detail_code=1540, description="count must be integer", trace=str(e)
+        )
+    if replica_status is not None:
+        return d1_NotImplemented(
+            description="Replica status not supported", detail_code=1561
+        )
+    start = (page-1)*count
+    if start < 0:
+        start = 0
+    if count > PAGE_SIZE:
+        count = PAGE_SIZE
+
+    columns = [
+        "identifier",
+        "checksum_md5",
+        "date_modified",
+        "size_bytes",
+        "format_id",
+        "source",
+    ]
+    db = flask.g.op.getSession()
+    olist = db.query(opersist.models.thing.Thing).options(
+        sqlalchemy.orm.load_only(*columns)
+    )
+    if _filter["field"] is not None:
+        identifier = _filter["val"]
+    if from_date is not None:
+        olist = olist.filter(opersist.models.thing.Thing.date_modified >= from_date)
+    if to_date is not None:
+        olist = olist.filter(opersist.models.thing.Thing.date_modified < to_date)
+    if identifier is not None:
+        olist = olist.filter(
+            sqlalchemy.or_(
+                opersist.models.thing.Thing.identifier.like(identifier + "%"),
+                opersist.models.thing.Thing.series_id.like(identifier + "%"),
+            )
+        )
+    if format_id is not None:
+        olist = olist.filter(
+            opersist.models.thing.Thing.format_id.like(format_id + "%")
+        )
+    total_records = olist.count()
+    records = olist.order_by(opersist.models.thing.Thing.date_modified.desc())[
+        start : start + count
+    ]
+    last_page = total_records / count
+    return flask.jsonify({"last_page":last_page, "data":[r.asJsonDict() for r in records],"total_rows":total_records})
+
 
 
 @m_node.route(
@@ -420,15 +511,19 @@ def getCapabilities():
 )
 def getLogRecords():
     L = flask.current_app.logger
-    from_date = opersist.utils.datetimeFromSomething(flask.request.args.get("fromDate", None))
-    to_date = opersist.utils.datetimeFromSomething(flask.request.args.get("toDate", None))
+    from_date = opersist.utils.datetimeFromSomething(
+        flask.request.args.get("fromDate", None)
+    )
+    to_date = opersist.utils.datetimeFromSomething(
+        flask.request.args.get("toDate", None)
+    )
     event = flask.request.args.get("event", None)
     id_filter = flask.request.args.get("idFilter", None)
     start = flask.request.args.get("start", None)
     count = flask.request.args.get("count", None)
     msg = f"getLogRecords: {from_date} {to_date} {event} {id_filter} {start} {count}"
     L.debug("params = %s", msg)
-    #TODO: implement getLogRecords
+    # TODO: implement getLogRecords
     return d1_NotImplemented(description="getLogRecords", detail_code=1461, trace=msg)
 
 
@@ -464,7 +559,7 @@ def monitorPing():
     ],
 )
 def describe(identifier):
-    #TODO: implement describe
+    # TODO: implement describe
     L = flask.current_app.logger
     return d1_NotImplemented(description="describe", detail_code=1361, pid=identifier)
 
@@ -480,19 +575,27 @@ def streamTemplate(template_name, **context):
 # listObjects
 def listObjects(db):
     L = flask.current_app.logger
-    from_date = opersist.utils.datetimeFromSomething(flask.request.args.get("fromDate", None))
-    to_date = opersist.utils.datetimeFromSomething(flask.request.args.get("toDate", None))
+    from_date = opersist.utils.datetimeFromSomething(
+        flask.request.args.get("fromDate", None)
+    )
+    to_date = opersist.utils.datetimeFromSomething(
+        flask.request.args.get("toDate", None)
+    )
     identifier = flask.request.args.get("identifier", None)
     format_id = flask.request.args.get("formatId", None)
     replica_status = flask.request.args.get("replicaStatus", None)
     try:
         start = int(flask.request.args.get("start", 0))
     except ValueError as e:
-        return d1_InvalidRequest(detail_code=1540, description="start must be integer", trace=str(e))
+        return d1_InvalidRequest(
+            detail_code=1540, description="start must be integer", trace=str(e)
+        )
     try:
         count = int(flask.request.args.get("count", PAGE_SIZE))
     except ValueError as e:
-        return d1_InvalidRequest(detail_code=1540, description="count must be integer", trace=str(e))
+        return d1_InvalidRequest(
+            detail_code=1540, description="count must be integer", trace=str(e)
+        )
     if replica_status is not None:
         return d1_NotImplemented(
             description="Replica status not supported", detail_code=1561
@@ -502,9 +605,17 @@ def listObjects(db):
     if count > PAGE_SIZE:
         count = PAGE_SIZE
 
-    columns = ["identifier", "checksum_md5", "date_modified", "size_bytes", "format_id", ]
+    columns = [
+        "identifier",
+        "checksum_md5",
+        "date_modified",
+        "size_bytes",
+        "format_id",
+    ]
     db = flask.g.op.getSession()
-    olist = db.query(opersist.models.thing.Thing).options(sqlalchemy.orm.load_only(*columns))
+    olist = db.query(opersist.models.thing.Thing).options(
+        sqlalchemy.orm.load_only(*columns)
+    )
     if from_date is not None:
         olist = olist.filter(opersist.models.thing.Thing.date_modified >= from_date)
     if to_date is not None:
@@ -517,9 +628,13 @@ def listObjects(db):
             )
         )
     if format_id is not None:
-        olist = olist.filter(opersist.models.thing.Thing.format_id.like(format_id + "%"))
+        olist = olist.filter(
+            opersist.models.thing.Thing.format_id.like(format_id + "%")
+        )
     total_records = olist.count()
-    records = olist.order_by(opersist.models.thing.Thing.date_modified.desc())[start : start + count]
+    records = olist.order_by(opersist.models.thing.Thing.date_modified.desc())[
+        start : start + count
+    ]
     return flask.Response(
         streamTemplate(
             "mnode/objectlist_template.xml",
@@ -528,26 +643,23 @@ def listObjects(db):
             records_total=total_records,
             records=records,
         ),
-        content_type=XML_TYPE
+        content_type=XML_TYPE,
     )
 
 
 # get
 @m_node.route(
     "/object",
-    defaults={"identifier": None},
     methods=[
         "GET",
     ],
 )
-@m_node.route(
-    "/object/",
-    defaults={"identifier": None},
-    methods=[
-        "GET",
-    ],
-)
-@m_node.route("/object/<path:identifier>")
+def _listObjects():
+    L = flask.current_app.logger
+    db = flask.g.op.getSession()
+    return listObjects(db)
+
+@m_node.route("/object/<path:identifier>", strict_slashes=False)
 def getObject(identifier):
     L = flask.current_app.logger
     db = flask.g.op.getSession()
@@ -567,7 +679,7 @@ def getObject(identifier):
         mimetype=obj.media_type_name,
         as_attachment=True,
         attachment_filename=obj.file_name,
-        last_modified=obj.t_content_modified
+        last_modified=obj.t_content_modified,
     )
 
 
@@ -580,11 +692,27 @@ def getObject(identifier):
 )
 def getChecksum(identifier):
     L = flask.current_app.logger
-    checksum_algorithm = flask.request.args.get("checksumAlgorithm", None)
-    msg = f"checksum_algorithm: {checksum_algorithm}"
-    return d1_NotImplemented(
-        description="getChecksum", detail_code=1401, pid=identifier, trace=msg
-    )
+    obj = flask.g.op.getThingPIDorSID(identifier)
+    if obj is None:
+        return d1_NotFound(pid=identifier, detail_code=1041)
+    _checksum = None
+    checksum_algorithm = flask.request.args.get("checksumAlgorithm", "").upper()
+    try:
+        if checksum_algorithm == "MD5":
+            _checksum = obj.checksum_md5
+        elif checksum_algorithm == "SHA1":
+            _checksum = obj.checksum_sha1
+        elif checksum_algorithm == "SHA256":
+            _checksum = obj.checksum_sha256
+        response = flask.make_response(
+            flask.render_template("checksum_template.xml", algorithm=checksum_algorithm, checksum=_checksum)
+        )
+        response.mimetype = XML_TYPE
+        return response, 200
+    except Exception as e:
+        return d1_ServiceFailure(
+            detail_code=1401, description="getChecksum", trace=e
+        )
 
 
 # getReplica
@@ -608,7 +736,7 @@ def getReplica(identifier):
 )
 def getMeta(identifier):
     L = flask.current_app.logger
-    #db = flask.g.op.getSession()
+    # db = flask.g.op.getSession()
     obj = flask.g.op.getThingPIDorSID(identifier)
     if obj is None:
         return d1_NotFound(pid=identifier, detail_code=1041)

@@ -4,6 +4,10 @@ flob is a blob writer to a file system hierarchy.
 A sha256 hash of the blob is created and stored in a folder
 three levels down, with folders named by the first three
 characters of the sha256 hash hex digest.
+
+Each blob may have metadata stored under the same name but
+with the extension ".json". Any valid json-serializable
+informaiton may be included in the metadata.
 """
 
 import os
@@ -13,7 +17,7 @@ import tempfile
 import pathlib
 import shutil
 import re
-import ojson   # ojson is faster than the standard json
+import json
 
 
 class FLOB(object):
@@ -52,9 +56,10 @@ class FLOB(object):
             removed = removed + 2
         return removed
 
-
-    def add(self, b: bytes, hash: str = None, metadata: dict = None, allow_replace=False):
-        '''
+    def add(
+        self, b: bytes, hash: str = None, metadata: dict = None, allow_replace=False
+    ):
+        """
         Add a blob file to the stash.
 
         Raises an error if the blob already exists and allow_replace is False
@@ -66,8 +71,8 @@ class FLOB(object):
             allow_replace: OK to replace existing hash, otherwise raise ValueError
 
         Returns:
-            Relative path to the written blob and the SHA256 hash
-        '''
+            fldr_dest, sha256, path_to_file
+        """
         if hash is None:
             sha = hashlib.sha256()
             sha.update(b)
@@ -85,13 +90,12 @@ class FLOB(object):
             fout.write(b)
         if not metadata is None:
             with open(f"{f_base}.json", "w") as fout:
-                fout.write(ojson.dumps(metadata, indent=" "))
+                json.dump(metadata, fout, indent=2)
         self.L.debug("wrote %s bytes to %s", len(b), f_dest)
         return fldr_dest, hash, os.path.join(fldr_dest, f"{hash}.{self.EXTENSION}")
 
-
     def addFile(self, fh, hash: str = None, metadata: dict = None, allow_replace=False):
-        '''
+        """
         Adds the file stream to the stash as a blob.
 
         Args:
@@ -100,8 +104,8 @@ class FLOB(object):
             allow_replace: If True, then ok to replace existing file
 
         Returns:
-
-        '''
+            fldr_dest, sha256, path_to_file
+        """
         sha = hashlib.sha256()
         nbytes = 0
         tmpfile_name = None
@@ -129,18 +133,20 @@ class FLOB(object):
         shutil.move(tmpfile_name, f_dest)
         if not metadata is None:
             with open(f"{f_base}.json", "w") as fout:
-                fout.write(ojson.dumps(metadata, indent=" "))
+                json.dump(metadata, fout, indent=2)
         self.L.debug("wrote %s bytes to %s", nbytes, f_dest)
         return fldr_dest, hash, os.path.join(fldr_dest, f"{hash}.{self.EXTENSION}")
 
-    def addFilePath(self, fname, hash: str = None, metadata: dict = None, allow_replace=False):
+    def addFilePath(
+        self, fname, hash: str = None, metadata: dict = None, allow_replace=False
+    ):
         if metadata is None:
             metadata = {}
-        if not "original_path" in metadata:
-            metadata["original_path"] = fname
+        metadata.setdefault("original_path", fname)
         with open(fname, "rb") as f_src:
-            return self.addFile(f_src, hash=hash, metadata=metadata, allow_replace=allow_replace)
-
+            return self.addFile(
+                f_src, hash=hash, metadata=metadata, allow_replace=allow_replace
+            )
 
     def listAllBlobs(self):
         _path = pathlib.Path(self.root_path)
