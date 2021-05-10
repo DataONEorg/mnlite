@@ -692,11 +692,27 @@ def getObject(identifier):
 )
 def getChecksum(identifier):
     L = flask.current_app.logger
-    checksum_algorithm = flask.request.args.get("checksumAlgorithm", None)
-    msg = f"checksum_algorithm: {checksum_algorithm}"
-    return d1_NotImplemented(
-        description="getChecksum", detail_code=1401, pid=identifier, trace=msg
-    )
+    obj = flask.g.op.getThingPIDorSID(identifier)
+    if obj is None:
+        return d1_NotFound(pid=identifier, detail_code=1041)
+    _checksum = None
+    checksum_algorithm = flask.request.args.get("checksumAlgorithm", "").upper()
+    try:
+        if checksum_algorithm == "MD5":
+            _checksum = obj.checksum_md5
+        elif checksum_algorithm == "SHA1":
+            _checksum = obj.checksum_sha1
+        elif checksum_algorithm == "SHA256":
+            _checksum = obj.checksum_sha256
+        response = flask.make_response(
+            flask.render_template("checksum_template.xml", algorithm=checksum_algorithm, checksum=_checksum)
+        )
+        response.mimetype = XML_TYPE
+        return response, 200
+    except Exception as e:
+        return d1_ServiceFailure(
+            detail_code=1401, description="getChecksum", trace=e
+        )
 
 
 # getReplica

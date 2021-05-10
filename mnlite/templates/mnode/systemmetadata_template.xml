@@ -5,7 +5,7 @@
   {% if sysm.series_id %}<seriesId>{{ sysm.series_id }}</seriesId>{% endif %}
   <formatId>{{sysm.format_id}}</formatId>
   <size>{{sysm.size_bytes}}</size>
-  <checksum algoritm="{{sysm.checksum_algorithm}}">{{sysm.checksum}}</checksum>
+  <checksum algorithm="{{sysm.checksum_algorithm}}">{{sysm.checksum}}</checksum>
   <submitter>{{sysm.submitter.subject}}</submitter>
   <rightsHolder>{{sysm.rights_holder.subject}}</rightsHolder>
   <accessPolicy>{% for policy in sysm.access_policy %}

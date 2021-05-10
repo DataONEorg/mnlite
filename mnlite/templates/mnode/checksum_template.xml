@@ -1,0 +1,2 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<checksum xmlns="http://ns.dataone.org/service/types/v1" algorithm="{{ algorithm }}">{{ checksum }}</checksum>
