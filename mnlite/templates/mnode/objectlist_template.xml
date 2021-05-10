@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<d1:objectList xmlns:d1="http://ns.dataone.org/service/types/v2.0" count="{{records_count}}" start="{{records_start}}" total="{{records_total}}">
+<d0:objectList xmlns:d0="http://ns.dataone.org/service/types/v1" xmlns:d1="http://ns.dataone.org/service/types/v2.0" count="{{records_count}}" start="{{records_start}}" total="{{records_total}}">
   {% for record in records %}<objectInfo>
         <identifier>{{record.identifier}}</identifier>
         <formatId>{{record.format_id}}</formatId>
@@ -7,4 +7,4 @@
         <dateSysMetadataModified>{{record.date_modified | datetimeToJsonStr}}</dateSysMetadataModified>
         <size>{{record.size_bytes}}</size>
     </objectInfo>{% endfor %}
-</d1:objectList>
+</d0:objectList>
