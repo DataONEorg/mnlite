@@ -12,4 +12,3 @@ import copy
 import sqlalchemy.exc
 import opersist
 import scrapy.exceptions
-

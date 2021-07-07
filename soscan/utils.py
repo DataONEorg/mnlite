@@ -1,6 +1,6 @@
 import datetime
 
-#raise Exception("don't use this")
+# raise Exception("don't use this")
 
 JSON_TIME_FORMAT = "%Y-%m-%dT%H:%M:%S%z"
 """datetime format string for generating JSON content

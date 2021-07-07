@@ -1,8 +1,14 @@
 import logging
 import scrapy.exceptions
 import sonormal.normalize
-import json
+
+try:
+    import orjson as json
+except ModuleNotFoundError:
+    import json
+
 import opersist.rdfutils
+
 
 class SoscanNormalizePipeline:
     """
@@ -15,16 +21,14 @@ class SoscanNormalizePipeline:
     def process_item(self, item, spider):
         self.logger.debug("process_item: %s", item["url"])
 
-        #TODO: load these from config
+        # TODO: load these from config
         force_lists = True
         require_identifier = True
 
         jsonld = item["jsonld"]
         if force_lists:
             jsonld = sonormal.normalize.forceSODatasetLists(jsonld)
-        options = {
-            "base":item["url"]
-        }
+        options = {"base": item["url"]}
         try:
             normalized = sonormal.normalize.normalizeJsonld(jsonld, options=options)
         except Exception as e:
@@ -32,12 +36,14 @@ class SoscanNormalizePipeline:
         ids = []
         try:
             _framed = sonormal.normalize.frameSODataset(normalized)
-            ids = sonormal.normalize.getDatasetsIdentifiers(_framed)            
+            ids = sonormal.normalize.getDatasetsIdentifiers(_framed)
         except Exception as e:
             raise scrapy.exceptions.DropItem(f"JSON-LD identifier extract failed: {e}")
         if len(ids) < 1:
-            raise scrapy.exceptions.DropItem(f"JSON-LD no ids, not a Dataset: {item['url']}")
-        
+            raise scrapy.exceptions.DropItem(
+                f"JSON-LD no ids, not a Dataset: {item['url']}"
+            )
+
         # TODO: identifiers
         # The process for handling of identifiers needs to be set in configuration
 
@@ -50,7 +56,9 @@ class SoscanNormalizePipeline:
                 if len(ids[0]["identifier"]) > 1:
                     item["alt_identifiers"] = ids[0]["identifier"][1:]
             elif require_identifier:
-                raise scrapy.exceptions.DropItem(f"JSON-LD no identifier: {item['url']}")
+                raise scrapy.exceptions.DropItem(
+                    f"JSON-LD no identifier: {item['url']}"
+                )
         item["identifier"] = None
         item["normalized"] = normalized
         item["format_id"] = opersist.rdfutils.DATASET_FORMATID
