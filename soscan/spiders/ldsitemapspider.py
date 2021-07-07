@@ -43,9 +43,8 @@ class LDSitemapSpider(Spider):
                     c = getattr(self, c)
                 self._cbs.append((regex(r), c))
         self._follow = [regex(x) for x in self.sitemap_follow]
-        #If set, then don't download the target
+        # If set, then don't download the target
         self._count_only = kw.get("count_only", False)
-
 
     def start_requests(self):
         for url in self.sitemap_urls:
@@ -84,7 +83,13 @@ class LDSitemapSpider(Spider):
                 for (loc, ts) in iterloc(it, self.sitemap_alternate_links):
                     for r, c in self._cbs:
                         if r.search(loc):
-                            req = Request(loc, callback=c, flags=[self._count_only, ])
+                            req = Request(
+                                loc,
+                                callback=c,
+                                flags=[
+                                    self._count_only,
+                                ],
+                            )
                             req.meta["loc_timestamp"] = ts
                             yield req
                             break

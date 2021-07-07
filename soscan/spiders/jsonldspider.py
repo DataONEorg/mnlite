@@ -2,7 +2,12 @@ import os
 import sonormal
 import pyld
 import email.utils
-import json
+
+try:
+    import orjson as json
+except ModuleNotFoundError:
+    import json
+
 import dateparser
 import soscan.spiders.ldsitemapspider
 import soscan.items
@@ -42,7 +47,7 @@ class JsonldSpider(soscan.spiders.ldsitemapspider.LDSitemapSpider):
                 _data = {}
                 with open(node_settings) as src:
                     _data = json.load(src)
-                self.sitemap_urls = _data.get("spider",{}).get("sitemap_urls", None)
+                self.sitemap_urls = _data.get("spider", {}).get("sitemap_urls", None)
         urls = kwargs.get("sitemap_urls", None)
         if not urls is None:
             self.sitemap_urls = urls.split(" ")
@@ -54,10 +59,9 @@ class JsonldSpider(soscan.spiders.ldsitemapspider.LDSitemapSpider):
                 self.lastmod_filter, settings={"RETURN_AS_TIMEZONE_AWARE": True}
             )
 
-
     @classmethod
     def from_crawler(cls, crawler, *args, **kwargs):
-        node_path=crawler.settings.get("STORE_PATH", None)
+        node_path = crawler.settings.get("STORE_PATH", None)
         alt_rules = None
         if not node_path is None:
             node_settings = os.path.join(node_path, "node.json")
@@ -65,7 +69,7 @@ class JsonldSpider(soscan.spiders.ldsitemapspider.LDSitemapSpider):
                 _data = {}
                 with open(node_settings) as src:
                     _data = json.load(src)
-                url_rules = _data.get("spider",{}).get("url_rules", [])
+                url_rules = _data.get("spider", {}).get("url_rules", [])
                 if len(url_rules) > 0:
                     alt_rules = []
                     for arule in url_rules:
@@ -78,7 +82,6 @@ class JsonldSpider(soscan.spiders.ldsitemapspider.LDSitemapSpider):
         )
         spider._set_crawler(crawler)
         return spider
-
 
     def sitemap_filter(self, entries):
         """
@@ -123,7 +126,7 @@ class JsonldSpider(soscan.spiders.ldsitemapspider.LDSitemapSpider):
 
         Returns: yields the item or None
         """
-        #TODO: set this from configuration
+        # TODO: set this from configuration
         json_parse_strict = False
         if response.flags is not None:
             if len(response.flags) > 0:
@@ -133,12 +136,10 @@ class JsonldSpider(soscan.spiders.ldsitemapspider.LDSitemapSpider):
         try:
             options = {
                 "extractAllScripts": True,
-                "json_parse_strict": json_parse_strict
+                "json_parse_strict": json_parse_strict,
             }
-            jsonld = pyld.jsonld.load_html(
-                response.body, response.url, None, options
-            )
-            #for j_item in jsonld:
+            jsonld = pyld.jsonld.load_html(response.body, response.url, None, options)
+            # for j_item in jsonld:
             #    item = soscan.items.SoscanItem()
             #    item["source"] = response.url
             #    item["checksum"] = opersist.rdfutils.computeJSONLDChecksum(j_item, response.url)
