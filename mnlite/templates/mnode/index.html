@@ -138,6 +138,7 @@ var _table = new Tabulator("#object_table",{
     ajaxURL:"./_page",
     ajaxProgressiveLoad:"scroll",
     paginationSize:50,
+    pagination: "remote",
     columns:[
         {"title":"PID", field:"identifier", width:200},
         {"title":"SID", field:"series_id"},
