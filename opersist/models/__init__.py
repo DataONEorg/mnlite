@@ -59,5 +59,5 @@ def getSession(engine):
     session = sqlalchemy.orm.scoped_session(
         sqlalchemy.orm.sessionmaker(autocommit=False, autoflush=False, bind=engine)
     )
-    #session = Session()
+    # session = Session()
     return session

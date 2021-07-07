@@ -1,13 +1,18 @@
-'''
+"""
 Implements the AccessRule ORM
-'''
+"""
 
 import enum
-import ojson as json
+
+try:
+    import orjson as json
+except ModuleNotFoundError:
+    import json
 import sqlalchemy
 import sqlalchemy.orm
 import sqlalchemy.types
 import opersist.models
+
 
 class AllowedPermissions(enum.Enum):
     read = "read"
@@ -78,7 +83,9 @@ class AccessRule(opersist.models.Base):
         default=AllowedPermissions.read,
         doc="Access rule permission, 'read' | 'write' | 'changePermission'",
     )
-    subjects = sqlalchemy.orm.relationship("Subject", secondary=accessrule_subject_table)
+    subjects = sqlalchemy.orm.relationship(
+        "Subject", secondary=accessrule_subject_table
+    )
 
     def asJsonDict(self):
         res = {
@@ -86,16 +93,11 @@ class AccessRule(opersist.models.Base):
             "permission": AllowedPermissions.toString(self.permission),
             "t": opersist.utils.datetimeToJsonStr(self.t),
             "t_mod": opersist.utils.datetimeToJsonStr(self.t_mod),
-            "subjects": []
+            "subjects": [],
         }
         for s in self.subjects:
-            res['subjects'].append(s.asJsonDict())
+            res["subjects"].append(s.asJsonDict())
         return res
-
 
     def __repr__(self):
         return json.dumps(self.asJsonDict(), indent=2)
-
-
-
-
