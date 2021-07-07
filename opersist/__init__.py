@@ -1,6 +1,10 @@
 import os
 import logging
-import json
+try:
+    import orjson as json
+except ModuleNotFoundError:
+    import json
+
 import tempfile
 import sqlalchemy.exc
 import sqlalchemy.orm.exc
@@ -299,7 +303,6 @@ class OPersist(object):
         self._session.commit()
         self._L.info("Object %s removed.", sha256)
 
-
     def addThing(
         self,
         fname: str,
@@ -349,7 +352,7 @@ class OPersist(object):
         self._L.info("Persisting %s", identifier)
         self._L.info("Path = %s", fname)
         blob_metadata = metadata
-        blob_metadata["file_name"] =  os.path.basename(fname)
+        blob_metadata["file_name"] = os.path.basename(fname)
         blob_metadata["media_type"] = media_type
         blob_metadata["identifier"] = identifier
         if source is not None:
@@ -412,13 +415,13 @@ class OPersist(object):
                 if not series_id is None:
                     # look for matches
                     #
-                    #series_id = "https://doi.org/10.5061/dryad.hm55b"
+                    # series_id = "https://doi.org/10.5061/dryad.hm55b"
                     _things = self.getThingsSID(series_id)
                     _obsoleted = _things.first()
                     if _obsoleted is not None:
                         obsoletes = _obsoleted.identifier
                         _obsoleted.obsoleted_by = identifier
-            
+
             if obsoletes is not None:
                 # Get the thing being obsoleted
                 match = (

@@ -5,7 +5,12 @@ Miscellaneous utilities for working with RDF / JSON-LD
 import logging
 import io
 import copy
-import json
+
+try:
+    import orjson as json
+except ModuleNotFoundError:
+    import json
+
 import pyld
 import re
 

@@ -5,7 +5,12 @@ Provides command line utility for interacting with an opersist instance.
 import os
 import logging
 import click
-import ojson as json
+
+try:
+    import orjson as json
+except ModuleNotFoundError:
+    import json
+
 import opersist
 import opersist.models
 

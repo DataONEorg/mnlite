@@ -17,7 +17,11 @@ import tempfile
 import pathlib
 import shutil
 import re
-import json
+
+try:
+    import orjson as json
+except ModuleNotFoundError:
+    import json
 
 
 class FLOB(object):
