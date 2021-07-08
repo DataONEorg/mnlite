@@ -56,6 +56,24 @@ const dataset_frame = {
     "creator":{}
 };
 
+const CONTEXT_MAP = {
+    "http://schema.org": "https://schema.org/docs/jsonldcontext.jsonld",
+    "http://schema.org/": "https://schema.org/docs/jsonldcontext.jsonld",
+    "https://schema.org": "https://schema.org/docs/jsonldcontext.jsonld",
+    "https://schema.org/": "https://schema.org/docs/jsonldcontext.jsonld",
+    "http://schema.org/docs/jsonldcontext.jsonld": "https://schema.org/docs/jsonldcontext.jsonld",
+    "https://schema.org/docs/jsonldcontext.jsonld": "https://schema.org/docs/jsonldcontext.jsonld"
+}
+
+const xhrDocumentLoader = jsonld.documentLoaders.xhr();
+
+async function customContextLoader(url, options) {
+    if (url in CONTEXT_MAP) {
+        return xhrDocumentLoader(CONTEXT_MAP[url]);
+    }
+    return xhrDocumentLoader(url);
+}
+
 document.getElementById("defaultOpen").click();
 
 function setObjectFormat() {
@@ -91,7 +109,9 @@ async function showSysMeta(pid) {
 }
 
 async function doFrame(jdoc) {
-    var opts = {}
+    var opts = {
+        documentLoader: customContextLoader
+    }
     jsonld.frame(jdoc, dataset_frame, opts)
     .then(fdoc => {
         var ele = document.getElementById("dsframe_show");
