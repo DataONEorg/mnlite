@@ -35,8 +35,6 @@ class JsonldSpider(soscan.spiders.ldsitemapspider.LDSitemapSpider):
         kwargs.setdefault("count_only", False)
         super(JsonldSpider, self).__init__(*args, **kwargs)
 
-        sonormal.installDocumentLoader(expire_existing=False)
-
         node_settings = None
         node_path = kwargs.get("store_path", None)
         if not node_path is None:
@@ -46,7 +44,7 @@ class JsonldSpider(soscan.spiders.ldsitemapspider.LDSitemapSpider):
             if os.path.exists(node_settings):
                 _data = {}
                 with open(node_settings) as src:
-                    _data = json.load(src)
+                    _data = json.loads(src.read())
                 self.sitemap_urls = _data.get("spider", {}).get("sitemap_urls", None)
         urls = kwargs.get("sitemap_urls", None)
         if not urls is None:
@@ -68,7 +66,7 @@ class JsonldSpider(soscan.spiders.ldsitemapspider.LDSitemapSpider):
             if os.path.exists(node_settings):
                 _data = {}
                 with open(node_settings) as src:
-                    _data = json.load(src)
+                    _data = json.loads(src.read())
                 url_rules = _data.get("spider", {}).get("url_rules", [])
                 if len(url_rules) > 0:
                     alt_rules = []
