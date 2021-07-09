@@ -15,6 +15,8 @@ import opersist.utils
 import opersist.rdfutils
 from scrapy.utils.project import get_project_settings
 
+# Setup the schema.org contexts for local retrieval
+sonormal.prepareSchemaOrgLocalContexts()
 
 class JsonldSpider(soscan.spiders.ldsitemapspider.LDSitemapSpider):
 

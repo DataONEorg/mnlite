@@ -1,18 +1,27 @@
 import logging
 import scrapy.exceptions
 import sonormal.normalize
-
-try:
-    import orjson as json
-except ModuleNotFoundError:
-    import json
-
+import json
 import opersist.rdfutils
 
 
 class SoscanNormalizePipeline:
     """
     Normalization is needed for reliably computing checksums for the content.
+
+    This is the rabbit hole.
+
+    The PID is from the SHA256 checksum.
+    The checksum must be reliably computable.
+    The SID is from an identifier, if provided.
+    If there's more than one identifier, we take the first one.
+    The first one may not be the same as before, unless it's an ordered list...
+
+    So, Alice does this:
+    1. Keep the original JSONLD - preserved for later distribution
+    2. Create a copy of the JSONLD normalized to http://schema.org/ and expanded
+    3. Frame the normalized JSONLD with a Dataset structure
+    4. Get the identifier from the framed JSONLD
     """
 
     def __init__(self):
@@ -26,13 +35,12 @@ class SoscanNormalizePipeline:
         require_identifier = True
 
         jsonld = item["jsonld"]
-        if force_lists:
-            jsonld = sonormal.normalize.forceSODatasetLists(jsonld)
         options = {"base": item["url"]}
         try:
-            normalized = sonormal.normalize.normalizeJsonld(jsonld, options=options)
+            normalized = sonormal.sosoNormalize(jsonld, options=options)
         except Exception as e:
             raise scrapy.exceptions.DropItem(f"JSON-LD normalization failed: {e}")
+
         ids = []
         try:
             _framed = sonormal.normalize.frameSODataset(normalized)

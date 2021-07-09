@@ -78,7 +78,7 @@ def cachingDocumentLoader(url, options={}):
 
 
 # inject the custom document loader into pyld
-pyld.jsonld.set_document_loader(cachingDocumentLoader)
+#pyld.jsonld.set_document_loader(cachingDocumentLoader)
 
 
 def XXextractDatasetIdentifiers(jsonld: dict):

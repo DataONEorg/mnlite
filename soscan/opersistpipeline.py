@@ -45,7 +45,8 @@ class OPersistPipeline:
 
     def process_item(self, item, spider):
         try:
-            hashes, _canonical = sonormal.checksums.jsonChecksums(item["normalized"])
+            #hashes, _canonical = sonormal.checksums.jsonChecksums(item["normalized"])
+            hashes, _canonical = sonormal.checksums.jsonChecksums(item["jsonld"], canonicalize=False)
             checksum_sha256 = hashes.get("sha256", None)
             if checksum_sha256 is None:
                 raise scrapy.exceptions.DropItem(f"No checksum for item: {item['url']}")

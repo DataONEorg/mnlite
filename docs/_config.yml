@@ -1,6 +1,6 @@
 title: "MN Lite"
 logo: "assets/logo.png"
-copyright: 2021
+copyright: "2021"
 author: Dave
 exclude_patterns: [_build, Thumbs.db, .DS_Store, "**.ipynb_checkpoints"]
 only_build_toc_files: true
