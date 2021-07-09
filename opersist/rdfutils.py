@@ -39,7 +39,8 @@ CONTEXT_CACHE = {
 }
 
 # DataONE formatId for the Dataset structure
-DATASET_FORMATID = "science-on-schema.org/Dataset/1.2;ld+json"
+#DATASET_FORMATID = "science-on-schema.org/Dataset/1.2;ld+json"
+DATASET_FORMATID = "science-on-schema.org/Dataset;ld+json"
 
 # regexp to match the typical location of the schema.org remote context
 SO_MATCH = re.compile("http(s)?\://schema.org(/)?")
