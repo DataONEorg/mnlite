@@ -1,5 +1,5 @@
 title: "MN Lite"
-logo: "assets/logo.png"
+logo: "assets/logo_s.png"
 copyright: "2021"
 author: Dave
 exclude_patterns: [_build, Thumbs.db, .DS_Store, "**.ipynb_checkpoints"]
@@ -10,6 +10,27 @@ execute:
 html:
   favicon: "assets/favicon.ico"
   use_repository_button: true
+  extra_navbar: Powered by <a href="https://jupyterbook.org">Jupyter Book</a>
+  extra_footer: ""
+  home_page_in_navbar: false
+  collapse_inactive_sections: true
+
 repository:
   url: https://github.com/datadavev/mnlite
   branch: main
+sphinx:
+  extra_extensions: [
+    "sphinxcontrib.drawio",
+    "sphinxcontrib.plantuml",
+  ]
+  config:
+    language: en
+    drawio_binary_path: "/Applications/draw.io.app/Contents/MacOS/draw.io"
+    myst_enable_extensions:
+      - deflist
+      - dollarmath
+      - substitution
+      - colon_fence
+    bibtex_reference_style: super
+    plantuml: "java -jar /Users/vieglais/.local/bin/plantuml.jar"
+    plantuml_output_format: svg

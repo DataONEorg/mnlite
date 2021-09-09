@@ -1,4 +1,5 @@
 import datetime
+import dateparser
 
 # raise Exception("don't use this")
 
@@ -28,3 +29,9 @@ def datetimeToJsonStr(dt):
     if dt is None:
         return None
     return dt.strftime(JSON_TIME_FORMAT)
+
+
+def parseDatetimeString(ds):
+    if ds is None:
+        return None
+    return dateparser.parse(ds, settings={"RETURN_AS_TIMEZONE_AWARE": True})

@@ -13,6 +13,8 @@ from scrapy.http import Request, XmlResponse
 from scrapy.utils.sitemap import Sitemap, sitemap_urls_from_robots
 from scrapy.utils.gz import gunzip, gzip_magic_number
 
+import soscan.items
+import soscan.utils
 
 logger = logging.getLogger(__name__)
 
@@ -43,8 +45,12 @@ class LDSitemapSpider(Spider):
                     c = getattr(self, c)
                 self._cbs.append((regex(r), c))
         self._follow = [regex(x) for x in self.sitemap_follow]
+        urls = kw.get("sitemap_urls", None)
+        if not urls is None:
+            self.sitemap_urls = urls.split(" ")
         # If set, then don't download the target
         self._count_only = kw.get("count_only", False)
+
 
     def start_requests(self):
         for url in self.sitemap_urls:
@@ -57,6 +63,9 @@ class LDSitemapSpider(Spider):
         """
         for entry in entries:
             yield entry
+
+    #def parse(self, response, **kwargs):
+    #    print(f"RESPONSE = {response}")
 
     def _parse_sitemap(self, response):
         if response.url.endswith("/robots.txt"):
@@ -76,22 +85,37 @@ class LDSitemapSpider(Spider):
             it = self.sitemap_filter(s)
 
             if s.type == "sitemapindex":
-                for (loc, ts) in iterloc(it, self.sitemap_alternate_links):
+                for (loc, ts, freq, prio) in iterloc(it, self.sitemap_alternate_links):
                     if any(x.search(loc) for x in self._follow):
                         yield Request(loc, callback=self._parse_sitemap)
             elif s.type == "urlset":
-                for (loc, ts) in iterloc(it, self.sitemap_alternate_links):
+                for (loc, ts, freq, prio) in iterloc(it, self.sitemap_alternate_links):
                     for r, c in self._cbs:
                         if r.search(loc):
-                            req = Request(
-                                loc,
-                                callback=c,
-                                flags=[
-                                    self._count_only,
-                                ],
-                            )
-                            req.meta["loc_timestamp"] = ts
-                            yield req
+                            ts = soscan.utils.parseDatetimeString(ts)
+                            if self._count_only:
+                                item = soscan.items.SitemapItem()
+                                item["source"] = response.url
+                                item["time_retrieved"] = soscan.utils.dtnow()
+                                item["url"] = loc
+                                item["time_loc"] = ts
+                                item["changefreq"] = freq
+                                item["priority"] = prio
+                                logger.debug("Yield item: %s", item)
+                                yield item
+                            else:
+                                req = Request(
+                                    loc,
+                                    callback=c,
+                                    flags=[
+                                        self._count_only,
+                                    ],
+                                )
+                                req.meta["loc_timestamp"] = ts
+                                req.meta["loc_source"] = response.url
+                                req.meta["loc_changefreq"] = freq
+                                req.meta["loc_priority"] = prio
+                                yield req
                             break
 
     def _get_sitemap_body(self, response):
@@ -124,8 +148,10 @@ def regex(x):
 def iterloc(it, alt=False):
     for d in it:
         ts = d.get("lastmod", None)
-        yield (d["loc"], ts)
+        freq = d.get("changefreq", None)
+        prio = d.get("priority", None)
+        yield (d["loc"], ts, freq, prio)
 
         # Also consider alternate URLs (xhtml:link rel="alternate")
         if alt and "alternate" in d:
-            yield from (d["alternate"], ts)
+            yield from (d["alternate"], ts, freq, prio)

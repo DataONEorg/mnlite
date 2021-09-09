@@ -1,0 +1,11 @@
+#/bin/zsh
+browser-sync start -s _build/html/ -f '_build/html/**.html' &
+BS_PID=$!
+watchmedo shell-command --interval 5 \
+  -c "jb build ." \
+  --recursive \
+  -i '_build/' \
+  -p '*.md;*.ipynb' \
+  "."
+kill ${BS_PID}
+

@@ -32,6 +32,10 @@ sonormal = {path = "../../sonormal", develop=true }
 pytest = "^6.1.2"
 black = {version = "^20.8b1", allow-prereleases = true}
 jupyter-book = "^0.11.1"
+watchdog = "^2.1.3"
+argh = "^0.26.2"
+sphinxcontrib-plantuml = "^0.21"
+sphinxcontrib-drawio = "^0.0.13"
 
 [tool.poetry.scripts]
 opersist= "opersist.cli:main"
