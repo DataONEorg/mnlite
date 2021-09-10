@@ -20,7 +20,7 @@ Add a subject to the MN:
 opersist -f instance/nodes/mn_1 sub -o create -n "Dave" -s 'https://orcid.org/0000-0002-6513-4996'
 ----
 
-Adjust the node configuration to specify `default_submitter`, `default_owner`, `base_url`, `subject`, and `contact_subject`:
+Adjust the node configuration to specify `default_submitter`, `default_owner`, `base_url`, and `contact_subject`:
 
 ----
 {
