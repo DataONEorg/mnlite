@@ -153,6 +153,8 @@ class JsonldSpider(soscan.spiders.ldsitemapspider.LDSitemapSpider):
                 # source
                 # alt_identifiers
                 # format_id
+                if len(jsonld) == 1:
+                    jsonld=jsonld[0]
 
                 item = soscan.items.SoscanItem()
                 item["url"] = response.url
