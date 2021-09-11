@@ -18,7 +18,7 @@ PAGE_SIZE = 100
 DEFAULT_NODE_CONFIG = {
     "node": {
         "node_id": None,
-        "state": "up",
+        "state": "down",
         "name": None,
         "description": None,
         "base_url": None,
@@ -28,7 +28,7 @@ DEFAULT_NODE_CONFIG = {
             "min": "0,10,20,30,40,50",
             "mon": "*",
             "sec": "5",
-            "wday": "*",
+            "wday": "?",
             "year": "*",
         },
         "subject": None,
