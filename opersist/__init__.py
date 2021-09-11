@@ -435,6 +435,7 @@ class OPersist(object):
                         assert match.series_id == series_id
                 # Set here - will be comitted later or rolled back on error
                 match.obsoleted_by = identifier
+                match.date_modified = utils.dtnow()
                 self._L.warning("OBSOLETED = %s", match)
 
             blob_fname = os.path.join(self._path_root, self._blob_path, fn_dest)
