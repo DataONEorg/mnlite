@@ -19,3 +19,32 @@ scrapy crawl JsonldSpider -s STORE_PATH=instance/nodes/mnTestDRYAD -L INFO -a co
 
 
 [^scrapy]: https://docs.scrapy.org/en/latest/index.html
+
+
+## Registration with DataONE
+
+Register the node (assumes node document is available at `./mnTestNODE.xml`: 
+```
+sudo curl --cert /etc/dataone/client/private/urn_node_cnSandboxUCSB1.pem \
+-X POST \
+-F 'node=@mnTestNODE.xml' \
+"https://cn-sandbox-ucsb-1.test.dataone.org/cn/v2/node"
+```
+
+Update registration for an already registered node:
+```
+sudo curl --cert /etc/dataone/client/private/urn_node_cnSandboxUCSB1.pem \
+-X PUT \
+-F 'node=@mnTestNODE.xml' \
+"https://cn-sandbox-ucsb-1.test.dataone.org/cn/v2/node/urn:node:mnTestNODE"
+```
+
+Adjust the node properties for the `CN_*` entries:
+```
+```
+
+Approve the node:
+```
+sudo java -jar /usr/share/dataone-cn-os-core/d1_cn_approve_node.jar
+```
+
