@@ -1,7 +1,11 @@
 import logging
 import os
 import time
-import ojson as json
+
+try:
+    import orjson as json
+except ModuleNotFoundError:
+    import json
 import dateparser
 import sqlalchemy
 import sqlalchemy.ext.declarative
@@ -73,7 +77,7 @@ class Thing(opersist.models.Base):
         default=opersist.utils.dtnow,
         doc="When this record was modified, like system metadata date modified",
     )
-    # Identifies when the thing was created. For harvested content, this is the age of 
+    # Identifies when the thing was created. For harvested content, this is the age of
     # the content as identified by the origin - so sitemap loc_timestamp for example
     date_uploaded = sqlalchemy.Column(
         sqlalchemy.DateTime(timezone=True),
@@ -105,7 +109,7 @@ class Thing(opersist.models.Base):
         sqlalchemy.String,
         nullable=False,
         index=True,
-        doc="Source of this thing, such as full path or URL"
+        doc="Source of this thing, such as full path or URL",
     )
     # DataONE sysmetadata specific stuff
     format_id = sqlalchemy.Column(
@@ -183,9 +187,7 @@ class Thing(opersist.models.Base):
         default=None,
         doc="Additional information pertinent to this record",
     )
-    __table_args__ = (
-        sqlalchemy.CheckConstraint("identifier != series_id"),
-    )
+    __table_args__ = (sqlalchemy.CheckConstraint("identifier != series_id"),)
 
     @sqlalchemy.orm.validates("identifier", "series_id", "format_id")
     def validate_identifier(self, key, value):
@@ -193,9 +195,11 @@ class Thing(opersist.models.Base):
             value = value.strip()
             if opersist.utils.stringHasSpace(value):
                 raise ValueError(f"An identifier must not contain spaces: '{value}'")
-            if key == 'series_id':
+            if key == "series_id":
                 if self.identifier is None:
-                    raise ValueError(f"series_id can not be set without a persistent identifier")
+                    raise ValueError(
+                        f"series_id can not be set without a persistent identifier"
+                    )
         return value
 
     def asJsonDict(self):
@@ -207,7 +211,7 @@ class Thing(opersist.models.Base):
             "checksum_sha1": self.checksum_sha1,
             "checksum_md5": self.checksum_md5,
             "identifiers": self.identifiers,
-            #whe
+            # whe
             "t_added": opersist.utils.datetimeToJsonStr(self.t_added),
             "t_content_modified": opersist.utils.datetimeToJsonStr(
                 self.t_content_modified
@@ -215,11 +219,10 @@ class Thing(opersist.models.Base):
             "content": self.content,
             "media_type_name": self.media_type_name,
             "file_name": self.file_name,
-            "source":self.source,
+            "source": self.source,
             "format_id": self.format_id,
-            #used for system metadata dateModified
+            # used for system metadata dateModified
             "date_modified": opersist.utils.datetimeToJsonStr(self.date_modified),
-
             "date_uploaded": opersist.utils.datetimeToJsonStr(self.date_uploaded),
             "serial_version": self.serial_version,
             "replication_allowed": self.replication_allowed,
@@ -254,6 +257,6 @@ class Thing(opersist.models.Base):
         return json.dumps(self.asJsonDict())
 
 
-@sqlalchemy.event.listens_for(Thing, 'before_insert')
+@sqlalchemy.event.listens_for(Thing, "before_insert")
 def doThingChecks(mapper, connect, target):
     logging.debug("At doThingChecks: %s", target)

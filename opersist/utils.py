@@ -5,7 +5,12 @@ import datetime
 import dateparser
 import cgi
 import contextlib
-import json
+
+try:
+    import orjson as json
+except ModuleNotFoundError:
+    import json
+
 import hashlib
 
 # For splitting HTTP header values

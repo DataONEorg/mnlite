@@ -1,6 +1,7 @@
 import datetime
+import dateparser
 
-#raise Exception("don't use this")
+# raise Exception("don't use this")
 
 JSON_TIME_FORMAT = "%Y-%m-%dT%H:%M:%S%z"
 """datetime format string for generating JSON content
@@ -28,3 +29,13 @@ def datetimeToJsonStr(dt):
     if dt is None:
         return None
     return dt.strftime(JSON_TIME_FORMAT)
+
+
+def parseDatetimeString(ds):
+    if ds is None:
+        return None
+    if isinstance(ds, datetime.datetime):
+        return ds
+    if isinstance(ds, bytes):
+        ds = ds.decode("utf-8")
+    return dateparser.parse(ds, settings={"RETURN_AS_TIMEZONE_AWARE": True})

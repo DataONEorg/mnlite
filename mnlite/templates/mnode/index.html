@@ -50,13 +50,32 @@ var _format_json = true;
 
 const compact_context = {};
 const dataset_frame = {
-    "@context": {
-        "@vocab":"https://schema.org/"
-    },
+    "@context": "https://schema.org/",
     "@type":"Dataset",
     "identifier":{},
     "creator":{}
 };
+
+/* json-ld library used:
+   https://github.com/digitalbazaar/jsonld.js
+*/
+const CONTEXT_MAP = {
+    "http://schema.org": "https://schema.org/docs/jsonldcontext.jsonld",
+    "http://schema.org/": "https://schema.org/docs/jsonldcontext.jsonld",
+    "https://schema.org": "https://schema.org/docs/jsonldcontext.jsonld",
+    "https://schema.org/": "https://schema.org/docs/jsonldcontext.jsonld",
+    "http://schema.org/docs/jsonldcontext.jsonld": "https://schema.org/docs/jsonldcontext.jsonld",
+    "https://schema.org/docs/jsonldcontext.jsonld": "https://schema.org/docs/jsonldcontext.jsonld"
+}
+
+const xhrDocumentLoader = jsonld.documentLoaders.xhr();
+
+async function customContextLoader(url, options) {
+    if (url in CONTEXT_MAP) {
+        return xhrDocumentLoader(CONTEXT_MAP[url]);
+    }
+    return xhrDocumentLoader(url);
+}
 
 document.getElementById("defaultOpen").click();
 
@@ -93,7 +112,9 @@ async function showSysMeta(pid) {
 }
 
 async function doFrame(jdoc) {
-    var opts = {}
+    var opts = {
+        documentLoader: customContextLoader
+    }
     jsonld.frame(jdoc, dataset_frame, opts)
     .then(fdoc => {
         var ele = document.getElementById("dsframe_show");
@@ -136,8 +157,9 @@ var _table = new Tabulator("#object_table",{
     layout:"fitColumns",
     placeholder:"No data available",
     ajaxURL:"./_page",
-    ajaxProgressiveLoad:"scroll",
+    //ajaxProgressiveLoad:"scroll",
     paginationSize:50,
+    pagination: "remote",
     columns:[
         {"title":"PID", field:"identifier", width:200},
         {"title":"SID", field:"series_id"},

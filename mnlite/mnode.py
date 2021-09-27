@@ -18,7 +18,7 @@ PAGE_SIZE = 100
 DEFAULT_NODE_CONFIG = {
     "node": {
         "node_id": None,
-        "state": "up",
+        "state": "down",
         "name": None,
         "description": None,
         "base_url": None,
@@ -28,7 +28,7 @@ DEFAULT_NODE_CONFIG = {
             "min": "0,10,20,30,40,50",
             "mon": "*",
             "sec": "5",
-            "wday": "*",
+            "wday": "?",
             "year": "*",
         },
         "subject": None,
@@ -40,6 +40,10 @@ DEFAULT_NODE_CONFIG = {
     "created": None,
     "default_submitter": None,
     "default_owner": None,
+    "spider": {
+        "sitemap_urls": [
+        ]
+    }
 }
 
 
@@ -80,7 +84,11 @@ def getPersistence(abs_path, node_config):
 
 @m_node.cli.command("new_node", help="Create a new MNode instance")
 @click.argument("mn_name")
-def createMNode(mn_name):
+@click.argument("sitemap_url")
+@click.option("-s", "--submitter", default=None, help="Subject for default submitter (\"SUBJ Name\")")
+@click.option("-o", "--owner", default=None, help="Subject for default owner (\"SUBJ Name\"), defaults to nodeId")
+@click.option("-c", "--contact", default=None, help="Subject for node contact (\"SUBJ Name\")")
+def createMNode(mn_name, sitemap_url, submitter, owner, contact):
     mn_name = mn_name.strip()
     the_app = flask.current_app
     L = the_app.logger
@@ -98,19 +106,47 @@ def createMNode(mn_name):
             os.path.join(config_path, "node.json"),
         )
         return
-    L.info("Creating instance in %s", config_path)
+    if submitter is not None:
+        submitter = submitter.partition(" ")
+    if owner is not None:
+        owner = owner.partition(" ")
+    if contact is not None:
+        contact = contact.partition(" ")
+    print(f"Creating instance in {config_path}")
     os.makedirs(config_path, exist_ok=True)
     config_name = os.path.join(config_path, "node.json")
     cfg = DEFAULT_NODE_CONFIG
-    cfg["node"]["node_id"] = f"urn:node:{mn_name}"
+    node_id = f"urn:node:{mn_name}"
+    cfg["node"]["node_id"] = node_id
+    cfg["node"]["subject"] = node_id
     cfg["node"]["name"] = f"Unnamed member node: {mn_name}"
     cfg["node"]["description"] = "No description available for this node."
+    if contact is not None:
+        cfg["node"]["contact_subject"] = contact[0]
+    if owner is None:
+        cfg["default_owner"] = node_id
+    else:
+        cfg["default_owner"] = owner[0]
+    if submitter is not None:
+        cfg["default_submitter"] = submitter[0]
+    cfg["spider"]["sitemap_urls"].append(sitemap_url)
     cfg["created"] = opersist.utils.datetimeToJsonStr(opersist.utils.dtnow())
     with open(config_name, "w") as config_dest:
         config_dest.write(json.dumps(cfg, indent="  "))
     op = getPersistence(config_path, cfg)
+    if submitter is not None:
+        new_subject = op.getSubject(submitter[0], name=submitter[2], create_if_missing=True)
+        print(f"Submitter subject: {new_subject}")
+    if owner is not None:
+        new_subject = op.getSubject(owner[0], name=owner[2], create_if_missing=True)
+        print(f"Owner subject: {new_subject}")
+    if contact is not None:
+        new_subject = op.getSubject(contact[0], name=contact[2], create_if_missing=True)
+        print(f"Contact subject: {new_subject}")
+
     op.close()
-    L.info("New node %s created at %s", mn_name, config_path)
+    print(f"New node {mn_name} created at {config_path}")
+    print(f"Populate with:\n scrapy crawl JsonldSpider -s STORE_PATH={config_path} -L INFO")
 
 
 """

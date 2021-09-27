@@ -1,0 +1,26 @@
+@startuml
+!include C4-PlantUML/C4_Component.puml
+LAYOUT_WITH_LEGEND()
+
+Person(admin, "Administrator")
+System_Ext(collection, "Collection", "Dataset collection with Schema.org JSON-LD markup")
+
+Container_Boundary(scrapy, "soscan") {
+  Component(settings, "settings", "Python", "General configuration of soscan spider and pipelines")
+  Component(jsonldspider,"jsonldspider", "Python", "Spider for parsing sitemap.xml and Landing pages for JSON-LD")
+  Component(normalize, "sonormalizepipeline", "Python", "Pipeline component for generating metadata about extracted JSON-LD")
+  Component(store, "opersistpipeline", "Python", "Pipeline component for storing extracted JSON-LD and metadata in OPersist")
+}
+Container(opersist, "OPersist", "Python", "JSON-LD storage and management")
+Component(instance, "Instance", "JSON", "Collection and MN specific configuration")
+Rel(jsonldspider, collection, "Crawls")
+Rel(jsonldspider, normalize, "Sends")
+Rel(normalize, store, "Sends")
+Rel(store, opersist, "Store")
+Rel_U(settings, instance, "Reads")
+Rel_R(settings, jsonldspider, "Config")
+Rel_R(settings, normalize, "Config")
+Rel_R(settings, store, "Config")
+Rel(admin, settings, "Edit settings and runtime options")
+Rel_R(admin, instance, "Edit collecton and node settings")
+@enduml

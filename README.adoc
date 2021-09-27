@@ -2,6 +2,7 @@
 
 Light weight read-only DataONE member node in Python Flask
 
+The Netherlands Polar Data Center (NPDC) is part of the Netherlands Polar Program (NPP). NPDC archives and provides access to the data of Polar Research by researchers funded by Dutch Research Council (NWO) or otherwise carried out by researchers from Dutch universities and research institutions. The repository provides: 1) An overview of current and completed projects from the Netherlands Polar Programme (NPP) and other Dutch projects in the Polar Regions; 2) Access to the data of research carried out by Dutch researchers in the Polar Regions; and, 3) Links to external sources of Polar research data. For more information about the NPDC and the services it may offer to the Dutch Polar research community see https://npdc.nl/npdc.
 
 ## Development Notes
 
@@ -20,7 +21,7 @@ Add a subject to the MN:
 opersist -f instance/nodes/mn_1 sub -o create -n "Dave" -s 'https://orcid.org/0000-0002-6513-4996'
 ----
 
-Adjust the node configuration to specify `default_submitter`, `default_owner`, `base_url`, `subject`, and `contact_subject`:
+Adjust the node configuration to specify `default_submitter`, `default_owner`, `base_url`, and `contact_subject`:
 
 ----
 {

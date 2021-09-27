@@ -2,7 +2,10 @@
 Implements the Subject ORM
 """
 
-import ojson as json
+try:
+    import orjson as json
+except ModuleNotFoundError:
+    import json
 import sqlalchemy
 import sqlalchemy.orm
 import opersist.models

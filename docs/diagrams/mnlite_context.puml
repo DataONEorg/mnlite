@@ -1,0 +1,18 @@
+@startuml
+!include C4-PlantUML/C4_Context.puml
+LAYOUT_WITH_LEGEND()
+
+Person(admin, "Administrator")
+System_Ext(collection, "Collection", "Dataset collection with Schema.org JSON-LD markup")
+System_Ext(cns, "CNs", "DataONE Coordinating Nodes")
+System_Boundary(mnlite_system, "MNLite") {
+    System(harvest, "SOScan", "Sitemap, JSON-LD crawler")
+    System(web, "HTTP", "Slender Node implementation")
+    SystemDb(opersist, "Opersist", "Persistence store")
+}
+Rel_U(harvest, collection, "Reads")
+Rel(harvest, opersist, "Reads / Writes")
+Rel(web, opersist, "Reads")
+Rel(cns, web, "Reads")
+Rel_U(admin, mnlite_system, "Manages")
+@enduml

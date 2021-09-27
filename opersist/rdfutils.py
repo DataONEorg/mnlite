@@ -5,7 +5,12 @@ Miscellaneous utilities for working with RDF / JSON-LD
 import logging
 import io
 import copy
-import json
+
+try:
+    import orjson as json
+except ModuleNotFoundError:
+    import json
+
 import pyld
 import re
 
@@ -34,7 +39,8 @@ CONTEXT_CACHE = {
 }
 
 # DataONE formatId for the Dataset structure
-DATASET_FORMATID = "science-on-schema.org/Dataset/1.2;ld+json"
+#DATASET_FORMATID = "science-on-schema.org/Dataset/1.2;ld+json"
+DATASET_FORMATID = "science-on-schema.org/Dataset;ld+json"
 
 # regexp to match the typical location of the schema.org remote context
 SO_MATCH = re.compile("http(s)?\://schema.org(/)?")
@@ -73,7 +79,7 @@ def cachingDocumentLoader(url, options={}):
 
 
 # inject the custom document loader into pyld
-pyld.jsonld.set_document_loader(cachingDocumentLoader)
+#pyld.jsonld.set_document_loader(cachingDocumentLoader)
 
 
 def XXextractDatasetIdentifiers(jsonld: dict):

@@ -5,7 +5,12 @@ Provides command line utility for interacting with an opersist instance.
 import os
 import logging
 import click
-import ojson as json
+
+try:
+    import orjson as json
+except ModuleNotFoundError:
+    import json
+
 import opersist
 import opersist.models
 
@@ -57,6 +62,9 @@ def main(ctx, verbosity, folder):
 @main.command("init")
 @click.pass_context
 def initializeInstance(ctx):
+    '''
+    Initialize a new instance; -f path/to/instance
+    '''
     L = logging.getLogger("init")
     folder = ctx.obj["folder"]
     L.info("Setting up opersist in %s", folder)
@@ -88,6 +96,9 @@ def initializeInstance(ctx):
     help="Operation to perform",
 )
 def subjects(ctx, name, subj, operation):
+    '''
+    Manage subjects in the opersist instance.
+    '''
     L = logging.getLogger("subjects")
     folder = ctx.obj["folder"]
     op = getOpersistInstance(folder)
@@ -141,6 +152,9 @@ def subjects(ctx, name, subj, operation):
     help="Operation to perform",
 )
 def accessRules(ctx, perm, subj, ar_id, operation):
+    '''
+    Manage access rules for the opersist instance
+    '''
     L = logging.getLogger("accessRules")
     folder = ctx.obj["folder"]
     op = getOpersistInstance(folder)
@@ -221,6 +235,9 @@ def accessRules(ctx, perm, subj, ar_id, operation):
 )
 @click.option("--sid", "series_id", default=None, help="SID for object")
 def things(ctx, operation, fname, sha256, identifier, format_id, series_id):
+    '''
+    Manage things in the opersist instance.
+    '''
     L = logging.getLogger("things")
     folder = ctx.obj["folder"]
     op = getOpersistInstance(folder)

@@ -45,13 +45,16 @@ class OPersistPipeline:
 
     def process_item(self, item, spider):
         try:
-            hashes, _canonical = sonormal.checksums.jsonChecksums(item["normalized"])
+            #hashes, _canonical = sonormal.checksums.jsonChecksums(item["normalized"])
+            hashes, _canonical = sonormal.checksums.jsonChecksums(item["jsonld"], canonicalize=False)
             checksum_sha256 = hashes.get("sha256", None)
             if checksum_sha256 is None:
                 raise scrapy.exceptions.DropItem(f"No checksum for item: {item['url']}")
             existing = self._op.getThingSha256(checksum_sha256)
             if existing is not None:
-                raise scrapy.exceptions.DropItem(f"Item already in store:\n{item['url']}\n{checksum_sha256}\n{existing.series_id}\n{existing.file_name}\n===")
+                raise scrapy.exceptions.DropItem(
+                    f"Item already in store:\n{item['url']}\n{checksum_sha256}\n{existing.series_id}\n{existing.file_name}\n==="
+                )
 
             identifier = item["identifier"]
             if identifier is None:
@@ -94,7 +97,7 @@ class OPersistPipeline:
                 source=source,
                 metadata=metadata,
                 obsoletes=obsoletes,
-                date_uploaded=item.get('time_loc', None)
+                date_uploaded=item.get("time_loc", None),
             )
 
         except Exception as e:

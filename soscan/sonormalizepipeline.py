@@ -4,9 +4,24 @@ import sonormal.normalize
 import json
 import opersist.rdfutils
 
+
 class SoscanNormalizePipeline:
     """
     Normalization is needed for reliably computing checksums for the content.
+
+    This is the rabbit hole.
+
+    The PID is from the SHA256 checksum.
+    The checksum must be reliably computable.
+    The SID is from an identifier, if provided.
+    If there's more than one identifier, we take the first one.
+    The first one may not be the same as before, unless it's an ordered list...
+
+    So, Alice does this:
+    1. Keep the original JSONLD - preserved for later distribution
+    2. Create a copy of the JSONLD normalized to http://schema.org/ and expanded
+    3. Frame the normalized JSONLD with a Dataset structure
+    4. Get the identifier from the framed JSONLD
     """
 
     def __init__(self):
@@ -15,29 +30,28 @@ class SoscanNormalizePipeline:
     def process_item(self, item, spider):
         self.logger.debug("process_item: %s", item["url"])
 
-        #TODO: load these from config
+        # TODO: load these from config
         force_lists = True
         require_identifier = True
 
         jsonld = item["jsonld"]
-        if force_lists:
-            jsonld = sonormal.normalize.forceSODatasetLists(jsonld)
-        options = {
-            "base":item["url"]
-        }
+        options = {"base": item["url"]}
         try:
-            normalized = sonormal.normalize.normalizeJsonld(jsonld, options=options)
+            normalized = sonormal.sosoNormalize(jsonld, options=options)
         except Exception as e:
             raise scrapy.exceptions.DropItem(f"JSON-LD normalization failed: {e}")
+
         ids = []
         try:
             _framed = sonormal.normalize.frameSODataset(normalized)
-            ids = sonormal.normalize.getDatasetsIdentifiers(_framed)            
+            ids = sonormal.normalize.getDatasetsIdentifiers(_framed)
         except Exception as e:
             raise scrapy.exceptions.DropItem(f"JSON-LD identifier extract failed: {e}")
         if len(ids) < 1:
-            raise scrapy.exceptions.DropItem(f"JSON-LD no ids, not a Dataset: {item['url']}")
-        
+            raise scrapy.exceptions.DropItem(
+                f"JSON-LD no ids, not a Dataset: {item['url']}"
+            )
+
         # TODO: identifiers
         # The process for handling of identifiers needs to be set in configuration
 
@@ -50,7 +64,9 @@ class SoscanNormalizePipeline:
                 if len(ids[0]["identifier"]) > 1:
                     item["alt_identifiers"] = ids[0]["identifier"][1:]
             elif require_identifier:
-                raise scrapy.exceptions.DropItem(f"JSON-LD no identifier: {item['url']}")
+                raise scrapy.exceptions.DropItem(
+                    f"JSON-LD no identifier: {item['url']}"
+                )
         item["identifier"] = None
         item["normalized"] = normalized
         item["format_id"] = opersist.rdfutils.DATASET_FORMATID

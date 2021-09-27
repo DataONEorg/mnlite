@@ -1,19 +1,10 @@
-# Scrapy settings for soscan project
+# Scrapy settings for soscan project, sitemap scanning only
 #
-# For simplicity, this file contains only settings considered important or
-# commonly used. You can find more settings consulting the documentation:
-#
-#     https://docs.scrapy.org/en/latest/topics/settings.html
-#     https://docs.scrapy.org/en/latest/topics/downloader-middleware.html
-#     https://docs.scrapy.org/en/latest/topics/spider-middleware.html
 
-BOT_NAME = "soscan"
+BOT_NAME = "soscan_sitemap"
 
 SPIDER_MODULES = ["soscan.spiders"]
 NEWSPIDER_MODULE = "soscan.spiders"
-
-DATABASE_URL = "postgresql+psycopg2://soscanrw@localhost/soscan"
-
 
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
 # USER_AGENT = 'soscan (+http://www.yourdomain.com)'
@@ -54,13 +45,11 @@ REACTOR_THREADPOOL_MAXSIZE = 8
 # Enable or disable spider middlewares
 # See https://docs.scrapy.org/en/latest/topics/spider-middleware.html
 SPIDER_MIDDLEWARES = {
-    "soscan.middlewares.SoscanSpiderMiddleware": 543,
 }
 
 # Enable or disable downloader middlewares
 # See https://docs.scrapy.org/en/latest/topics/downloader-middleware.html
 DOWNLOADER_MIDDLEWARES = {
-    "soscan.middlewares.SoscanDownloaderMiddleware": 543,
 }
 
 # Enable or disable extensions
@@ -72,9 +61,6 @@ DOWNLOADER_MIDDLEWARES = {
 # Configure item pipelines
 # See https://docs.scrapy.org/en/latest/topics/item-pipeline.html
 ITEM_PIPELINES = {
-    "soscan.sonormalizepipeline.SoscanNormalizePipeline": 500,
-    "soscan.opersistpipeline.OPersistPipeline": 1000,
-    #'soscan.pipelines.SoscanPersistPipeline': 1000,
 }
 
 # Enable and configure the AutoThrottle extension (disabled by default)

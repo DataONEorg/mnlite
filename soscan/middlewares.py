@@ -54,7 +54,7 @@ class SoscanSpiderMiddleware:
             yield r
 
     def spider_opened(self, spider):
-        spider.logger.info('Spider opened: %s' % spider.name)
+        spider.logger.info("Spider opened: %s" % spider.name)
 
 
 class SoscanDownloaderMiddleware:
@@ -84,9 +84,14 @@ class SoscanDownloaderMiddleware:
         if request.flags is not None:
             if len(request.flags) > 0:
                 if request.flags[0]:
-                    #This is a count only operation
-                    #return a fake response.
-                    return scrapy.http.Response(request.url, flags=[True, ])
+                    # This is a count only operation
+                    # return a fake response.
+                    return scrapy.http.Response(
+                        request.url,
+                        flags=[
+                            True,
+                        ],
+                    )
         return None
 
     def process_response(self, request, response, spider):
@@ -109,4 +114,4 @@ class SoscanDownloaderMiddleware:
         pass
 
     def spider_opened(self, spider):
-        spider.logger.info('Spider opened: %s' % spider.name)
+        spider.logger.info("Spider opened: %s" % spider.name)

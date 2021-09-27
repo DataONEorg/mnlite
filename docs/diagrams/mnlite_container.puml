@@ -1,0 +1,21 @@
+@startuml
+!include C4-PlantUML/C4_Container.puml
+LAYOUT_WITH_LEGEND()
+
+Person(admin, "Administrator")
+Person(user, "User")
+Container(soscan, "SOScan", "Python", "Scrapy with custom crawler for sitemaps and JSON-LD")
+Container(opersist, "OPersist", "Python", "JSON-LD storage and management")
+ContainerDb(db, "Content Store", "SQL", "Relational data store with file system backing")
+Container(web, "MNLite", "Flask", "Member Node implementation with UI")
+System_Ext(collection, "Collection", "Dataset collection with Schema.org JSON-LD markup")
+System_Ext(cns, "CNs", "DataONE Coordinating Nodes")
+Rel(admin, soscan, "Crawl URL")
+Rel(admin, opersist, "Manage node")
+Rel(soscan, opersist, "Add content")
+Rel(opersist, db, "Reads / Writes")
+Rel(web, opersist, "Get content")
+Rel(user, web, "View / Get")
+Rel_U(soscan, collection, "Reads")
+Rel(cns, web, "Reads")
+@enduml

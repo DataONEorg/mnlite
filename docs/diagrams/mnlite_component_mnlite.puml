@@ -1,0 +1,23 @@
+@startuml
+!include C4-PlantUML/C4_Component.puml
+LAYOUT_WITH_LEGEND()
+
+Person(admin, "Administrator")
+Person(user, "User")
+
+Container_Boundary(mnlite, "mnlite") {
+  Component(init, "__init__", "Python Flask", "Base of MNLite web application")
+  Component(mnode, "mnode", "Python Flask", "Member Node API and UI")
+}
+Container(opersist, "OPersist", "Python", "JSON-LD storage and management")
+Component(instance, "Instance", "JSON", "Collection and MN specific configuration")
+Component_Ext(nginx, "nginx","HTTP", "nginx Web server")
+System_Ext(cn, "CNs","DataONE Coordinating Nodes")
+Rel(admin, instance, "Edit collecton and node settings")
+Rel(mnode, instance, "Get Config")
+Rel(mnode, opersist, "Read")
+Rel_R(nginx, init, "Serves via uWSGI")
+Rel(init, mnode, "Delegate to")
+Rel(cn, nginx, "Read")
+Rel(user, nginx, "Read")
+@enduml
