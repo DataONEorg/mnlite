@@ -1,6 +1,10 @@
 import json
+import pyshacl
 
 def default_json():
+	"""
+	A function that spits out a json file to be used in onboarding.
+	"""
     jstr = r'''{
   "node": {
     "node_id": "",
