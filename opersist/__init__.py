@@ -167,6 +167,15 @@ class OPersist(object):
                 self._L.info("Created new subject: %s", subj)
         return s
 
+    def removeSubject(self, subj: str):
+        assert self._session is not None
+        if subj is None:
+            self._L.warning("No subject removed.")
+        else:
+            self._session.delete(subj)
+            self._session.commit()
+            self._L.info("Subject %s removed.", subj)
+
     def subjects(self, subj=None, name=None):
         assert self._session is not None
         Q = self._session.query(models.subject.Subject)
