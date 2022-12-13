@@ -10,6 +10,39 @@ def default_json():
     """
     return json.loads(DEFAULT_JSON)
 
+def valid_orcid(orcid):
+    """
+    Checks the validity of an ORCiD number.
+    ORCiDs have 4 groupings of 4 of integers separated by dashes (-)
+    for a total of 19 characters, thus `0000-0000-0000-0000` is valid
+    but `0000-0000-00000-000` and `0000-0000-0000-000` are not.
+    """
+    if (len(orcid) == 19):
+        # it's 19 characters long. start test loop
+        for i in range(0,19):
+            # does it have a dash (-) in positions 5, 9, and 13?
+            if i in (4, 9, 14):
+                if orcid[i] in '-':
+                    # dash exists in correct position, next test
+                    continue
+                else:
+                    # fail (not a dash)
+                    #print('no dash at %s' % i)
+                    return False
+            try:
+                # int exists in correct position, next test
+                int(orcid[i])
+            except ValueError as e:
+                # fail (not an integer)
+                #print('valueerror at %s' % i)
+                return False
+        # pass
+        return True
+    else:
+        # fail (not 19 characters)
+        #print('not 19 chars')
+        return False
+
 def user_input():
     """
     We need a few pieces of information to fill the json fields.
@@ -17,6 +50,7 @@ def user_input():
     for f in FIELDS:
         if f in 'num_sitemap_urls':
             while True:
+                # make sure user enters an int
                 try:
                     FIELDS[f][1] = int(input(FIELDS[f][0]))
                     break
@@ -24,14 +58,16 @@ def user_input():
                     L.warning(e)
                     print('Please enter an integer.')
             while True:
+                # make sure user enters 1 or more
                 if FIELDS[f][1] >= 1:
                     break
                 else:
                     L.warning("The number of database sitemap URLs can't be less than 1.")
         elif f in ('contact_subject', 'default_submitter', 'default_owner'):
             while True:
+                # make sure user enters a valid ORCiD number
                 FIELDS[f][1] = input(FIELDS[f][0])
-                if len(FIELDS[f][1]) == 19:
+                if valid_orcid(FIELDS[f][1]):
                     break
                 else:
                     print('Please enter a valid ORCiD number (ex: 0000-0000-0000-0000).')
