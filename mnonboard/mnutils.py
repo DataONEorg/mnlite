@@ -13,9 +13,13 @@ def default_json():
 def valid_orcid(orcid):
     """
     Checks the validity of an ORCiD number.
+
     ORCiDs have 4 groupings of 4 of integers separated by dashes (-)
     for a total of 19 characters, thus `0000-0000-0000-0000` is valid
     but `0000-0000-00000-000` and `0000-0000-0000-000` are not.
+
+    This seems like overkill but is probably good to have since it will be
+    used to store contacts for database upkeep/maintenance.
     """
     if (len(orcid) == 19):
         # it's 19 characters long. start test loop
