@@ -17,11 +17,24 @@ def user_input():
     for f in FIELDS:
         if f in 'num_sitemap_urls':
             while True:
-                FIELDS[f][1] = int(input(FIELDS[f][0]))
+                try:
+                    FIELDS[f][1] = int(input(FIELDS[f][0]))
+                    break
+                except ValueError as e:
+                    L.warning(e)
+                    print('Please enter an integer.')
+            while True:
                 if FIELDS[f][1] >= 1:
                     break
                 else:
                     L.warning("The number of database sitemap URLs can't be less than 1.")
+        elif f in ('contact_subject', 'default_submitter', 'default_owner'):
+            while True:
+                FIELDS[f][1] = input(FIELDS[f][0])
+                if len(FIELDS[f][1]) == 19:
+                    break
+                else:
+                    print('Please enter a valid ORCiD number (ex: 0000-0000-0000-0000).')
         else:
             FIELDS[f][1] = input(FIELDS[f][0])
     return FIELDS
