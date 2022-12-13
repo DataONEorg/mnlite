@@ -24,7 +24,7 @@ def valid_orcid(orcid):
     if (len(orcid) == 19):
         # it's 19 characters long. start test loop
         for i in range(0,19):
-            # does it have a dash (-) in positions 5, 9, and 13?
+            # does it have a dash (-) in positions 5, 10, and 15?
             if i in (4, 9, 14):
                 if orcid[i] in '-':
                     # dash exists in correct position, next test
