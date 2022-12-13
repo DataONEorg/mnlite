@@ -10,6 +10,20 @@ def default_json():
     """
     return json.loads(DEFAULT_JSON)
 
+def load_json(loc):
+    """
+    Load json from file.
+    """
+    with open(loc, 'r') as f:
+        return json.load(f)
+
+def save_json(loc, jf):
+    """
+    Output json to file.
+    """
+    with open(loc, 'w') as f:
+        json.dump(jf, f)
+
 def valid_orcid(orcid):
     """
     Checks the validity of an ORCiD number.
