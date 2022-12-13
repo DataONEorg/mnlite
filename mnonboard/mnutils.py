@@ -18,7 +18,7 @@ def user_input():
         if f in 'num_sitemap_urls':
             while True:
                 FIELDS[f][1] = int(input(FIELDS[f][0]))
-                if FIELDS[f][1] > 1:
+                if FIELDS[f][1] >= 1:
                     break
                 else:
                     L.warning("The number of database sitemap URLs can't be less than 1.")
