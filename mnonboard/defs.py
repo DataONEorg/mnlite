@@ -54,7 +54,8 @@ FILL_FIELDS = [
     'base_url',
     'contact_subject',
     'default_submitter',
-    'default_owner'
+    'default_owner',
+    'sitemap_urls'
 ]
 
 SITEMAP_URLS = {
