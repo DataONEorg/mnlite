@@ -85,11 +85,12 @@ def enter_int(prompt):
     """
     Make sure the user enters an integer value of 1 or greater.
     """
+    i = None
     while True:
         # make sure user enters an int
         try:
             # ask the user for input
-            i =  int(input(prompt))
+            i = int(input(prompt))
             # must be 1 or greater
             assert i >= 1
             # tests ok
