@@ -70,6 +70,7 @@ def user_input():
             while True:
                 # make sure user enters an int
                 try:
+                    # ask the user for input
                     FIELDS[f][1] = int(input(FIELDS[f][0]))
                     break
                 except ValueError as e:
@@ -83,8 +84,9 @@ def user_input():
                     L.warning("The number of database sitemap URLs can't be less than 1.")
         elif f in ('contact_subject', 'default_submitter', 'default_owner'):
             while True:
-                # make sure user enters a valid ORCiD number
+                # ask the user for an ORCiD number
                 FIELDS[f][1] = input(FIELDS[f][0])
+                # make sure user has entered a valid ORCiD number
                 if valid_orcid(FIELDS[f][1]):
                     break
                 else:
@@ -100,6 +102,8 @@ def sitemap_urls(num_urls):
     """
     i = 0
     while i < num_urls:
+        # add URLs one at a time (should only be a few at most)
+        # if we start getting MNs with 10+ sitemap URLs, maybe we change to accept lists
         SITEMAP_URLS[i] = input("Sitemap URL #%s: " % (i+1))
         i += 1
     return SITEMAP_URLS
