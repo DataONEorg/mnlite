@@ -135,4 +135,5 @@ def user_input():
     FIELDS['sitemap_urls'][1] = sitemap_urls(FIELDS['num_sitemap_urls'][1])
     return FIELDS
 
-
+def input_test(fields):
+    return 
