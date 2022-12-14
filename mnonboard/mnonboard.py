@@ -27,4 +27,4 @@ def main(ctx, jsonfile):
         mnutils.input_test(fields)
 
 if __name__ == '__main__':
-    main()
+    main(ctx=None, jsonfile=None)
