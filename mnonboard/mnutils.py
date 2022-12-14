@@ -2,7 +2,7 @@ import json
 import pyshacl
 
 from defs import DEFAULT_JSON, FIELDS, FILL_FIELDS, SITEMAP_URLS
-import logging as L
+from mnonboard import L
 
 def default_json():
     """
@@ -14,8 +14,15 @@ def load_json(loc):
     """
     Load json from file.
     """
-    with open(loc, 'r') as f:
-        return json.load(f)
+    try:
+        with open(loc, 'r') as f:
+            return json.load(f)
+    except FileNotFoundError as e:
+        L.error('File does not exist - %s' % e)
+        exit(1)
+    except Exception as e:
+        L.error('Error: %s' % e)
+        exit(1)
 
 def save_json(loc, jf):
     """
@@ -61,40 +68,6 @@ def valid_orcid(orcid):
         #print('not 19 chars')
         return False
 
-def user_input():
-    """
-    We need a few pieces of information to fill the json fields.
-    """
-    for f in FIELDS:
-        if f in 'num_sitemap_urls':
-            while True:
-                # make sure user enters an int
-                try:
-                    # ask the user for input
-                    FIELDS[f][1] = int(input(FIELDS[f][0]))
-                    break
-                except ValueError as e:
-                    L.warning(e)
-                    print('Please enter an integer.')
-            while True:
-                # make sure user enters 1 or more
-                if FIELDS[f][1] >= 1:
-                    break
-                else:
-                    L.warning("The number of database sitemap URLs can't be less than 1.")
-        elif f in ('contact_subject', 'default_submitter', 'default_owner'):
-            while True:
-                # ask the user for an ORCiD number
-                FIELDS[f][1] = input(FIELDS[f][0])
-                # make sure user has entered a valid ORCiD number
-                if valid_orcid(FIELDS[f][1]):
-                    break
-                else:
-                    print('Please enter a valid ORCiD number (ex: 0000-0000-0000-0000).')
-        else:
-            FIELDS[f][1] = input(FIELDS[f][0])
-    return FIELDS
-
 def sitemap_urls(num_urls):
     """
     Collect the sitemap URLs.
@@ -107,3 +80,58 @@ def sitemap_urls(num_urls):
         SITEMAP_URLS[i] = input("Sitemap URL #%s: " % (i+1))
         i += 1
     return SITEMAP_URLS
+
+def enter_int(prompt):
+    """
+    Make sure the user enters an integer value of 1 or greater.
+    """
+    while True:
+        # make sure user enters an int
+        try:
+            # ask the user for input
+            i =  int(input(prompt))
+            # must be 1 or greater
+            assert i >= 1
+            # tests ok
+            return i
+        except ValueError as e:
+            L.warning(e)
+            print('Please enter an integer.')
+        except AssertionError as e:
+            L.warning("Number of database sitemap URLs can't be less than 1. (%s entered)" % i)
+            print('Please enter 1 or greater.')
+
+def enter_orcid(prompt):
+    """
+    Make sure the user enters an integer value of 1 or greater.
+    """
+    while True:
+        # ask the user for an ORCiD number
+        o = input(prompt)
+        # make sure user has entered a valid ORCiD number
+        if valid_orcid(o):
+            return o
+        else:
+            L.warning("Invalid ORCiD number entered: %s" % o)
+            print('Please enter a valid ORCiD number (ex: 0000-0000-0000-0000).')
+
+def user_input():
+    """
+    We need a few pieces of information to fill the json fields.
+    """
+    for f in FIELDS:
+        if f in 'num_sitemap_urls':
+            FIELDS[f][1] = enter_int(FIELDS[f][0])
+        elif f in ('contact_subject', 'default_submitter', 'default_owner'):
+            FIELDS[f][1] = enter_orcid(FIELDS[f][0])
+        else:
+            FIELDS[f][1] = input(FIELDS[f][0])
+    # add the sitemap URLs field now that we're done with the loops
+    FIELDS['sitemap_urls'] = ['Sitemap URLs: ', {}]
+    # pass the number of mn sitemap URLs to sitemap_urls()
+    # fx will ask the user to enter the URL(s) and return them as a dict
+    # we then store it as the second list item in the 'sitemap_urls' field
+    FIELDS['sitemap_urls'][1] = sitemap_urls(FIELDS['num_sitemap_urls'][1])
+    return FIELDS
+
+
