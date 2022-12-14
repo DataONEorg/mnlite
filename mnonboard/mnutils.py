@@ -1,8 +1,8 @@
 import json
 import pyshacl
 
-from .defs import DEFAULT_JSON, FIELDS, FILL_FIELDS, SITEMAP_URLS
-from . import L
+from defs import DEFAULT_JSON, FIELDS, FILL_FIELDS, SITEMAP_URLS
+import logging as L
 
 def default_json():
     """
