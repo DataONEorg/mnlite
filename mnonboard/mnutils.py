@@ -8,6 +8,7 @@ def default_json():
     """
     A function that spits out a json file to be used in onboarding.
     """
+    L.info('Loading default json template.')
     return json.loads(DEFAULT_JSON)
 
 def load_json(loc):
@@ -53,6 +54,7 @@ def valid_orcid(orcid):
                 else:
                     # fail (not a dash)
                     #print('no dash at %s' % i)
+                    L.warning('ORCiD number failed check (%s has no dash in position %s)' % (orcid, i+1))
                     return False
             try:
                 # int exists in correct position, next test
@@ -60,8 +62,10 @@ def valid_orcid(orcid):
             except ValueError as e:
                 # fail (not an integer)
                 #print('valueerror at %s' % i)
+                L.warning('ORCiD number failed check (%s has no integer in position %s)' % (orcid, i+1))
                 return False
         # pass
+        L.info('ORCiD number passed checks. (%s)' % orcid)
         return True
     else:
         # fail (not 19 characters)
@@ -78,6 +82,7 @@ def sitemap_urls(num_urls):
         # add URLs one at a time (should only be a few at most)
         # if we start getting MNs with 10+ sitemap URLs, maybe we change to accept lists
         SITEMAP_URLS[i] = input("Sitemap URL #%s: " % (i+1))
+        L.info('Sitemap URL #%s: %s' % (i+1, SITEMAP_URLS[i]))
         i += 1
     return SITEMAP_URLS
 
@@ -90,13 +95,15 @@ def enter_int(prompt):
         # make sure user enters an int
         try:
             # ask the user for input
-            i = int(input(prompt))
+            i = input(prompt)
+            L.info('User has entered %s' % i)
+            i = int(i)
             # must be 1 or greater
             assert i >= 1
             # tests ok
             return i
         except ValueError as e:
-            L.warning(e)
+            L.warning('Not an integer. Error text: %s' % e)
             print('Please enter an integer.')
         except AssertionError as e:
             L.warning("Number of database sitemap URLs can't be less than 1. (%s entered)" % i)
@@ -109,6 +116,7 @@ def enter_orcid(prompt):
     while True:
         # ask the user for an ORCiD number
         o = input(prompt)
+        L.info('User has entered ORCiD number %s' % o)
         # make sure user has entered a valid ORCiD number
         if valid_orcid(o):
             return o
@@ -120,6 +128,7 @@ def user_input():
     """
     We need a few pieces of information to fill the json fields.
     """
+    L.info('Collecting user input (mnonboard.mnutils.user_input()).')
     for f in FIELDS:
         if f in 'num_sitemap_urls':
             FIELDS[f][1] = enter_int(FIELDS[f][0])
@@ -136,4 +145,24 @@ def user_input():
     return FIELDS
 
 def input_test(fields):
-    return 
+    # first, test that there are the fields we need
+    L.info('Running mnonboard.mnutils.input_test() on imported json.')
+    for f in FILL_FIELDS:
+        try:
+            if f in ('contact_subject', 'default_submitter', 'default_owner'):
+                # orcid number will be preceded by a https://orcid.org/ url prefix
+                if fields[f][-1] in '/':
+                    L.error('ORCiD number in %s field has a trailing slash.')
+                    print('Please remove the trailing slash (/) from the end of the ORCiD number in field %s' % f)
+                    exit(1)
+                assert valid_orcid(fields[f])
+                L.info('Loaded json info has passed checks.')
+                return
+        except ValueError as e:
+            L.error('No "%s" field found in json.' % f)
+            print('Please add the "%s" field to the json and re-run the script.' % f)
+            exit(1)
+        except AssertionError as e:
+            L.error('Invalid ORCiD number %s in field "%s"' % (fields[f], f))
+            print('Please correct the ORCiD number in field "%s"' % f)
+            exit(1)
