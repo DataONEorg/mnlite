@@ -1,7 +1,7 @@
 import json
 import pyshacl
 
-from defs import DEFAULT_JSON, FIELDS, FILL_FIELDS, SITEMAP_URLS
+from defs import DEFAULT_JSON, FIELDS, FILL_FIELDS, SITEMAP_URLS, ORCID_PREFIX
 from mnonboard import L
 
 def default_json():
@@ -61,6 +61,7 @@ def valid_orcid(orcid):
             try:
                 # int exists in correct position, next test
                 int(orcid[i])
+                continue
             except ValueError as e:
                 # fail (not an integer)
                 #print('valueerror at %s' % i)
@@ -121,7 +122,7 @@ def enter_orcid(prompt):
         L.info('User has entered ORCiD number %s' % o)
         # make sure user has entered a valid ORCiD number
         if valid_orcid(o):
-            return o
+            return ORCID_PREFIX + o
         else:
             L.warning("Invalid ORCiD number entered: %s" % o)
             print('Please enter a valid ORCiD number (ex: 0000-0000-0000-0000).')
@@ -152,14 +153,15 @@ def input_test(fields):
     for f in FILL_FIELDS:
         try:
             if f in ('contact_subject', 'default_submitter', 'default_owner'):
-                # orcid number will be preceded by a https://orcid.org/ url prefix
+                # orcid number will be preceded by a url prefix but no trailing slash
+                if ORCID_PREFIX not in fields[f]:
+                    L.error('ORCiD number in %s field does not have the correct URL prefix.' % (f))
+                    print('Please ensure the correct URL prefix (%s) preceeds the ORCiD number in field %s' % (ORCID_PREFIX,f))
                 if fields[f][-1] in '/':
                     L.error('ORCiD number in %s field has a trailing slash.')
                     print('Please remove the trailing slash (/) from the end of the ORCiD number in field %s' % f)
                     exit(1)
-                assert valid_orcid(fields[f])
-                L.info('Loaded json info has passed checks.')
-                return
+                assert valid_orcid(fields[f].split('/')[-1])
         except ValueError as e:
             L.error('No "%s" field found in json.' % f)
             print('Please add the "%s" field to the json and re-run the script.' % f)
@@ -168,3 +170,5 @@ def input_test(fields):
             L.error('Invalid ORCiD number %s in field "%s"' % (fields[f], f))
             print('Please correct the ORCiD number in field "%s"' % f)
             exit(1)
+    L.info('Loaded json info has passed checks.')
+    return True
