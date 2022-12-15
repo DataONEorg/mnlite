@@ -15,6 +15,7 @@ def load_json(loc):
     """
     Load json from file.
     """
+    L.info('Loading member node json from %s' % loc)
     try:
         with open(loc, 'r') as f:
             return json.load(f)
@@ -29,6 +30,7 @@ def save_json(loc, jf):
     """
     Output json to file.
     """
+    L.info('Writing member node json to %s' % loc)
     with open(loc, 'w') as f:
         json.dump(jf, f)
 
