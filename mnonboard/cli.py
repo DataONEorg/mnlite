@@ -3,7 +3,7 @@ import getopt
 
 import utils
 import info_chx
-from defs import CFG, HELP_TEXT
+from defs import CFG, HELP_TEXT, DEFAULT_JSON
 from mnonboard import L
 from mnonboard import node_path
 from opersist.cli import getOpersistInstance
@@ -16,9 +16,10 @@ def run(cfg):
     Wrapper around opersist that simplifies the process of onboarding a new
     member node to DataONE.
     """
+    fields = DEFAULT_JSON
     if cfg['mode'] is 'user':
         # do the full user-driven info gathering process
-        fields = info_chx.user_input()
+        fields, dbinfo = info_chx.user_input()
     else:
         # grab the info from a json
         fields = utils.load_json(cfg['json_file'])
@@ -28,7 +29,10 @@ def run(cfg):
     loc = node_path(fields['node']['subject'].split('/')[-1])
     # initialize a repository there
     utils.init_repo(loc)
-    
+    for f in ('default_owner', 'default_submitter'):
+        # if mode is json maybe we use scrapy here to get orcid user's name
+        name = 'Test User'
+        utils.new_subject(loc, name, fields[f])
 
 
 def main():
