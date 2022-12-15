@@ -6,9 +6,6 @@ import info_chx
 from defs import CFG, HELP_TEXT, DEFAULT_JSON
 from mnonboard import L
 from mnonboard import node_path
-from opersist.cli import getOpersistInstance
-
-
 
 
 def run(cfg):
@@ -17,7 +14,7 @@ def run(cfg):
     member node to DataONE.
     """
     fields = DEFAULT_JSON
-    if cfg['mode'] is 'user':
+    if cfg['mode'] == 'user':
         # do the full user-driven info gathering process
         fields, dbinfo = info_chx.user_input()
     else:
@@ -31,7 +28,12 @@ def run(cfg):
     utils.init_repo(loc)
     for f in ('default_owner', 'default_submitter'):
         # if mode is json maybe we use scrapy here to get orcid user's name
-        name = 'Test User'
+        try:
+            # try to get the user's name from their orcid record
+            name = info_chx.scr_orcid_name(fields[f])
+        except Exception as e:
+            L.warning('Was not able to scrape name from orcid record %s' % fields[f])
+        
         utils.new_subject(loc, name, fields[f])
 
 
@@ -64,7 +66,6 @@ def main():
             CFG['mode'] = 'json'
             CFG['json_file'] = a
             run(CFG)
-
 
 
 if __name__ == '__main__':
