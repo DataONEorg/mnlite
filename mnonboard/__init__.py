@@ -13,7 +13,7 @@ L = logging.getLogger("main")
 # absolute path of current file
 CUR_PATH_ABS = os.path.dirname(os.path.abspath(__file__))
 
-# relative path to nodes directory
+# relative path from root of mnlite dir to nodes directory
 NODE_PATH_REL = 'instance/nodes/'
 
 def node_path(nodepath=NODE_PATH_REL, curpath=CUR_PATH_ABS):
