@@ -1,6 +1,16 @@
 
 ORCID_PREFIX = 'https://orcid.org/'
 
+CFG = {
+    'load_json': False,
+    'json_file': 'node.json',
+    
+}
+
+HELP_TEXT = """DataONE member node onboard script
+v0.0.1 NCEAS/Ian Nesbitt
+"""
+
 DEFAULT_JSON = r'''{
   "node": {
     "node_id": "",
