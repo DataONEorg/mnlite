@@ -2,9 +2,8 @@
 ORCID_PREFIX = 'https://orcid.org/'
 
 CFG = {
-    'load_json': False,
+    'mode': 'user',
     'json_file': 'node.json',
-    
 }
 
 HELP_TEXT = """DataONE member node onboard script
