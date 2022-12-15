@@ -6,6 +6,7 @@ import pyshacl
 
 from mnonboard import L
 import mnutils
+import info_chx
 from opersist.cli import getOpersistInstance
 
 @click.command()
@@ -20,11 +21,11 @@ def main(ctx, jsonfile):
 
     if jsonfile is None:
         # do the full user-driven info gathering process
-        fields = mnutils.user_input()
+        fields = info_chx.user_input()
     else:
         # grab the info from a json
         fields = mnutils.load_json(jsonfile)
-        mnutils.input_test(fields)
+        info_chx.input_test(fields)
 
 if __name__ == '__main__':
     main(ctx=None, jsonfile=None)
