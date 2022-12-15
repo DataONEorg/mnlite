@@ -8,6 +8,18 @@ CFG = {
 
 HELP_TEXT = """DataONE member node onboard script
 v0.0.1 NCEAS/Ian Nesbitt
+
+Usage: cli [ OPTIONS ]
+where OPTIONS := {
+    -h | --help
+            display this help message
+    -i | --init
+            initialize a new member node from scratch
+    -l | --load
+            initialize a new member node from a json file
+    -d | --dump
+            dump default member node json file to configure manually
+}
 """
 
 DEFAULT_JSON = r'''{
@@ -44,10 +56,12 @@ DEFAULT_JSON = r'''{
 '''
 
 FIELDS = {
-    'node_id': ['Member node identifier (must be unique): ', None],
-    'name': ['Repository name: ', None],
-    'description': ['Repository description: ', None],
-    'base_url': ['Base URL of repository: ', None],
+    'node': {
+        'node_id': ['Member node identifier (must be unique): ', None],
+        'name': ['Repository name: ', None],
+        'description': ['Repository description: ', None],
+        'base_url': ['Base URL of repository: ', None],
+    },
     'contact_subject_name': ['Repository technical contact name: ', None],
     'contact_subject': ["Technical contact's ORCiD number: ", None],
     'default_submitter_name': ['Repository submitter name: ', None],
