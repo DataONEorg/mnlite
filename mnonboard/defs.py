@@ -1,4 +1,5 @@
 
+ORCID_PREFIX = 'https://orcid.org/'
 
 DEFAULT_JSON = r'''{
   "node": {
