@@ -1,3 +1,4 @@
+from spiders import OrcidSpider
 from defs import FIELDS, FILL_FIELDS, SITEMAP_URLS, ORCID_PREFIX
 from mnonboard import L
 
@@ -102,10 +103,13 @@ def user_input():
     """
     L.info('Collecting user input (mnonboard.mnutils.user_input()).')
     for f in FIELDS:
-        if f in 'num_sitemap_urls':
-            FIELDS[f][1] = enter_int(FIELDS[f][0])
+        if f in 'node':
+            for nf in FIELDS[f]:
+                FIELDS[f][nf][1] = input(FIELDS[f][0])
         elif f in ('contact_subject', 'default_submitter', 'default_owner'):
             FIELDS[f][1] = enter_orcid(FIELDS[f][0])
+        elif f in 'num_sitemap_urls':
+            FIELDS[f][1] = enter_int(FIELDS[f][0])
         else:
             FIELDS[f][1] = input(FIELDS[f][0])
     # add the sitemap URLs field now that we're done with the loops
@@ -117,6 +121,9 @@ def user_input():
     return FIELDS
 
 def input_test(fields):
+    """
+    Testing the manually filled json file.
+    """
     # first, test that there are the fields we need
     L.info('Running mnonboard.mnutils.input_test() on imported json.')
     for f in FILL_FIELDS:
@@ -141,3 +148,6 @@ def input_test(fields):
             exit(1)
     L.info('Loaded json info has passed checks.')
     return True
+
+def scr_orcid_name(orcid_url):
+    orcid_spider = OrcidSpider()
