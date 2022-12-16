@@ -35,7 +35,7 @@ def save_json(loc, jf):
     L.info('Writing member node json to %s' % loc)
     try:
         with open(loc, 'w') as f:
-            json.dump(jf, f)
+            json.dump(jf, f, indent=4)
             L.info('File written to %s' % loc)
             return
     except FileExistsError as e:
