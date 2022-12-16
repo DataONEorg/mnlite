@@ -13,10 +13,11 @@ def run(cfg):
     Wrapper around opersist that simplifies the process of onboarding a new
     member node to DataONE.
     """
-    fields = DEFAULT_JSON
+    fields = utils.json.loads(DEFAULT_JSON)
     if cfg['mode'] == 'user':
         # do the full user-driven info gathering process
-        fields, dbinfo = info_chx.user_input()
+        ufields, dbinfo = info_chx.user_input()
+        fields = info_chx.transfer_info(ufields)
     else:
         # grab the info from a json
         fields = utils.load_json(cfg['json_file'])
