@@ -82,6 +82,15 @@ def enter_int(prompt):
             L.warning("Number of database sitemap URLs can't be less than 1. (%s entered)" % i)
             print('Please enter 1 or greater.')
 
+def orcid_name(orcid, f):
+    """
+    Ask the user for the name of an orcid number.
+    """
+    L.info('Asking for name of ORCiD user %s (%s)' % (orcid, f))
+    name = input('Please enter the name of ORCiD user %s (%s): ' % (orcid, f))
+    L.info('User has entered %s' % name)
+    return name
+
 def enter_orcid(prompt):
     """
     Make sure the user enters an integer value of 1 or greater.

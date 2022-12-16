@@ -27,7 +27,7 @@ def run(cfg):
     # initialize a repository there
     utils.init_repo(loc)
     for f in ('default_owner', 'default_submitter'):
-        name = input('Please enter the name of ORCiD user %s (%s): ' % (fields[f], f))
+        name = info_chx.orcid_name(fields[f], f)
         utils.new_subject(loc, name, fields[f])
 
 
