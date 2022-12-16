@@ -27,13 +27,7 @@ def run(cfg):
     # initialize a repository there
     utils.init_repo(loc)
     for f in ('default_owner', 'default_submitter'):
-        # if mode is json maybe we use scrapy here to get orcid user's name
-        try:
-            # try to get the user's name from their orcid record
-            name = info_chx.scr_orcid_name(fields[f])
-        except Exception as e:
-            L.warning('Was not able to scrape name from orcid record %s' % fields[f])
-        
+        name = input('Please enter the name of ORCiD user %s (%s): ' % (fields[f], f))
         utils.new_subject(loc, name, fields[f])
 
 

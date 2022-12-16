@@ -148,6 +148,3 @@ def input_test(fields):
             exit(1)
     L.info('Loaded json info has passed checks.')
     return True
-
-def scr_orcid_name(orcid_url):
-    orcid_spider = OrcidSpider()
