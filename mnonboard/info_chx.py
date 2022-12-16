@@ -1,5 +1,6 @@
-from spiders import OrcidSpider
-from defs import FIELDS, FILL_FIELDS, SITEMAP_URLS, ORCID_PREFIX
+import json
+
+from defs import FIELDS, FILL_FIELDS, SITEMAP_URLS, ORCID_PREFIX, DEFAULT_JSON
 from mnonboard import L
 
 # user info checks
@@ -128,6 +129,18 @@ def user_input():
     # we then store it as the second list item in the 'sitemap_urls' field
     FIELDS['sitemap_urls'][1] = sitemap_urls(FIELDS['num_sitemap_urls'][1])
     return FIELDS
+
+def transfer_info(ufields):
+    """
+    Take a user fields dict and translate it to the default json object.
+    """
+    fields = json.loads(DEFAULT_JSON)
+    for f in ufields:
+        if f in 'node':
+            for nf in ufields[f]:
+                fields[f][nf] = ufields[f][nf]
+        fields[f] = ufields[f]
+    return fields
 
 def input_test(fields):
     """
