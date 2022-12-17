@@ -3,17 +3,16 @@ import getopt
 
 import utils
 import info_chx
-from defs import CFG, HELP_TEXT, DEFAULT_JSON
+from defs import CFG, HELP_TEXT
 from mnonboard import L
 from mnonboard import node_path
-
 
 def run(cfg):
     """
     Wrapper around opersist that simplifies the process of onboarding a new
     member node to DataONE.
     """
-    fields = utils.json.loads(DEFAULT_JSON)
+    fields = utils.default_json()
     if cfg['mode'] == 'user':
         # do the full user-driven info gathering process
         ufields, dbinfo = info_chx.user_input()
@@ -64,4 +63,4 @@ def main():
 
 
 if __name__ == '__main__':
-    main() # type: ignore
+    main()
