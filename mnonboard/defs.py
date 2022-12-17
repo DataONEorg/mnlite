@@ -1,3 +1,4 @@
+from mnonboard import __version__
 
 ORCID_PREFIX = 'https://orcid.org/'
 
@@ -7,7 +8,7 @@ CFG = {
 }
 
 HELP_TEXT = """DataONE member node onboard script
-v0.0.1 NCEAS/Ian Nesbitt
+%s NCEAS/Ian Nesbitt
 
 Usage: cli [ OPTIONS ]
 where OPTIONS := {
@@ -20,7 +21,7 @@ where OPTIONS := {
     -d | --dump
             dump default member node json file to configure manually
 }
-"""
+""" % __version__
 
 DEFAULT_JSON = r'''{
   "node": {
