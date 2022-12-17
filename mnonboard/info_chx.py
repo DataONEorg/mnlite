@@ -135,11 +135,13 @@ def transfer_info(ufields):
     Take a user fields dict and translate it to the default json object.
     """
     fields = json.loads(DEFAULT_JSON)
+    L.info('Adding user fields to default fields.')
     for f in ufields:
         if f in 'node':
             for nf in ufields[f]:
                 fields[f][nf] = ufields[f][nf]
         fields[f] = ufields[f]
+    L.info('Successfully merged. Returning json object.')
     return fields
 
 def input_test(fields):
