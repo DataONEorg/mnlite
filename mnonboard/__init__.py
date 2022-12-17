@@ -1,7 +1,12 @@
 import os
 import logging
+from datetime import datetime
 
 from opersist.cli import LOG_LEVELS, LOG_DATE_FORMAT, LOG_FORMAT
+
+LOG_DIR = '/var/log/mnlite/'
+LOG_NAME = 'mnonboard-%s.log' % datetime.now().strftime('%Y-%m-%d')
+LOG_LOC = os.path.join(LOG_DIR, LOG_NAME)
 
 logging.basicConfig(
     level=LOG_LEVELS.get("INFO", logging.INFO),
@@ -9,6 +14,14 @@ logging.basicConfig(
     datefmt=LOG_DATE_FORMAT,
 )
 L = logging.getLogger("main")
+formatter = logging.Formatter(fmt=LOG_FORMAT, datefmt=LOG_DATE_FORMAT)
+# this initializes logging to file
+f = logging.FileHandler(LOG_LOC)
+f.setLevel('INFO')
+f.setFormatter(formatter)
+# warnings also go to file
+# initialize logging
+L.addHandler(f)
 
 # absolute path of current file
 CUR_PATH_ABS = os.path.dirname(os.path.abspath(__file__))
