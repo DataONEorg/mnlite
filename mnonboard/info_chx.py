@@ -52,8 +52,9 @@ def valid_url_prefix(url, prefix, f):
     """
     # orcid number will be preceded by a url prefix but no trailing slash
     if prefix not in url:
-        L.error('ORCiD number in %s field does not have the correct URL prefix.' % (f))
+        L.error('ORCiD number in %s field does not have the correct URL prefix. (URL: %s)' % (f, url))
         print('Please ensure the correct URL prefix (%s) preceeds the ORCiD number in field %s' % (ORCID_PREFIX,f))
+        exit(1)
     if url[-1] in '/':
         L.error('ORCiD number in %s field has a trailing slash.')
         print('Please remove the trailing slash (/) from the end of the ORCiD number in field %s' % f)
