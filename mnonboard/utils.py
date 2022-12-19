@@ -45,6 +45,12 @@ def save_json(loc, jf):
         L.error('Error: %s' % e)
         exit(1)
 
+def dumps_json(js):
+    """
+    Quick and dirty way to output formatted json.
+    """
+    print(json.dumps(js, indent=4))
+
 def init_repo(loc):
     '''
     Initialize a new instance using opersist.

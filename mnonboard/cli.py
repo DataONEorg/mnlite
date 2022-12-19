@@ -25,6 +25,8 @@ def run(cfg):
     # get the node path using the end of the path in the 'subject' field
     loc = node_path(fields['node']['subject'].split('/')[-1])
     # initialize a repository there
+    json.dumps(fields, indent=4)
+    print(loc)
     utils.init_repo(loc)
     for f in ('default_owner', 'default_submitter'):
         name = info_chx.orcid_name(fields[f], f)
