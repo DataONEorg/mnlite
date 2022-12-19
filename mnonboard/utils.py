@@ -49,7 +49,7 @@ def dumps_json(js):
     """
     Quick and dirty way to output formatted json.
     """
-    print(json.dumps(js, indent=4))
+    print(json.dumps(js, indent=2))
 
 def init_repo(loc):
     '''
