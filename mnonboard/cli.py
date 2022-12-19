@@ -38,7 +38,7 @@ def main():
     # get arguments
     try:
         opts = getopt.getopt(sys.argv[1:], 'hid:l:',
-            ['help', 'init', 'dump=' 'load=']
+            ['help', 'init', 'dump=', 'load=']
             )[0]
     except Exception as e:
         L.error('Error: %s' % e)
