@@ -46,6 +46,20 @@ def valid_orcid(orcid):
         #print('not 19 chars')
         return False
 
+def valid_url_prefix(url, prefix, f):
+    """
+    Validate a URL prefix (such as for an ORCiD number).
+    """
+    # orcid number will be preceded by a url prefix but no trailing slash
+    if prefix not in url:
+        L.error('ORCiD number in %s field does not have the correct URL prefix.' % (f))
+        print('Please ensure the correct URL prefix (%s) preceeds the ORCiD number in field %s' % (ORCID_PREFIX,f))
+    if url[-1] in '/':
+        L.error('ORCiD number in %s field has a trailing slash.')
+        print('Please remove the trailing slash (/) from the end of the ORCiD number in field %s' % f)
+        exit(1)
+    return
+
 def sitemap_urls(num_urls):
     """
     Collect the sitemap URLs.
@@ -150,25 +164,23 @@ def input_test(fields):
     """
     # first, test that there are the fields we need
     L.info('Running mnonboard.mnutils.input_test() on imported json.')
-    for f in FILL_FIELDS:
-        try:
-            if f in ('contact_subject', 'default_submitter', 'default_owner'):
-                # orcid number will be preceded by a url prefix but no trailing slash
-                if ORCID_PREFIX not in fields[f]:
-                    L.error('ORCiD number in %s field does not have the correct URL prefix.' % (f))
-                    print('Please ensure the correct URL prefix (%s) preceeds the ORCiD number in field %s' % (ORCID_PREFIX,f))
-                if fields[f][-1] in '/':
-                    L.error('ORCiD number in %s field has a trailing slash.')
-                    print('Please remove the trailing slash (/) from the end of the ORCiD number in field %s' % f)
-                    exit(1)
+    f = ''
+    try:
+        # test orcid records
+        for f in FILL_FIELDS:
+            if f in ['default_submitter', 'default_owner']:
+                assert valid_url_prefix(fields[f], ORCID_PREFIX, f)
                 assert valid_orcid(fields[f].split('/')[-1])
-        except ValueError as e:
-            L.error('No "%s" field found in json.' % f)
-            print('Please add the "%s" field to the json and re-run the script.' % f)
-            exit(1)
-        except AssertionError as e:
-            L.error('Invalid ORCiD number %s in field "%s"' % (fields[f], f))
-            print('Please correct the ORCiD number in field "%s"' % f)
-            exit(1)
+        f = "'node' -> 'contact_subject'"
+        assert valid_url_prefix(fields['node']['contact_subject'], ORCID_PREFIX, f)
+        assert valid_orcid(fields['node']['contact_subject'].split('/')[-1])
+    except ValueError as e:
+        L.error('No "%s" field found in json.' % f)
+        print('Please add the "%s" field to the json and re-run the script.' % f)
+        exit(1)
+    except AssertionError as e:
+        L.error('Invalid ORCiD number %s in field "%s"' % (fields[f], f))
+        print('Please correct the ORCiD number in field "%s"' % f)
+        exit(1)
     L.info('Loaded json info has passed checks.')
     return True
