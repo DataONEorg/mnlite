@@ -18,9 +18,9 @@ def load_json(loc):
     L.info('Loading member node json from %s' % loc)
     try:
         with open(loc, 'r') as f:
-            json.load(f)
+            j = json.load(f)
             L.info('File loaded from %s' % loc)
-            return
+            return j
     except FileNotFoundError as e:
         L.error('File does not exist - %s' % e)
         exit(1)
