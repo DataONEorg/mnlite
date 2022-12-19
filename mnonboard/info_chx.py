@@ -58,7 +58,7 @@ def valid_url_prefix(url, prefix, f):
         L.error('ORCiD number in %s field has a trailing slash.')
         print('Please remove the trailing slash (/) from the end of the ORCiD number in field %s' % f)
         exit(1)
-    return
+    return True
 
 def sitemap_urls(num_urls):
     """
