@@ -52,10 +52,10 @@ def main():
             # do data gathering
             CFG['mode'] = 'user'
             run(CFG)
-        if o in ('-d', '--dump='):
+        if o in ('-d', '--dump'):
             # dump default json to file
             utils.save_json(a, utils.default_json())
-        if o in ('-l', '--load='):
+        if o in ('-l', '--load'):
             # load from json file
             CFG['mode'] = 'json'
             CFG['json_file'] = a
