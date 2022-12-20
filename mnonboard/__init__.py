@@ -6,9 +6,13 @@ from opersist.cli import LOG_LEVELS, LOG_DATE_FORMAT, LOG_FORMAT
 
 __version__ = 'v0.0.1'
 
+FN_DATE = datetime.now().strftime('%Y-%m-%d')
+YM_DATE = datetime.now().strftime('%Y-%m')
 LOG_DIR = '/var/log/mnlite/'
-LOG_NAME = 'mnonboard-%s.log' % datetime.now().strftime('%Y-%m-%d')
+LOG_NAME = 'mnonboard-%s.log' % FN_DATE
 LOG_LOC = os.path.join(LOG_DIR, LOG_NAME)
+
+HARVEST_LOG_NAME = '-crawl-%s.log' % YM_DATE
 
 def start_logging():
     logging.basicConfig(
@@ -35,11 +39,3 @@ CUR_PATH_ABS = os.path.dirname(os.path.abspath(__file__))
 
 # relative path from root of mnlite dir to nodes directory
 NODE_PATH_REL = 'instance/nodes/'
-
-def node_path(nodepath=NODE_PATH_REL, curpath=CUR_PATH_ABS, nodedir=''):
-    """
-    Get the absolute path of the nodes directory where new members will go.
-    Currently the nodes directory lives at `../instance/nodes/` (relative to
-    the mnonboard dir that this file is in).
-    """
-    return os.path.abspath(os.path.join(curpath, '../', nodepath, nodedir))

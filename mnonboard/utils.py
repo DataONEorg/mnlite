@@ -1,8 +1,9 @@
+import os
 import json
 import subprocess
 
 from defs import DEFAULT_JSON
-from mnonboard import L
+from mnonboard import L, NODE_PATH_REL, CUR_PATH_ABS, LOG_DIR, HARVEST_LOG_NAME
 
 def default_json():
     """
@@ -51,6 +52,14 @@ def dumps_json(js):
     """
     print(json.dumps(js, indent=2))
 
+def node_path(nodepath=NODE_PATH_REL, curpath=CUR_PATH_ABS, nodedir=''):
+    """
+    Get the absolute path of the nodes directory where new members will go.
+    Currently the nodes directory lives at `../instance/nodes/` (relative to
+    the mnonboard dir that this file is in).
+    """
+    return os.path.abspath(os.path.join(curpath, '../', nodepath, nodedir))
+
 def init_repo(loc):
     '''
     Initialize a new instance using opersist.
@@ -61,10 +70,23 @@ def init_repo(loc):
         L.error('opersist init command failed (node folder: %s): %s' % (loc, e))
         exit(1)
 
-def new_subject(loc, name, orcid):
+def new_subject(loc, name, value):
     try:
-        subprocess.run(['opersist', '-f', loc, 'sub', '-n', '"%s"' % name, '-s', orcid], check=True)
+        subprocess.run(['opersist', '-f', loc, 'sub', '-n', '"%s"' % name, '-s', value], check=True)
     except Exception as e:
-        L.error('opersist subject creation command failed for %s (%s): %s' % (name, orcid, e))
+        L.error('opersist subject creation command failed for %s (%s): %s' % (name, value, e))
         exit(1)
 
+def restart_mnlite():
+    """
+    Subprocess call to restart the mnlite system service. Requires sudo.
+    """
+    subprocess.run(['sudo', 'systemctl', 'restart', 'mnlite.service'], check=True)
+
+def harvest_data(loc, mn_name):
+    """
+    
+    """
+    log_loc = os.path.join(LOG_DIR, mn_name + HARVEST_LOG_NAME)
+    subprocess.run(['scrapy', 'crawl', 'JsonldSpider', '-s',
+                    'STORE_PATH=%s' % loc, '>', log_loc, '2>&1'])
