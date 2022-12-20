@@ -3,6 +3,7 @@ import getopt
 
 import utils
 import info_chx
+import data_chx
 from defs import CFG, HELP_TEXT
 from mnonboard import L
 
@@ -49,6 +50,7 @@ def run(cfg):
     # run scrapy to harvest metadata (step 10)
     utils.harvest_data(loc, end_node_subj)
     # now run tests
+    data_chx.test_mdata()
 
 
 def main():
