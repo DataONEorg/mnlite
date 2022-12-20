@@ -65,6 +65,7 @@ def init_repo(loc):
     Initialize a new instance using opersist.
     '''
     try:
+        L.info('Using opersist to init new member node folder: %s' % loc)
         subprocess.run(['opersist', '-f', loc, 'init'], check=True)
     except Exception as e:
         L.error('opersist init command failed (node folder: %s): %s' % (loc, e))
@@ -72,6 +73,7 @@ def init_repo(loc):
 
 def new_subject(loc, name, value):
     try:
+        L.info('opersist creating new subject. Name: %s Value: %s Location: %s' % (name, value, loc))
         subprocess.run(['opersist', '-f', loc, 'sub', '-n', '"%s"' % name, '-s', value], check=True)
     except Exception as e:
         L.error('opersist subject creation command failed for %s (%s): %s' % (name, value, e))
@@ -81,12 +83,18 @@ def restart_mnlite():
     """
     Subprocess call to restart the mnlite system service. Requires sudo.
     """
+    L.info('Restarting mnlite systemctl service...')
     subprocess.run(['sudo', 'systemctl', 'restart', 'mnlite.service'], check=True)
+    L.info('Done.')
 
 def harvest_data(loc, mn_name):
     """
     
     """
     log_loc = os.path.join(LOG_DIR, mn_name + HARVEST_LOG_NAME)
+    L.info('Starting scrapy crawl, saving to %s' % (loc))
+    L.info('scrapy log location is %s' % (log_loc))
     subprocess.run(['scrapy', 'crawl', 'JsonldSpider', '-s',
-                    'STORE_PATH=%s' % loc, '>', log_loc, '2>&1'])
+                    'STORE_PATH=%s' % loc, '>', log_loc, '2>&1'],
+                    check=True)
+    L.info('scrapy crawl complete.')
