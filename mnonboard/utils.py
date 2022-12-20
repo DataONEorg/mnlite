@@ -56,15 +56,15 @@ def init_repo(loc):
     Initialize a new instance using opersist.
     '''
     try:
-        assert subprocess.call('opersist -f %s init' % (loc)) == 0
-    except AssertionError as e:
+        subprocess.run(['opersist', '-f', loc, 'init'], check=True)
+    except Exception as e:
         L.error('opersist init command failed (node folder: %s): %s' % (loc, e))
         exit(1)
 
 def new_subject(loc, name, orcid):
     try:
-        assert subprocess.call('opersist -f %s sub -n "%s" -s %s' % (loc, name, orcid)) == 0
-    except AssertionError as e:
+        subprocess.run(['opersist', '-f', loc, 'sub', '-n', '"%s"' % name, '-s', orcid], check=True)
+    except Exception as e:
         L.error('opersist subject creation command failed for %s (%s): %s' % (name, orcid, e))
         exit(1)
 
