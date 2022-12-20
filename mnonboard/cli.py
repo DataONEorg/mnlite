@@ -23,24 +23,22 @@ def run(cfg):
         fields = utils.load_json(cfg['json_file'])
         info_chx.input_test(fields)
         # still need to ask the user for some names
-        for f in ('default_owner', 'default_submitter'):
-            names[f] = info_chx.orcid_name(fields[f], f)
         f = 'contact_subject'
-        names[f] = info_chx.orcid_name(fields['node'][f], f)
+        names[f+'_name'] = info_chx.orcid_name(fields['node'][f], f)
+        for f in ('default_owner', 'default_submitter'):
+            names[f+'_name'] = info_chx.orcid_name(fields[f], f)
     # now we're cooking
     # get the node path using the end of the path in the 'subject' field (differs from operation.md documentation)
     end_node_subj = fields['node']['subject'].split('/')[-1]
     loc = utils.node_path(nodedir=end_node_subj)
-    utils.dumps_json(fields)
-    print(names)
     # initialize a repository there (step 5)
     utils.init_repo(loc)
     for f in ('default_owner', 'default_submitter'):
         # add a subject for owner and submitter (may not be necessary)
-        utils.new_subject(loc=loc, name=names[f], value=fields[f])
+        utils.new_subject(loc=loc, name=names[f+'_name'], value=fields[f])
     f = 'contact_subject'
     # add subject for technical contact (step 6)
-    utils.new_subject(loc=loc, name=names[f], value=fields['node'][f])
+    utils.new_subject(loc=loc, name=names[f+'_name'], value=fields['node'][f])
     # add node as a subject (step 7)
     utils.new_subject(loc=loc, name=end_node_subj, value=fields['node']['node_id'])
     # okay, now overwrite the default node.json with our new one (step 8)
