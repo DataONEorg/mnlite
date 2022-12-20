@@ -5,6 +5,17 @@ from mnonboard import L
 
 # user info checks
 
+def req_input(desc):
+    while True:
+        i = input(desc)
+        L.info('User entry for %s"%s"' % (desc, i))
+        if i != '':
+            return i
+        else:
+            desc_nocolon = desc.split(':')[0]
+            L.warning('Empty string entered.')
+            print('Please enter a value for %s.' % desc_nocolon)
+
 def valid_orcid(orcid):
     """
     Checks the validity of an ORCiD number.
@@ -51,8 +62,9 @@ def base_url(descrip):
     Validate the base URL of the member node. Should include trailing slash.
     """
     while True:
-        url = input(descrip)
+        url = req_input(descrip)
         if url[-1] in '/':
+            L.info('Base URL is %s' % url)
             return url
         else:
             L.warning('Base URL must contain a trailing slash. Please try again.')
@@ -81,7 +93,7 @@ def sitemap_urls(num_urls):
     while i < num_urls:
         # add URLs one at a time (should only be a few at most)
         # if we start getting MNs with 10+ sitemap URLs, maybe we change to accept lists
-        SITEMAP_URLS[i] = input("Sitemap URL #%s: " % (i+1))
+        SITEMAP_URLS[i] = req_input("Sitemap URL #%s: " % (i+1))
         L.info('Sitemap URL #%s: %s' % (i+1, SITEMAP_URLS[i]))
         i += 1
     return SITEMAP_URLS
@@ -114,7 +126,7 @@ def orcid_name(orcid, f):
     Ask the user for the name of an orcid number.
     """
     L.info('Asking for name of %s (ORCiD number %s)' % (f, orcid))
-    name = input('Please enter the name of %s (ORCiD number %s): ' % (f, orcid))
+    name = req_input('Please enter the name of %s (ORCiD number %s): ' % (f, orcid))
     L.info('User has entered "%s"' % name)
     return name
 
@@ -124,8 +136,7 @@ def enter_orcid(prompt):
     """
     while True:
         # ask the user for an ORCiD number
-        o = input(prompt)
-        L.info('User has entered ORCiD number %s' % o)
+        o = req_input(prompt)
         # make sure user has entered a valid ORCiD number
         if valid_orcid(o):
             return ORCID_PREFIX + o
@@ -147,22 +158,22 @@ def user_input():
                 if nf in ['contact_subject']:
                     FIELDS[f][nf][1] = enter_orcid(FIELDS[f][nf][0])
                 elif '_name' in nf:
-                    names[nf] = input(FIELDS[f][nf][0])
+                    names[nf] = req_input(FIELDS[f][nf][0])
                 elif f in 'base_url':
                     baseurl = base_url(FIELDS[f][0])
                     FIELDS[f][nf][1] = baseurl
                     # set the subject field as the base_url without trailing slash
                     FIELDS['node']['subject'] = baseurl[:-1]
                 else:
-                    FIELDS[f][nf][1] = input(FIELDS[f][nf][0])
+                    FIELDS[f][nf][1] = req_input(FIELDS[f][nf][0])
         elif f in ('default_submitter', 'default_owner'):
             FIELDS[f][1] = enter_orcid(FIELDS[f][0])
         elif f in 'num_sitemap_urls':
             FIELDS[f][1] = enter_int(FIELDS[f][0])
         elif '_name' in f:
-            names[f] = input(FIELDS[f][0])
+            names[f] = req_input(FIELDS[f][0])
         else:
-            FIELDS[f][1] = input(FIELDS[f][0])
+            FIELDS[f][1] = req_input(FIELDS[f][0])
     # add the sitemap URLs field now that we're done with the loops
     FIELDS['sitemap_urls'] = ['Sitemap URLs: ', {}]
     # pass the number of mn sitemap URLs to sitemap_urls()
@@ -177,11 +188,15 @@ def transfer_info(ufields):
     """
     fields = json.loads(DEFAULT_JSON)
     L.info('Adding user fields to default fields.')
+    print(ufields)
     for f in ufields:
-        if f in 'node':
+        # take fields we want, ignore fields we don't want
+        if f in ['node', 'spider']:
             for nf in ufields[f]:
-                fields[f][nf] = ufields[f][nf]
-        fields[f] = ufields[f]
+                if '_name' not in nf:
+                    fields[f][nf] = ufields[f][nf][1]
+        elif ('_name' not in f) and ('num_' not in f):
+            fields[f] = ufields[f][1]
     L.info('Successfully merged. Returning json object.')
     return fields
 
