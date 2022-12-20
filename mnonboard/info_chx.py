@@ -2,14 +2,20 @@ import json
 
 from defs import FIELDS, FILL_FIELDS, SITEMAP_URLS, ORCID_PREFIX, DEFAULT_JSON
 from mnonboard import L
+from opersist.utils import JSON_TIME_FORMAT, dtnow
 
 # user info checks
+def not_empty(f):
+    """
+    Test whether a string is empty.
+    """
+    return f != ''
 
 def req_input(desc):
     while True:
         i = input(desc)
         L.info('User entry for %s"%s"' % (desc, i))
-        if i != '':
+        if not_empty(i):
             return i
         else:
             desc_nocolon = desc.split(':')[0]
@@ -92,8 +98,8 @@ def sitemap_urls(num_urls):
     i = 0
     while i < num_urls:
         # add URLs one at a time (should only be a few at most)
-        # if we start getting MNs with 10+ sitemap URLs, maybe we change to accept lists
-        SITEMAP_URLS[i] = req_input("Sitemap URL #%s: " % (i+1))
+        # if we start getting MNs with 10+ sitemap URLs, maybe we change to accept formatted lists from the user
+        SITEMAP_URLS.append(req_input("Sitemap URL #%s: " % (i+1)))
         L.info('Sitemap URL #%s: %s' % (i+1, SITEMAP_URLS[i]))
         i += 1
     return SITEMAP_URLS
@@ -149,6 +155,7 @@ def user_input():
     We need a few pieces of information to fill the json fields.
     """
     names = {}
+    baseurl = ''
     L.info('Collecting user input (mnonboard.mnutils.user_input()).')
     for f in FIELDS:
         # the lowest level of the dict/json structure
@@ -158,12 +165,15 @@ def user_input():
                 if nf in ['contact_subject']:
                     FIELDS[f][nf][1] = enter_orcid(FIELDS[f][nf][0])
                 elif '_name' in nf:
+                    # put the contact subject name in a different dict
                     names[nf] = req_input(FIELDS[f][nf][0])
-                elif f in 'base_url':
-                    baseurl = base_url(FIELDS[f][0])
+                elif nf in 'base_url':
+                    # get the base url
+                    baseurl = base_url(FIELDS[f][nf][0])
                     FIELDS[f][nf][1] = baseurl
+                elif nf in 'subject':
                     # set the subject field as the base_url without trailing slash
-                    FIELDS['node']['subject'] = baseurl[:-1]
+                    FIELDS[f][nf][1] = baseurl[:-1]
                 else:
                     FIELDS[f][nf][1] = req_input(FIELDS[f][nf][0])
         elif f in ('default_submitter', 'default_owner'):
@@ -175,11 +185,12 @@ def user_input():
         else:
             FIELDS[f][1] = req_input(FIELDS[f][0])
     # add the sitemap URLs field now that we're done with the loops
-    FIELDS['sitemap_urls'] = ['Sitemap URLs: ', {}]
+    FIELDS['spider'] = {}
+    FIELDS['spider']['sitemap_urls'] = ['Sitemap URLs: ', []]
     # pass the number of mn sitemap URLs to sitemap_urls()
     # fx will ask the user to enter the URL(s) and return them as a dict
     # we then store it as the second list item in the 'sitemap_urls' field
-    FIELDS['sitemap_urls'][1] = sitemap_urls(FIELDS['num_sitemap_urls'][1])
+    FIELDS['spider']['sitemap_urls'][1] = sitemap_urls(FIELDS['num_sitemap_urls'][1])
     return FIELDS, names
 
 def transfer_info(ufields):
@@ -188,7 +199,6 @@ def transfer_info(ufields):
     """
     fields = json.loads(DEFAULT_JSON)
     L.info('Adding user fields to default fields.')
-    print(ufields)
     for f in ufields:
         # take fields we want, ignore fields we don't want
         if f in ['node', 'spider']:
@@ -197,6 +207,7 @@ def transfer_info(ufields):
                     fields[f][nf] = ufields[f][nf][1]
         elif ('_name' not in f) and ('num_' not in f):
             fields[f] = ufields[f][1]
+    fields['created'] = dtnow().strftime(JSON_TIME_FORMAT)
     L.info('Successfully merged. Returning json object.')
     return fields
 
@@ -204,15 +215,14 @@ def input_test(fields):
     """
     Testing the manually filled json file.
     """
-    # first, test that there are the fields we need
     L.info('Running mnonboard.mnutils.input_test() on imported json.')
+    # first, test that there are the fields we need
     f = ''
     try:
         # test orcid records
-        for f in FILL_FIELDS:
-            if f in ['default_submitter', 'default_owner']:
-                assert valid_url_prefix(fields[f], ORCID_PREFIX, f)
-                assert valid_orcid(fields[f].split('/')[-1])
+        for f in ['default_submitter', 'default_owner']:
+            assert valid_url_prefix(fields[f], ORCID_PREFIX, f)
+            assert valid_orcid(fields[f].split('/')[-1])
         f = "'node' -> 'contact_subject'"
         assert valid_url_prefix(fields['node']['contact_subject'], ORCID_PREFIX, f)
         assert valid_orcid(fields['node']['contact_subject'].split('/')[-1])
