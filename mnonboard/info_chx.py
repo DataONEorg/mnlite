@@ -102,9 +102,9 @@ def orcid_name(orcid, f):
     """
     Ask the user for the name of an orcid number.
     """
-    L.info('Asking for name of ORCiD user %s (%s)' % (orcid, f))
-    name = input('Please enter the name of ORCiD user %s (%s): ' % (orcid, f))
-    L.info('User has entered %s' % name)
+    L.info('Asking for name of %s (ORCiD number %s)' % (f, orcid))
+    name = input('Please enter the name of %s (ORCiD number %s): ' % (f, orcid))
+    L.info('User has entered "%s"' % name)
     return name
 
 def enter_orcid(prompt):
@@ -128,10 +128,15 @@ def user_input():
     """
     L.info('Collecting user input (mnonboard.mnutils.user_input()).')
     for f in FIELDS:
+        # the lowest level of the dict/json structure
         if f in 'node':
             for nf in FIELDS[f]:
-                FIELDS[f][nf][1] = input(FIELDS[f][0])
-        elif f in ('contact_subject', 'default_submitter', 'default_owner'):
+                # the second level beneath 'node'
+                if nf in ['contact_subject']:
+                    FIELDS[f][nf][1] = enter_orcid(FIELDS[f][nf][0])
+                else:
+                    FIELDS[f][nf][1] = input(FIELDS[f][nf][0])
+        elif f in ('default_submitter', 'default_owner'):
             FIELDS[f][1] = enter_orcid(FIELDS[f][0])
         elif f in 'num_sitemap_urls':
             FIELDS[f][1] = enter_int(FIELDS[f][0])
