@@ -126,6 +126,7 @@ def user_input():
     """
     We need a few pieces of information to fill the json fields.
     """
+    names = {}
     L.info('Collecting user input (mnonboard.mnutils.user_input()).')
     for f in FIELDS:
         # the lowest level of the dict/json structure
@@ -134,12 +135,16 @@ def user_input():
                 # the second level beneath 'node'
                 if nf in ['contact_subject']:
                     FIELDS[f][nf][1] = enter_orcid(FIELDS[f][nf][0])
+                elif '_name' in nf:
+                    names[nf] = input(FIELDS[f][nf][0])
                 else:
                     FIELDS[f][nf][1] = input(FIELDS[f][nf][0])
         elif f in ('default_submitter', 'default_owner'):
             FIELDS[f][1] = enter_orcid(FIELDS[f][0])
         elif f in 'num_sitemap_urls':
             FIELDS[f][1] = enter_int(FIELDS[f][0])
+        elif '_name' in f:
+            names[f] = input(FIELDS[f][0])
         else:
             FIELDS[f][1] = input(FIELDS[f][0])
     # add the sitemap URLs field now that we're done with the loops
@@ -148,7 +153,7 @@ def user_input():
     # fx will ask the user to enter the URL(s) and return them as a dict
     # we then store it as the second list item in the 'sitemap_urls' field
     FIELDS['sitemap_urls'][1] = sitemap_urls(FIELDS['num_sitemap_urls'][1])
-    return FIELDS
+    return FIELDS, names
 
 def transfer_info(ufields):
     """
