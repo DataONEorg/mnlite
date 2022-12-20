@@ -46,6 +46,17 @@ def valid_orcid(orcid):
         #print('not 19 chars')
         return False
 
+def base_url(descrip):
+    """
+    Validate the base URL of the member node. Should include trailing slash.
+    """
+    while True:
+        url = input(descrip)
+        if url[-1] in '/':
+            return url
+        else:
+            L.warning('Base URL must contain a trailing slash. Please try again.')
+
 def valid_url_prefix(url, prefix, f):
     """
     Validate a URL prefix (such as for an ORCiD number).
@@ -137,6 +148,11 @@ def user_input():
                     FIELDS[f][nf][1] = enter_orcid(FIELDS[f][nf][0])
                 elif '_name' in nf:
                     names[nf] = input(FIELDS[f][nf][0])
+                elif f in 'base_url':
+                    baseurl = base_url(FIELDS[f][0])
+                    FIELDS[f][nf][1] = baseurl
+                    # set the subject field as the base_url without trailing slash
+                    FIELDS['node']['subject'] = baseurl[:-1]
                 else:
                     FIELDS[f][nf][1] = input(FIELDS[f][nf][0])
         elif f in ('default_submitter', 'default_owner'):
