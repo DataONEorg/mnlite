@@ -23,14 +23,15 @@ def run(cfg):
         info_chx.input_test(fields)
     # now we're cooking
     # get the node path using the end of the path in the 'subject' field
-    loc = node_path(fields['node']['subject'].split('/')[-1])
+    loc = node_path(nodedir=fields['node']['subject'].split('/')[-1])
     # initialize a repository there
-    json.dumps(fields, indent=4)
-    print(loc)
+    utils.dumps_json(fields)
     utils.init_repo(loc)
     for f in ('default_owner', 'default_submitter'):
         name = info_chx.orcid_name(fields[f], f)
         utils.new_subject(loc, name, fields[f])
+    name = info_chx.orcid_name(fields['node']['contact_subject'], ['contact_subject'])
+    utils.new_subject(loc, name, fields['node']['contact_subject'])
 
 
 def main():
