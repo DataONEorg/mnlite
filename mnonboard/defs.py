@@ -62,6 +62,7 @@ FIELDS = {
         'name': ['Repository name: ', None],
         'description': ['Repository description: ', None],
         'base_url': ['Base URL of repository: ', None],
+        'subject': ['Path of repository: ', None],
         'contact_subject_name': ['Repository technical contact name: ', None],
         'contact_subject': ["Technical contact's ORCiD number: ", None],
     },
@@ -83,6 +84,4 @@ FILL_FIELDS = [
     'sitemap_urls'
 ]
 
-SITEMAP_URLS = {
-    0: '',
-}
+SITEMAP_URLS = []
