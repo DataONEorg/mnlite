@@ -1,4 +1,5 @@
 import json
+import d1_python
 
 from defs import FIELDS, FILL_FIELDS, SITEMAP_URLS, ORCID_PREFIX, DEFAULT_JSON
 from mnonboard import L
@@ -81,12 +82,12 @@ def valid_url_prefix(url, prefix, f):
     """
     # orcid number will be preceded by a url prefix but no trailing slash
     if prefix not in url:
-        L.error('ORCiD number in %s field does not have the correct URL prefix. (URL: %s)' % (f, url))
-        print('Please ensure the correct URL prefix (%s) preceeds the ORCiD number in field %s' % (ORCID_PREFIX,f))
+        L.error('ORCiD number in "%s" field does not have the correct URL prefix. (URL: %s)' % (f, url))
+        print('Please ensure the correct URL prefix (%s) preceeds the ORCiD number in field "%s"' % (ORCID_PREFIX, f))
         exit(1)
     if url[-1] in '/':
-        L.error('ORCiD number in %s field has a trailing slash.')
-        print('Please remove the trailing slash (/) from the end of the ORCiD number in field %s' % f)
+        L.error('ORCiD number in "%s" field has a trailing slash.')
+        print('Please remove the trailing slash (/) from the end of the ORCiD number in field "%s"' % f)
         exit(1)
     return True
 
@@ -217,22 +218,62 @@ def input_test(fields):
     """
     L.info('Running mnonboard.mnutils.input_test() on imported json.')
     # first, test that there are the fields we need
+    test_fields = json.loads(DEFAULT_JSON)
+    # test at nest level 1
     f = ''
     try:
-        # test orcid records
-        for f in ['default_submitter', 'default_owner']:
-            assert valid_url_prefix(fields[f], ORCID_PREFIX, f)
-            assert valid_orcid(fields[f].split('/')[-1])
-        f = "'node' -> 'contact_subject'"
-        assert valid_url_prefix(fields['node']['contact_subject'], ORCID_PREFIX, f)
-        assert valid_orcid(fields['node']['contact_subject'].split('/')[-1])
-    except ValueError as e:
+        for f in test_fields:
+            if fields[f] == '':
+                raise ValueError('Value in field "%s" is an empty string.' % (f))
+            if f in ['default_owner', 'default_submitter']:
+                # test orcid records while we're here
+                assert valid_url_prefix(fields[f], ORCID_PREFIX, f)
+                assert valid_orcid(fields[f].split('/')[-1])
+    except KeyError as e:
         L.error('No "%s" field found in json.' % f)
-        print('Please add the "%s" field to the json and re-run the script.' % f)
+        print('Please add the "%s" field to the json you loaded and re-run the script.')
         exit(1)
     except AssertionError as e:
         L.error('Invalid ORCiD number %s in field "%s"' % (fields[f], f))
-        print('Please correct the ORCiD number in field "%s"' % f)
+        print('Please correct the ORCiD number in field "%s"' % (f))
         exit(1)
+    except ValueError as e:
+        L.error(e)
+        print('Please add a value in field "%s" and re-run the script.' % (f))
+    # nest level 2
+    nf = ''
+    try:
+        for f in ['node', 'spider']:
+            for nf in test_fields[f]:
+                if fields[f][nf] == '':
+                    raise ValueError('Value in field "%s > %s" is an empty string.' % (f, nf))
+                if 'contact_subject' in nf:
+                    # test orcid record
+                    assert valid_url_prefix(fields[f][nf], ORCID_PREFIX, nf)
+                    assert valid_orcid(fields[f][nf].split('/')[-1])
+    except KeyError as e:
+        L.error('No "%s > %s" field found in json.' % (f, nf))
+        print('Please add the "%s > %s" field to the json you loaded and re-run the script.' % (f, nf))
+        exit(1)
+    except AssertionError as e:
+        L.error('Invalid ORCiD number %s in field "%s > %s"' % (fields[f][nf], f, nf))
+        print('Please correct the ORCiD number in field "%s > %s"' % (f, nf))
+        exit(1)
+    except ValueError as e:
+        L.error(e)
+        print('Please add a value in field "%s > %s" and re-run the script.' % (f, nf))
+    # nest level 3 (node > schedule fields)
+    nnf = ''
+    try:
+        for nnf in test_fields['node']['schedule']:
+            if fields['node']['schedule'][nnf] == '':
+                raise ValueError('Value in field "node > schedule > %s" is an empty string.' % (nnf))
+    except KeyError as e:
+        L.error('No "node > schedule > %s" field found in json.' % (nnf))
+        print('Please add the "node > schedule > %s" field to the json you loaded and re-run the script.' % (nnf))
+        exit(1)
+    except ValueError as e:
+        L.error(e)
+        print('Please add a value in field "node > schedule > %s" and re-run the script.' % (nnf))
     L.info('Loaded json info has passed checks.')
     return True
