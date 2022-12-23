@@ -4,6 +4,7 @@ import subprocess
 
 from defs import DEFAULT_JSON
 from mnonboard import L, NODE_PATH_REL, CUR_PATH_ABS, LOG_DIR, HARVEST_LOG_NAME
+from mnonboard.info_chx import record_lookup
 
 def default_json():
     """
@@ -72,12 +73,22 @@ def init_repo(loc):
         exit(1)
 
 def new_subject(loc, name, value):
+    """
+    Create new subject in the database using opersist.
+    """
     try:
         L.info('opersist creating new subject. Name: %s Value: %s Location: %s' % (name, value, loc))
         subprocess.run(['opersist', '-f', loc, 'sub', '-n', '"%s"' % name, '-s', value], check=True)
     except Exception as e:
         L.error('opersist subject creation command failed for %s (%s): %s' % (name, value, e))
         exit(1)
+
+def get_or_create_subj(loc, name, value, cn_url):
+    """
+    Get an existing subject using their ORCiD or create a new one with the specified values.
+    """
+    if not record_lookup(value, cn_url):
+        new_subject(loc, name, value)
 
 def restart_mnlite():
     """
