@@ -1,9 +1,13 @@
 import json
-import d1_python
+from d1_client.cnclient import CoordinatingNodeClient
+from d1_common.types import exceptions
+from os import environ
 
 from defs import FIELDS, FILL_FIELDS, SITEMAP_URLS, ORCID_PREFIX, DEFAULT_JSON
 from mnonboard import L
 from opersist.utils import JSON_TIME_FORMAT, dtnow
+
+D1_AUTH_TOKEN = environ.get('D1_AUTH_TOKEN')
 
 # user info checks
 def not_empty(f):
@@ -127,6 +131,35 @@ def enter_int(prompt):
         except AssertionError as e:
             L.warning("Number of database sitemap URLs can't be less than 1. (%s entered)" % i)
             print('Please enter 1 or greater.')
+
+def orcid_lookup(orcid):
+    """
+    Use the DataONE API to look up whether a given ORCiD number already exists in the system.
+    """
+    # this code was adapted from 
+    options = {"headers": {"Authorization": "Bearer %s" % (D1_AUTH_TOKEN)}}
+    # Create the Member Node Client
+    CN_URL = 'https://cn.dataone.org/cn'
+    client = CoordinatingNodeClient(CN_URL, **options)
+    # Set your ORCID
+    try:
+        # Get records
+        L.info('Starting ORCiD record lookup from %s' % (CN_URL))
+        subject = client.getSubjectInfo(orcid)
+        r = subject.content()[0].content()
+        name = '%s %s' % (r[1], r[2])
+        L.info('Name associated with ORCiD record %s found in %s: %s.' % (orcid, CN_URL, name))
+        return True
+    except exceptions.NotFound as e:
+        L.info('Caught NotFound error from %s during ORCiD lookup: %s' % (CN_URL, e))
+        L.info('ORCiD %s does not exist in this database. Will create a record.' % (orcid))
+        return False
+    except exceptions.NotAuthorized as e:
+        L.error('Caught NotAuthorized error from %s. Is your auth token up to date?' % (CN_URL))
+        exit(1)
+    except exceptions.DataONEException as e:
+        L.error('Unspecified error from %s:\n%s' % (CN_URL, e))
+        exit(1)
 
 def orcid_name(orcid, f):
     """
