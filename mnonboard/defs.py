@@ -3,8 +3,10 @@ from mnonboard import __version__
 ORCID_PREFIX = 'https://orcid.org/'
 
 CFG = {
-    'mode': 'user',
+    'info': 'user',
     'json_file': 'node.json',
+    'cn_url': 'https://cn-stage.test.dataone.org/cn',
+    'mode': 'staging',
 }
 
 HELP_TEXT = """DataONE member node onboard script
