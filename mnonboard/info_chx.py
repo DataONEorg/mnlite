@@ -109,6 +109,28 @@ def sitemap_urls(num_urls):
         i += 1
     return SITEMAP_URLS
 
+def enter_schedule():
+    """
+    Give the user a choice between three basic scheduling options.
+    """
+    p = 'Select a starting frequency with which to scrape data from this member node.\n' \
+        '1: Monthly\n' \
+        '2: Daily\n' \
+        '3: Every 3 minutes\n' \
+        'Enter 1/2/3: '
+    while True:
+        i = input(p)
+        try:
+            if i in [1, 2, 3]:
+                L.info('User has entered frequency option %s.' % i)
+                return i
+            else:
+                L.warning('User entry "%s" is a number but not 1, 2, or 3.' % (i))
+                print('Please enter a choice of frequency option 1, 2, or 3.')
+        except ValueError as e:
+                L.warning('User entry "%s" is not an number.' % (i))
+                print('Please enter a choice of frequency option 1, 2, or 3.')
+
 def enter_int(prompt):
     """
     Make sure the user enters an integer value of 1 or greater.
