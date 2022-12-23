@@ -132,33 +132,32 @@ def enter_int(prompt):
             L.warning("Number of database sitemap URLs can't be less than 1. (%s entered)" % i)
             print('Please enter 1 or greater.')
 
-def orcid_lookup(orcid):
+def record_lookup(search, cn_url='https://cn.dataone.org/cn'):
     """
     Use the DataONE API to look up whether a given ORCiD number already exists in the system.
     """
     # this code was adapted from 
     options = {"headers": {"Authorization": "Bearer %s" % (D1_AUTH_TOKEN)}}
     # Create the Member Node Client
-    CN_URL = 'https://cn.dataone.org/cn'
-    client = CoordinatingNodeClient(CN_URL, **options)
+    client = CoordinatingNodeClient(cn_url, **options)
     # Set your ORCID
     try:
         # Get records
-        L.info('Starting ORCiD record lookup from %s' % (CN_URL))
-        subject = client.getSubjectInfo(orcid)
+        L.info('Starting record lookup for %s from %s' % (search, cn_url))
+        subject = client.getSubjectInfo(search)
         r = subject.content()[0].content()
         name = '%s %s' % (r[1], r[2])
-        L.info('Name associated with ORCiD record %s found in %s: %s.' % (orcid, CN_URL, name))
+        L.info('Name associated with record %s found in %s: %s.' % (search, cn_url, name))
         return True
     except exceptions.NotFound as e:
-        L.info('Caught NotFound error from %s during ORCiD lookup: %s' % (CN_URL, e))
-        L.info('ORCiD %s does not exist in this database. Will create a record.' % (orcid))
+        L.info('Caught NotFound error from %s during lookup: %s' % (cn_url, e))
+        L.info('%s does not exist in this database. Will create a record.' % (search))
         return False
     except exceptions.NotAuthorized as e:
-        L.error('Caught NotAuthorized error from %s. Is your auth token up to date?' % (CN_URL))
+        L.error('Caught NotAuthorized error from %s. Is your auth token up to date?' % (cn_url))
         exit(1)
     except exceptions.DataONEException as e:
-        L.error('Unspecified error from %s:\n%s' % (CN_URL, e))
+        L.error('Unspecified error from %s:\n%s' % (cn_url, e))
         exit(1)
 
 def orcid_name(orcid, f):
