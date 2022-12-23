@@ -3,7 +3,7 @@ from d1_client.cnclient import CoordinatingNodeClient
 from d1_common.types import exceptions
 from os import environ
 
-from defs import FIELDS, FILL_FIELDS, SITEMAP_URLS, ORCID_PREFIX, DEFAULT_JSON
+from defs import FIELDS, FILL_FIELDS, SITEMAP_URLS, ORCID_PREFIX, DEFAULT_JSON, SCHEDULES
 from mnonboard import L
 from opersist.utils import JSON_TIME_FORMAT, dtnow
 
@@ -120,16 +120,17 @@ def enter_schedule():
         'Enter 1/2/3: '
     while True:
         i = input(p)
+        et = 'Please enter a choice of the frequency options above.'
         try:
-            if i in [1, 2, 3]:
+            if i in SCHEDULES:
                 L.info('User has entered frequency option %s.' % i)
                 return i
             else:
-                L.warning('User entry "%s" is a number but not 1, 2, or 3.' % (i))
-                print('Please enter a choice of frequency option 1, 2, or 3.')
+                L.warning('User entry "%s" is a number but it is not an available option.' % (i))
+                print(et)
         except ValueError as e:
                 L.warning('User entry "%s" is not an number.' % (i))
-                print('Please enter a choice of frequency option 1, 2, or 3.')
+                print(et)
 
 def enter_int(prompt):
     """

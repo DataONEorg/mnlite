@@ -87,3 +87,36 @@ FILL_FIELDS = [
 ]
 
 SITEMAP_URLS = []
+
+SCHEDULES = {
+    # monthly on the 1st at 00:30
+    1: {
+      "hour": "0",
+      "day": "1",
+      "min": "30",
+      "mon": "*",
+      "sec": "0",
+      "wday": "?",
+      "year": "*"
+    },
+    # daily at 00:10
+    2: {
+      "hour": "0",
+      "day": "*",
+      "min": "10",
+      "mon": "*",
+      "sec": "0",
+      "wday": "?",
+      "year": "*"
+    },
+    # every three minutes
+    3: {
+      "hour": "*",
+      "day": "*",
+      "min": "*/3",
+      "mon": "*",
+      "sec": "0",
+      "wday": "?",
+      "year": "*"
+    }
+}

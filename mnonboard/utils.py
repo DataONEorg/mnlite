@@ -2,9 +2,9 @@ import os
 import json
 import subprocess
 
-from defs import DEFAULT_JSON
+from defs import DEFAULT_JSON, SCHEDULES
 from mnonboard import L, NODE_PATH_REL, CUR_PATH_ABS, LOG_DIR, HARVEST_LOG_NAME
-from mnonboard.info_chx import record_lookup
+from mnonboard.info_chx import record_lookup, enter_schedule
 
 def default_json():
     """
@@ -89,6 +89,13 @@ def get_or_create_subj(loc, name, value, cn_url):
     """
     if not record_lookup(value, cn_url):
         new_subject(loc, name, value)
+
+def set_schedule():
+    """
+    
+    """
+    s = enter_schedule()
+    return SCHEDULES[s]
 
 def restart_mnlite():
     """

@@ -30,6 +30,7 @@ def run(cfg):
     # now we're cooking
     # get the node path using the end of the path in the 'subject' field (differs from operation.md documentation)
     end_node_subj = fields['node']['subject'].split('/')[-1]
+    fields['node']['schedule'] = utils.set_schedule()
     loc = utils.node_path(nodedir=end_node_subj)
     # initialize a repository there (step 5)
     utils.init_repo(loc)
