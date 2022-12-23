@@ -14,7 +14,7 @@ def run(cfg):
     """
     fields = utils.default_json()
     names = {}
-    if cfg['mode'] == 'user':
+    if cfg['info'] == 'user':
         # do the full user-driven info gathering process
         ufields, names = info_chx.user_input()
         fields = info_chx.transfer_info(ufields)
@@ -35,12 +35,21 @@ def run(cfg):
     utils.init_repo(loc)
     for f in ('default_owner', 'default_submitter'):
         # add a subject for owner and submitter (may not be necessary)
-        utils.new_subject(loc=loc, name=names[f+'_name'], value=fields[f])
+        utils.get_or_create_subj(loc=loc,
+                                 name=names[f+'_name'],
+                                 value=fields[f],
+                                 cn_url=cfg['cn_url'])
     f = 'contact_subject'
     # add subject for technical contact (step 6)
-    utils.new_subject(loc=loc, name=names[f+'_name'], value=fields['node'][f])
+    utils.get_or_create_subj(loc=loc,
+                             name=names[f+'_name'],
+                             value=fields['node'][f],
+                             cn_url=cfg['cn_url'])
     # add node as a subject (step 7)
-    utils.new_subject(loc=loc, name=end_node_subj, value=fields['node']['node_id'])
+    utils.get_or_create_subj(loc=loc,
+                             name=end_node_subj,
+                             value=fields['node']['node_id'],
+                             cn_url=cfg['cn_url'])
     # okay, now overwrite the default node.json with our new one (step 8)
     utils.save_json(loc=os.path.join(loc, 'node.json'), jf=fields)
     # restart the mnlite process to pick up the new node.json (step 9)
@@ -57,8 +66,8 @@ def main():
     """
     # get arguments
     try:
-        opts = getopt.getopt(sys.argv[1:], 'hid:l:',
-            ['help', 'init', 'dump=', 'load=']
+        opts = getopt.getopt(sys.argv[1:], 'hiPd:l:',
+            ['help', 'init', 'production', 'dump=', 'load=']
             )[0]
     except Exception as e:
         L.error('Error: %s' % e)
@@ -66,20 +75,27 @@ def main():
         exit(1)
     for o, a in opts:
         if o in ('-h', '--help'):
+            # help
             print(HELP_TEXT)
             exit(0)
         if o in ('-i', '--init'):
             # do data gathering
-            CFG['mode'] = 'user'
-            run(CFG)
+            CFG['info'] = 'user'
+        if o in ('-P', '--production'):
+            # production case
+            CFG['cn_url'] = 'https://cn.dataone.org/cn'
         if o in ('-d', '--dump'):
             # dump default json to file
             utils.save_json(a, utils.default_json())
+            exit(0)
         if o in ('-l', '--load'):
             # load from json file
-            CFG['mode'] = 'json'
+            CFG['info'] = 'json'
             CFG['json_file'] = a
-            run(CFG)
+    L.info('running mnonboard in %s mode. data gathering from: %s. cn_url: %s' % (CFG['mode'],
+                                                                                  CFG['info'],
+                                                                                  CFG['cn_url']))
+    run(CFG)
 
 
 if __name__ == '__main__':
