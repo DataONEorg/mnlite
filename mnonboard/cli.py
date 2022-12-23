@@ -30,7 +30,6 @@ def run(cfg):
     # now we're cooking
     # get the node path using the end of the path in the 'subject' field (differs from operation.md documentation)
     end_node_subj = fields['node']['subject'].split('/')[-1]
-    fields['node']['schedule'] = utils.set_schedule()
     loc = utils.node_path(nodedir=end_node_subj)
     # initialize a repository there (step 5)
     utils.init_repo(loc)
@@ -51,6 +50,8 @@ def run(cfg):
                              name=end_node_subj,
                              value=fields['node']['node_id'],
                              cn_url=cfg['cn_url'])
+    # set the update schedule
+    fields['node']['schedule'] = utils.set_schedule()
     # okay, now overwrite the default node.json with our new one (step 8)
     utils.save_json(loc=os.path.join(loc, 'node.json'), jf=fields)
     # restart the mnlite process to pick up the new node.json (step 9)
