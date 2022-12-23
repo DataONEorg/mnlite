@@ -136,11 +136,11 @@ def record_lookup(search, cn_url='https://cn.dataone.org/cn'):
     """
     Use the DataONE API to look up whether a given ORCiD number already exists in the system.
     """
-    # this code was adapted from 
+    # this authentication method was adapted from:
+    # https://github.com/DataONEorg/dataone_examples/blob/master/python_examples/update_object.ipynb
     options = {"headers": {"Authorization": "Bearer %s" % (D1_AUTH_TOKEN)}}
     # Create the Member Node Client
     client = CoordinatingNodeClient(cn_url, **options)
-    # Set your ORCID
     try:
         # Get records
         L.info('Starting record lookup for %s from %s' % (search, cn_url))
