@@ -253,7 +253,7 @@ def transfer_info(ufields):
     """
     Take a user fields dict and translate it to the default json object.
     """
-    fields = json.loads(DEFAULT_JSON)
+    fields = DEFAULT_JSON
     L.info('Adding user fields to default fields.')
     for f in ufields:
         # take fields we want, ignore fields we don't want
@@ -273,7 +273,7 @@ def input_test(fields):
     """
     L.info('Running mnonboard.mnutils.input_test() on imported json.')
     # first, test that there are the fields we need
-    test_fields = json.loads(DEFAULT_JSON)
+    test_fields = DEFAULT_JSON
     # test at nest level 1
     f = ''
     try:

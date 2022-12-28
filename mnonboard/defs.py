@@ -1,5 +1,7 @@
 from mnonboard import __version__
+from mnlite.mnode import DEFAULT_NODE_CONFIG
 
+DEFAULT_JSON = DEFAULT_NODE_CONFIG
 ORCID_PREFIX = 'https://orcid.org/'
 SHACL_URL = 'https://raw.githubusercontent.com/ESIPFed/science-on-schema.org/master/validation/shapegraphs/soso_common_v1.2.3.ttl'
 
@@ -25,39 +27,6 @@ where OPTIONS := {
             dump default member node json file to configure manually
 }
 """ % __version__
-
-DEFAULT_JSON = r'''{
-  "node": {
-    "node_id": "",
-    "state": "up",
-    "name": "",
-    "description": "",
-    "base_url": "",
-    "schedule": {
-      "hour": "*",
-      "day": "*",
-      "min": "0,10,20,30,40,50",
-      "mon": "*",
-      "sec": "0",
-      "wday": "?",
-      "year": "*"
-    },
-    "subject": "",
-    "contact_subject": ""
-  },
-  "data_folder": "data",
-  "content_database": "sqlite:///content.db",
-  "log_database": "sqlite:///eventlog.db",
-  "created": "",
-  "default_submitter": "",
-  "default_owner": "",
-  "spider": {
-    "sitemap_urls":[
-      ""
-    ]
-  }
-}
-'''
 
 FIELDS = {
     'node': {

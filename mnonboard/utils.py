@@ -11,7 +11,7 @@ def default_json():
     A function that spits out a json file to be used in onboarding.
     """
     L.info('Loading default json template.')
-    return json.loads(DEFAULT_JSON)
+    return DEFAULT_JSON
 
 def load_json(loc):
     """
