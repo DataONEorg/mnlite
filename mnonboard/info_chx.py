@@ -3,7 +3,8 @@ from d1_client.cnclient import CoordinatingNodeClient
 from d1_common.types import exceptions
 from os import environ
 
-from defs import FIELDS, FILL_FIELDS, SITEMAP_URLS, ORCID_PREFIX, DEFAULT_JSON, SCHEDULES
+from utils import default_json
+from defs import FIELDS, SITEMAP_URLS, ORCID_PREFIX, SCHEDULES
 from mnonboard import L
 from opersist.utils import JSON_TIME_FORMAT, dtnow
 
@@ -253,7 +254,7 @@ def transfer_info(ufields):
     """
     Take a user fields dict and translate it to the default json object.
     """
-    fields = DEFAULT_JSON
+    fields = default_json(fx='mnonboard.info_chx.transfer_info()')
     L.info('Adding user fields to default fields.')
     for f in ufields:
         # take fields we want, ignore fields we don't want
@@ -273,7 +274,7 @@ def input_test(fields):
     """
     L.info('Running mnonboard.mnutils.input_test() on imported json.')
     # first, test that there are the fields we need
-    test_fields = DEFAULT_JSON
+    test_fields = default_json(fx='mnonboard.info_chx.input_test()')
     # test at nest level 1
     f = ''
     try:

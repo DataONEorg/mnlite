@@ -6,11 +6,11 @@ from defs import DEFAULT_JSON, SCHEDULES
 from mnonboard import L, NODE_PATH_REL, CUR_PATH_ABS, LOG_DIR, HARVEST_LOG_NAME
 from mnonboard.info_chx import record_lookup, enter_schedule
 
-def default_json():
+def default_json(fx='Unspecified'):
     """
     A function that spits out a json file to be used in onboarding.
     """
-    L.info('Loading default json template.')
+    L.info('%s function loading default json template.' % (fx))
     return DEFAULT_JSON
 
 def load_json(loc):

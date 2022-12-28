@@ -12,7 +12,7 @@ def run(cfg):
     Wrapper around opersist that simplifies the process of onboarding a new
     member node to DataONE.
     """
-    fields = utils.default_json()
+    fields = utils.default_json(fx='mnonboard.cli.run()')
     names = {}
     if cfg['info'] == 'user':
         # do the full user-driven info gathering process
