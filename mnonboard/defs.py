@@ -1,6 +1,7 @@
 from mnonboard import __version__
 
 ORCID_PREFIX = 'https://orcid.org/'
+SHACL_URL = 'https://raw.githubusercontent.com/ESIPFed/science-on-schema.org/master/validation/shapegraphs/soso_common_v1.2.3.ttl'
 
 CFG = {
     'info': 'user',
