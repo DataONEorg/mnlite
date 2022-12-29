@@ -95,8 +95,23 @@ def restart_mnlite():
     Subprocess call to restart the mnlite system service. Requires sudo.
     """
     L.info('Restarting mnlite systemctl service...')
-    subprocess.run(['sudo', 'systemctl', 'restart', 'mnlite.service'], check=True)
-    L.info('Done.')
+    try:
+        subprocess.run(['sudo', 'systemctl', 'restart', 'mnlite.service'], check=True)
+        L.info('Done.')
+    except subprocess.CalledProcessError as e:
+        L.error('Error restarting mnlite system service. Is it installed on your system? Error text:\n%s' % (e))
+        while True:
+            print('mnlite was not restarted.')
+            i = input('Do you wish to continue? (Y/n) ')
+            if i.lower() == 'n':
+                L.info('User has chosen to abort setup after mnlite restart failed.')
+                exit(1)
+            elif i.lower() in ['y', '']:
+                L.info('User has chosen to continue after mnlite restart failed.')
+                break
+            else:
+                L.error('Invalid input at mnlite failure continue prompt: %s' % (i))
+                print('You have selected an invalid option.')
 
 def harvest_data(loc, mn_name):
     """
