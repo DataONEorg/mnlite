@@ -51,8 +51,9 @@ def run(cfg):
                              name=end_node_subj,
                              value=fields['node']['node_id'],
                              cn_url=cfg['cn_url'])
-    # set the update schedule
+    # set the update schedule and set the state to up
     fields['node']['schedule'] = utils.set_schedule()
+    fields['node']['state'] = 'up'
     # okay, now overwrite the default node.json with our new one (step 8)
     utils.save_json(loc=os.path.join(loc, 'node.json'), jf=fields)
     # restart the mnlite process to pick up the new node.json (step 9)
