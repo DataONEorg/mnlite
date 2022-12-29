@@ -1,48 +1,52 @@
-import os
-import glob
 import random
 from pyshacl import validate
 
 from mnonboard import L
 from mnonboard.defs import SHACL_URL
+from opersist.cli import getOpersistInstance
+from opersist.models.thing import Thing
 
-def test_mdata(loc, shp_graph=SHACL_URL, format='nquads', num_tests=3):
+
+def test_mdata(loc, shp_graph=SHACL_URL, format='json-ld', num_tests=3):
     """
-    Using pyshacl to test harvested metadata.
+    Use pyshacl to test harvested metadata.
     """
     L.info('Starting metadata checks. Shape graph: %s' % (shp_graph))
     L.info('Checking %s files.' % num_tests)
-    dirlist0, dirlist1, dirlist2 = [], [], []
-    file_list = []
+    op = getOpersistInstance(loc)
+    num_things = op.countThings()
+    q = op.getSession().query(Thing) # this might be too inefficient for large sets; may need to change
     i = 0
     while i < num_tests:
+        record = ''
+        # get a random thing and decode its path
+        L.info('Record check %s/%s...' % (i+1, num_tests))
+        rand = random.randint(0, num_things)
+        t = q[rand]
+        L.info('Selected record number %s of %s in set: %s' % (rand, num_things, t.content))
+        pth = op.contentAbsPath(t.content)
+        # read to object
+        L.info('Reading binary from %s' % (pth))
         try:
-            for d in os.listdir(loc):
-                if os.path.isdir(os.path.join(loc, d)):
-                    dirlist0.append(d)
-            d0 = random.choice(dirlist0)
-            for d in os.listdir(d0):
-                if os.path.isdir(os.path.join(d0, d)):
-                    dirlist1.append(d)
-            d1 = random.choice(dirlist1)
-            for d in os.listdir(d1):
-                if os.path.isdir(os.path.join(d1, d)):
-                    dirlist2.append(d)
-            d2 = random.choice(dirlist2)
-            L.info('File %s: %s' % (str(i).zfill(3), ))
-            f = random.choice(glob.glob(os.path.join(d2, '*.bin')))
-            file_list.append(f)
-            i += 1
+            with open(pth, 'rb') as f:
+                record = f.read().decode('utf-8')
+            L.info('Success; record follows:\n%s' % (record))
         except Exception as e:
-            print("\nError: %s" % e)
-            return
-    for f in file_list:
+            L.error("\nError: %s" % e)
+            L.error('Error loading record %s\nSkipping to next record...' % (pth))
+            continue
         try:
-            L.info('Checking file %s/%s: %s' % (i, num_tests, f))
-            validate(data_graph=f,
-                    shacl_graph=shp_graph,
-                    data_graph_format=format,
-                    shacl_graph_format='json-ld',
-                    )
+            conforms, res_graph, res_text = validate(data_graph=record,
+                                                    data_graph_format=format,
+                                                    shacl_graph=shp_graph,
+                                                    shacl_graph_format='turtle',)
+            if not conforms:
+                num_violations = res_text.split('\n')[2].split('(')[1].split(')')[0]
+                L.error('pyshacl found %s violation(s):\n%s' % (num_violations, res_text))
+            else:
+                L.info('No violations found in %s' % (pth))
         except Exception as e:
+            # add pyshacl exceptions; perhaps consolidate try/excepts here?
             L.error('Error running pyshacl: %s' % e)
+        
+        i += 1
