@@ -3,9 +3,9 @@ from d1_client.cnclient import CoordinatingNodeClient
 from d1_common.types import exceptions
 from os import environ
 
-from utils import default_json
 from defs import FIELDS, SITEMAP_URLS, ORCID_PREFIX, SCHEDULES
 from mnonboard import L
+from mnonboard import default_json
 from opersist.utils import JSON_TIME_FORMAT, dtnow
 
 D1_AUTH_TOKEN = environ.get('D1_AUTH_TOKEN')

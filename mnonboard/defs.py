@@ -1,7 +1,5 @@
 from mnonboard import __version__
-from mnlite.mnode import DEFAULT_NODE_CONFIG
 
-DEFAULT_JSON = DEFAULT_NODE_CONFIG
 ORCID_PREFIX = 'https://orcid.org/'
 SHACL_URL = 'https://raw.githubusercontent.com/ESIPFed/science-on-schema.org/master/validation/shapegraphs/soso_common_v1.2.3.ttl'
 

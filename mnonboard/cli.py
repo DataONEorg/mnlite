@@ -6,13 +6,14 @@ import info_chx
 import data_chx
 from defs import CFG, HELP_TEXT
 from mnonboard import L
+from mnonboard import default_json
 
 def run(cfg):
     """
     Wrapper around opersist that simplifies the process of onboarding a new
     member node to DataONE.
     """
-    fields = utils.default_json(fx='mnonboard.cli.run()')
+    fields = default_json(fx='mnonboard.cli.run()')
     names = {}
     if cfg['info'] == 'user':
         # do the full user-driven info gathering process
@@ -88,7 +89,7 @@ def main():
             CFG['cn_url'] = 'https://cn.dataone.org/cn'
         if o in ('-d', '--dump'):
             # dump default json to file
-            utils.save_json(a, utils.default_json())
+            utils.save_json(a, default_json())
             exit(0)
         if o in ('-l', '--load'):
             # load from json file

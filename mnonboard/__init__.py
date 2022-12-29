@@ -3,6 +3,9 @@ import logging
 from datetime import datetime
 
 from opersist.cli import LOG_LEVELS, LOG_DATE_FORMAT, LOG_FORMAT
+from mnlite.mnode import DEFAULT_NODE_CONFIG
+
+DEFAULT_JSON = DEFAULT_NODE_CONFIG
 
 __version__ = 'v0.0.1'
 
@@ -39,3 +42,10 @@ CUR_PATH_ABS = os.path.dirname(os.path.abspath(__file__))
 
 # relative path from root of mnlite dir to nodes directory
 NODE_PATH_REL = 'instance/nodes/'
+
+def default_json(fx='Unspecified'):
+    """
+    A function that spits out a json file to be used in onboarding.
+    """
+    L.info('%s function loading default json template.' % (fx))
+    return DEFAULT_JSON
