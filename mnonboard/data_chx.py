@@ -1,6 +1,7 @@
 import random
 from pyshacl import validate
-
+from pyshacl.errors import ShapeLoadError, ConstraintLoadError, \
+                           ReportableRuntimeError
 from mnonboard import L
 from mnonboard.defs import SHACL_URL
 from opersist.cli import getOpersistInstance
@@ -31,11 +32,6 @@ def test_mdata(loc, shp_graph=SHACL_URL, format='json-ld', num_tests=3):
             with open(pth, 'rb') as f:
                 record = f.read().decode('utf-8')
             L.info('Success; record follows:\n%s' % (record))
-        except Exception as e:
-            L.error("\nError: %s" % e)
-            L.error('Error loading record %s\nSkipping to next record...' % (pth))
-            continue
-        try:
             conforms, res_graph, res_text = validate(data_graph=record,
                                                     data_graph_format=format,
                                                     shacl_graph=shp_graph,
@@ -45,8 +41,18 @@ def test_mdata(loc, shp_graph=SHACL_URL, format='json-ld', num_tests=3):
                 L.error('pyshacl found %s violation(s):\n%s' % (num_violations, res_text))
             else:
                 L.info('No violations found in %s' % (pth))
+        except ShapeLoadError as e:
+            L.error('pyshacl threw ShapeLoadError: %s' % e)
+            L.error('Skipping to next record...')
+        except ConstraintLoadError as e:
+            L.error('pyshacl threw ConstraintLoadError: %s' % e)
+            L.error('Skipping to next record...')
+        except ReportableRuntimeError as e:
+            L.error('pyshacl threw ReportableRuntimeError: %s' % e)
+            L.error('Skipping to next record...')
         except Exception as e:
-            # add pyshacl exceptions; perhaps consolidate try/excepts here?
-            L.error('Error running pyshacl: %s' % e)
+            L.error("\nError: %s" % e)
+            L.error('Error validating record %s\nSkipping to next record...' % (pth))
+            continue
         
         i += 1
