@@ -123,9 +123,9 @@ def enter_schedule():
         i = input(p)
         et = 'Please enter a choice of the frequency options above.'
         try:
-            if i in SCHEDULES:
+            if int(i) in SCHEDULES:
                 L.info('User has entered frequency option %s.' % i)
-                return i
+                return int(i)
             else:
                 L.warning('User entry "%s" is a number but it is not an available option.' % (i))
                 print(et)
