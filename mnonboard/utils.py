@@ -120,7 +120,8 @@ def harvest_data(loc, mn_name):
     log_loc = os.path.join(LOG_DIR, mn_name + HARVEST_LOG_NAME)
     L.info('Starting scrapy crawl, saving to %s' % (loc))
     L.info('scrapy log location is %s' % (log_loc))
-    subprocess.run(['scrapy', 'crawl', 'JsonldSpider', '-s',
-                    'STORE_PATH=%s' % loc, '>', log_loc, '2>&1'],
+    subprocess.run(['scrapy', 'crawl', 'JsonldSpider',
+                    '--set=STORE_PATH=%s' % loc,
+                    '--logfile=%s' % log_loc],
                     check=True)
     L.info('scrapy crawl complete.')
