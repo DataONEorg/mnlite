@@ -43,7 +43,9 @@ def test_mdata(loc, shp_graph=SHACL_URL, format='json-ld', num_tests=3):
                 constraint_viol = ' including Constraint Violation(s)' if 'Constraint Violation' in res_text else ''
                 L.error('pyshacl found %s violation(s):\n%s' % (violati1, res_text))
                 if (violati1 == 1) and ('<http://schema.org/> not <https://schema.org/>' in res_text):
-                    # do a quick replace and test again
+                    # under this condition there is one constraint violation where the record uses https
+                    constraint_viol = ' including https vs http namespace violation'
+                    # do a quick replace and test again for lower level violations
                     L.info('Found https vs http namespace violation...replacing and testing again...')
                     record = record.replace('https://schema.org/', 'http://schema.org/')
                     conforms2, res_graph2, res_text2 = validate(data_graph=record,
@@ -56,7 +58,7 @@ def test_mdata(loc, shp_graph=SHACL_URL, format='json-ld', num_tests=3):
                                 % (violati2, res_text))
                 tot_violations = violati1 + violati2
                 L.info('Total shacl violations in file: %s' % (tot_violations))
-                viol_dict[t.content] = 'shacl violations%s (%s)' % (tot_violations, constraint_viol)
+                viol_dict[t.content] = 'shacl violations%s (%s total)' % (constraint_viol, tot_violations, )
             else:
                 L.info('No violations found in %s' % (pth))
                 viol_dict[t.content] = None
