@@ -172,7 +172,7 @@ def record_lookup(search, cn_url='https://cn.dataone.org/cn'):
         r = subject.content()[0].content()
         name = '%s %s' % (r[1], r[2])
         L.info('Name associated with record %s found in %s: %s.' % (search, cn_url, name))
-        return True
+        return name
     except exceptions.NotFound as e:
         L.info('Caught NotFound error from %s during lookup: %s' % (cn_url, e))
         L.info('%s does not exist in this database. Will create a record.' % (search))
