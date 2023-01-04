@@ -100,7 +100,10 @@ def test_mdata(loc, shp_graph=SHACL_URL, format='json-ld', num_tests=3):
             i += 1
     L.info('Found %s valid records out of %s checked.' % (valid_files, i))
     L.info('Could not check %s records due to load and/or decode errors.' % (load_errs))
-    rep_str = 'Validation report (sha256 - violations or error):\n'
-    for v in viol_dict:
-        rep_str = rep_str + '%s - %s\n' % (v, viol_dict[v])
-    L.info(rep_str)
+    if len(viol_dict) > 0:
+        rep_str = 'Validation report (sha256 - violations or error):\n'
+        for v in viol_dict:
+            rep_str = rep_str + '%s - %s\n' % (v, viol_dict[v])
+        L.info(rep_str)
+    else:
+        L.info('All checks passed.')
