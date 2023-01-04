@@ -40,7 +40,7 @@ def test_mdata(loc, shp_graph=SHACL_URL, format='json-ld', num_tests=3):
                                                     shacl_graph_format='turtle',)
             if not conforms:
                 violati1 = int(res_text.split('\n')[2].split('(')[1].split(')')[0])
-                constraint_viol = ' including Constraint Violation(s)' if 'Constraint Violation' in res_text else ''
+                constraint_viol = ' including Constraint Violations' if 'Constraint Violation' in res_text else ''
                 L.error('pyshacl found %s violation(s):\n%s' % (violati1, res_text))
                 if (violati1 == 1) and ('<http://schema.org/> not <https://schema.org/>' in res_text):
                     # under this condition there is one constraint violation where the record uses https
@@ -56,6 +56,8 @@ def test_mdata(loc, shp_graph=SHACL_URL, format='json-ld', num_tests=3):
                         violati2 = int(res_text2.split('\n')[2].split('(')[1].split(')')[0])
                         L.error('pyshacl found %s additional violation(s):\n%s' \
                                 % (violati2, res_text))
+                    else:
+                        L.info('Namespace https/http constraint violation is the only error found')
                 tot_violations = violati1 + violati2
                 L.info('Total shacl violations in file: %s' % (tot_violations))
                 viol_dict[t.content] = 'shacl violations%s (%s total)' % (constraint_viol, tot_violations, )
@@ -90,7 +92,7 @@ def test_mdata(loc, shp_graph=SHACL_URL, format='json-ld', num_tests=3):
             # this might have something to do with code in this function
             # if it's a TypeError, it could have to do with the creation of violati1/violati2
             L.error('Error validating record %s' % (pth))
-            L.error("Uncaught exception (%s): %s" % (repr(e), e))
+            L.error('Uncaught exception (%s): %s' % (repr(e), e))
             viol_dict[t.content] = repr(e)
             load_errs += 1
         finally:
