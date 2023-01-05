@@ -29,7 +29,7 @@ where OPTIONS := {
 
 FIELDS = {
     'node': {
-        'node_id': ['Member node identifier (must be unique): ', None],
+        'node_id': ['Member node_id (must be unique): ', None],
         'name': ['Repository name: ', None],
         'description': ['Repository description: ', None],
         'base_url': ['Base URL of repository: ', None],

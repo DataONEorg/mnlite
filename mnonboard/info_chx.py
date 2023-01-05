@@ -225,7 +225,6 @@ def valid_nodeid(node_id):
             c = input('node_id usually contains the prefix "%s" but the entered one (%s) does not.\n\
                 This could have *serious* downstream consequences!\n\
                 Do you wish to modify the node_id entry to fit the standard?\n\
-                Ensure as well that the node_id is unique from that of all other member nodes.\n\
                 Please answer "yes" or "no" (yes is default): ' % (NODE_ID_PREFIX, node_id))
             if c.lower() == 'no':
                 L.warning('User has chosen to continue with node_id entry of %s' % (node_id))
@@ -244,6 +243,7 @@ def enter_nodeid(prompt='Unique node_id: ', id=False):
     while True:
         # ask the user for a node id
         if not id:
+            print('Please ensure that the node_id is unique from that of all other member nodes!')
             id = req_input(prompt)
         # validate and return
         if valid_nodeid(id):
