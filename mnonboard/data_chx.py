@@ -21,6 +21,8 @@ def test_mdata(loc, shp_graph=SHACL_URL, format='json-ld', num_tests=3):
     i, valid_files, load_errs = 0, 0, 0
     viol_dict = {}
     while i < num_tests:
+        if i > 0:
+            L.info('Continuing to next record...')
         record = ''
         violati1, violati2 = 0, 0
         # get a thing and decode its path
@@ -100,7 +102,6 @@ def test_mdata(loc, shp_graph=SHACL_URL, format='json-ld', num_tests=3):
             viol_dict[t.content] = repr(e)
             load_errs += 1
         finally:
-            L.info('Continuing to next record...')
             i += 1
     L.info('Found %s valid records out of %s checked.' % (valid_files, i))
     L.info('%s failures due to load and/or decode errors.' % (load_errs))
@@ -111,3 +112,5 @@ def test_mdata(loc, shp_graph=SHACL_URL, format='json-ld', num_tests=3):
         L.info(rep_str)
     else:
         L.info('All checks passed.')
+    # close the opersist instance
+    op.close()
