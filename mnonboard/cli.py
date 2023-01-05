@@ -88,16 +88,19 @@ def main():
             try:
                 CFG['check_files'] = int(a)
             except ValueError:
-                L.error('Option -c (--check) requires an integer number of files to check.')
-                print(HELP_TEXT)
-                exit(1)
+                if a == 'all': # this should probably not be used unless necessary!
+                    CFG['check_files'] = a
+                else:
+                    L.error('Option -c (--check) requires an integer number of files to check.')
+                    print(HELP_TEXT)
+                    exit(1)
     L.info('running mnonboard in %s mode.\n\
 data gathering from: %s\n\
 cn_url: %s\n\
-number of metadata files to check: %s' % (CFG['mode'],
-                                        CFG['info'],
-                                        CFG['cn_url'],
-                                        CFG['check_files']))
+metadata files to check: %s' % (CFG['mode'],
+                                CFG['info'],
+                                CFG['cn_url'],
+                                CFG['check_files']))
     try:
         run(CFG)
     except KeyboardInterrupt:

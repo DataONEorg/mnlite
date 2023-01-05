@@ -16,17 +16,21 @@ def test_mdata(loc, shp_graph=SHACL_URL, format='json-ld', num_tests=3):
     L.info('Checking %s files.' % num_tests)
     op = getOpersistInstance(loc)
     num_things = op.countThings()
+    num_tests = num_things if num_tests == 'all' else num_tests # might have to test all the things? let's hope not
     q = op.getSession().query(Thing) # this might be too inefficient for large sets; may need to change
     i, valid_files, load_errs = 0, 0, 0
     viol_dict = {}
     while i < num_tests:
         record = ''
         violati1, violati2 = 0, 0
-        # get a random thing and decode its path
+        # get a thing and decode its path
         L.info('Record check %s/%s...' % (i+1, num_tests))
-        rand = random.randint(0, num_things)
-        t = q[rand]
-        L.info('Selected record number %s of %s in set: %s' % (rand, num_things, t.content))
+        if num_tests != num_things:
+            thing_no = random.randint(0, num_things)
+        else:
+            thing_no = i
+        t = q[thing_no]
+        L.info('Selected record number %s of %s in set: %s' % (thing_no, num_things, t.content))
         pth = op.contentAbsPath(t.content)
         # read to object
         L.info('Reading binary from %s' % (pth))
