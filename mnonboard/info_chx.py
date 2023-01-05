@@ -156,7 +156,7 @@ def enter_int(prompt):
             L.warning("Number of database sitemap URLs can't be less than 1. (%s entered)" % i)
             print('Please enter 1 or greater.')
 
-def record_lookup(search, cn_url='https://cn.dataone.org/cn'):
+def record_lookup(search, cn_url='https://cn.dataone.org/cn', debug=False):
     """
     Use the DataONE API to look up whether a given ORCiD number already exists in the system.
     """
@@ -172,7 +172,8 @@ def record_lookup(search, cn_url='https://cn.dataone.org/cn'):
         r = subject.content()[0].content()
         name = '%s %s' % (r[1], r[2])
         L.info('Name associated with record %s found in %s: %s.' % (search, cn_url, name))
-        return name
+        rt = name if not debug else r
+        return rt
     except exceptions.NotFound as e:
         L.info('Caught NotFound error from %s during lookup: %s' % (cn_url, e))
         L.info('%s does not exist in this database. Will create a record.' % (search))
@@ -224,7 +225,9 @@ def user_input():
                     FIELDS[f][nf][1] = enter_orcid(FIELDS[f][nf][0])
                 elif '_name' in nf:
                     # put the contact subject name in a different dict
-                    names[nf] = req_input(FIELDS[f][nf][0])
+                    #names[nf] = req_input(FIELDS[f][nf][0])
+                    # postponing this step for later
+                    pass
                 elif nf in 'base_url':
                     # get the base url
                     baseurl = base_url(FIELDS[f][nf][0])
@@ -239,7 +242,9 @@ def user_input():
         elif f in 'num_sitemap_urls':
             FIELDS[f][1] = enter_int(FIELDS[f][0])
         elif '_name' in f:
-            names[f] = req_input(FIELDS[f][0])
+            #names[f] = req_input(FIELDS[f][0])
+            # postponing this step for later
+            pass
         else:
             FIELDS[f][1] = req_input(FIELDS[f][0])
     # add the sitemap URLs field now that we're done with the loops
@@ -249,7 +254,7 @@ def user_input():
     # fx will ask the user to enter the URL(s) and return them as a dict
     # we then store it as the second list item in the 'sitemap_urls' field
     FIELDS['spider']['sitemap_urls'][1] = sitemap_urls(FIELDS['num_sitemap_urls'][1])
-    return FIELDS, names
+    return FIELDS
 
 def transfer_info(ufields):
     """
