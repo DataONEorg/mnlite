@@ -49,7 +49,7 @@ def run(cfg):
     # run scrapy to harvest metadata (step 10)
     utils.harvest_data(loc, end_node_subj)
     # now run tests
-    data_chx.test_mdata(loc)
+    data_chx.test_mdata(loc, cfg['check_files'])
 
 
 def main():
@@ -58,8 +58,8 @@ def main():
     """
     # get arguments
     try:
-        opts = getopt.getopt(sys.argv[1:], 'hiPd:l:',
-            ['help', 'init', 'production', 'dump=', 'load=']
+        opts = getopt.getopt(sys.argv[1:], 'hiPd:l:c:',
+            ['help', 'init', 'production', 'dump=', 'load=', 'check=']
             )[0]
     except Exception as e:
         L.error('Error: %s' % e)
@@ -84,11 +84,26 @@ def main():
             # load from json file
             CFG['info'] = 'json'
             CFG['json_file'] = a
-    L.info('running mnonboard in %s mode. data gathering from: %s. cn_url: %s' % (CFG['mode'],
-                                                                                  CFG['info'],
-                                                                                  CFG['cn_url']))
-    run(CFG)
-
+        if o in ('-c', '--check'):
+            try:
+                CFG['check_files'] = int(a)
+            except ValueError:
+                L.error('Option -c (--check) requires an integer number of files to check.')
+                print(HELP_TEXT)
+                exit(1)
+    L.info('running mnonboard in %s mode.\n\
+data gathering from: %s\n\
+cn_url: %s\n\
+number of metadata files to check: %s' % (CFG['mode'],
+                                        CFG['info'],
+                                        CFG['cn_url'],
+                                        CFG['check_files']))
+    try:
+        run(CFG)
+    except KeyboardInterrupt:
+        print()
+        L.error('Caught KeyboardInterrupt, quitting...')
+        exit(1)
 
 if __name__ == '__main__':
     main()

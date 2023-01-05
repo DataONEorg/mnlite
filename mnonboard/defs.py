@@ -9,6 +9,7 @@ CFG = {
     'json_file': 'node.json',
     'cn_url': 'https://cn-stage.test.dataone.org/cn',
     'mode': 'staging',
+    'check_files': 5,
 }
 
 HELP_TEXT = """DataONE member node onboard script
@@ -16,14 +17,18 @@ HELP_TEXT = """DataONE member node onboard script
 
 Usage: cli [ OPTIONS ]
 where OPTIONS := {
+    -c | --check=[ NUMBER ]
+            number of random metadata files to check for schema.org compliance
+    -d | --dump=[ FILE ]
+            dump default member node json file to configure manually
     -h | --help
             display this help message
     -i | --init
             initialize a new member node from scratch
-    -l | --load
+    -l | --load=[ FILE ]
             initialize a new member node from a json file
-    -d | --dump
-            dump default member node json file to configure manually
+    -P | --production
+            run this script in production mode (uses the D1 cn API in searches)
 }
 """ % __version__
 
