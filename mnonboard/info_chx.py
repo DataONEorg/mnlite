@@ -3,7 +3,7 @@ from d1_client.cnclient import CoordinatingNodeClient
 from d1_common.types import exceptions
 from os import environ
 
-from defs import FIELDS, SITEMAP_URLS, ORCID_PREFIX, SCHEDULES
+from defs import FIELDS, SITEMAP_URLS, ORCID_PREFIX, SCHEDULES, NODE_ID_PREFIX
 from mnonboard import L
 from mnonboard import default_json
 from opersist.utils import JSON_TIME_FORMAT, dtnow
@@ -210,6 +210,47 @@ def enter_orcid(prompt):
             L.warning("Invalid ORCiD number entered: %s" % o)
             print('Please enter a valid ORCiD number (ex: 0000-0000-0000-0000).')
 
+def valid_nodeid(node_id):
+    """
+    Make sure the node_id contains the correct prefix.
+    """
+    if NODE_ID_PREFIX in node_id:
+        # if valid, return
+        return node_id
+    else:
+        # if invalid, ask user if they meant to do that
+        L.warning('Entered node_id does not contain the "%s" prefix. Entry: "%s"' % (NODE_ID_PREFIX, node_id))
+        while True:
+            # prompt loop
+            c = input('node_id usually contains the prefix "%s" but the entered one (%s) does not.\n\
+                This could have *serious* downstream consequences!\n\
+                Do you wish to modify the node_id entry to fit the standard?\n\
+                Ensure as well that the node_id is unique from that of all other member nodes.\n\
+                Please answer "yes" or "no" (yes is default): ' % (NODE_ID_PREFIX, node_id))
+            if c.lower() == 'no':
+                L.warning('User has chosen to continue with node_id entry of %s' % (node_id))
+                return node_id
+            elif (c.lower() == 'yes') or (c.lower() == ''):
+                L.info('User has chosen to re-enter node_id. Entry: "%s"' % (c))
+                return False
+            else:
+                L.info('User has entered something other than "yes", "", or "no" and will be prompted again. Entry: "%s"' % (c))
+                pass
+
+def enter_nodeid(prompt='Unique node_id: ', id=False):
+    """
+    Have the user enter a node_id and make sure it contains the correct id prefix.
+    """
+    while True:
+        # ask the user for a node id
+        if not id:
+            id = req_input(prompt)
+        # validate and return
+        if valid_nodeid(id):
+            return id
+        else:
+            id = False
+
 def user_input():
     """
     We need a few pieces of information to fill the json fields.
@@ -222,6 +263,8 @@ def user_input():
         if f in 'node':
             for nf in FIELDS[f]:
                 # the second level beneath 'node'
+                if nf in 'node_id':
+                    FIELDS[f][nf][1] = enter_nodeid(prompt=FIELDS[f][nf][0])
                 if nf in ['contact_subject']:
                     FIELDS[f][nf][1] = enter_orcid(FIELDS[f][nf][0])
                 elif '_name' in nf:
@@ -314,6 +357,9 @@ def input_test(fields):
                     # test orcid record
                     assert valid_url_prefix(fields[f][nf], ORCID_PREFIX, nf)
                     assert valid_orcid(fields[f][nf].split('/')[-1])
+                if 'node_id' in nf:
+                    # check that the node_id is valid and prompt user to change if it's not
+                    fields[f][nf] = enter_nodeid(id=fields[f][nf])
     except KeyError as e:
         L.error('No "%s > %s" field found in json.' % (f, nf))
         print('Please add the "%s > %s" field to the json you loaded and re-run the script.' % (f, nf))
