@@ -49,7 +49,7 @@ def run(cfg):
     # run scrapy to harvest metadata (step 10)
     utils.harvest_data(loc, end_node_subj)
     # now run tests
-    data_chx.test_mdata(loc, cfg['check_files'])
+    data_chx.test_mdata(loc, num_tests=cfg['check_files'])
 
 
 def main():
