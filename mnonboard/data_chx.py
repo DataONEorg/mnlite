@@ -59,7 +59,7 @@ def test_mdata(loc, shp_graph=SHACL_URL, format='json-ld', num_tests=3):
                     if not conforms2:
                         violati2 = int(res_text2.split('\n')[2].split('(')[1].split(')')[0])
                         L.error('pyshacl found %s additional violation(s):\n%s' \
-                                % (violati2, res_text))
+                                % (violati2, res_text2))
                     else:
                         L.info('Namespace https/http constraint violation is the only error found')
                 tot_violations = violati1 + violati2
