@@ -175,8 +175,9 @@ def record_lookup(search, cn_url='https://cn.dataone.org/cn', debug=False):
         rt = name if not debug else r
         return rt
     except exceptions.NotFound as e:
-        L.info('Caught NotFound error from %s during lookup: %s' % (cn_url, e))
-        L.info('%s does not exist in this database. Will create a record.' % (search))
+        estrip = str(e).split('<description>')[1].split('</description>')[0]
+        e = e if debug else estrip
+        L.info('Caught NotFound error from %s during lookup. Details: %s' % (cn_url, e))
         return False
     except exceptions.NotAuthorized as e:
         L.error('Caught NotAuthorized error from %s. Is your auth token up to date?' % (cn_url))
