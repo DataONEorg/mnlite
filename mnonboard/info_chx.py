@@ -200,6 +200,7 @@ def enter_orcid(prompt):
     while True:
         # ask the user for an ORCiD number
         o = req_input(prompt)
+        o = o.split('orcid.org/')[-1] # returns only number string even if this is not in string
         # make sure user has entered a valid ORCiD number
         if valid_orcid(o):
             return ORCID_PREFIX + o
