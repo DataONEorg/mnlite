@@ -17,40 +17,28 @@ def run(cfg):
     names = {}
     if cfg['info'] == 'user':
         # do the full user-driven info gathering process
-        ufields, names = info_chx.user_input()
+        ufields = info_chx.user_input()
         fields = info_chx.transfer_info(ufields)
     else:
         # grab the info from a json
         fields = utils.load_json(cfg['json_file'])
         info_chx.input_test(fields)
         # still need to ask the user for some names
-        f = 'contact_subject'
-        names[f+'_name'] = info_chx.orcid_name(fields['node'][f], f)
-        for f in ('default_owner', 'default_submitter'):
-            names[f+'_name'] = info_chx.orcid_name(fields[f], f)
     # now we're cooking
     # get the node path using the end of the path in the 'subject' field (differs from operation.md documentation)
     end_node_subj = fields['node']['subject'].split('/')[-1]
     loc = utils.node_path(nodedir=end_node_subj)
     # initialize a repository there (step 5)
     utils.init_repo(loc)
-    for f in ('default_owner', 'default_submitter'):
-        # add a subject for owner and submitter (may not be necessary)
-        utils.get_or_create_subj(loc=loc,
-                                 name=names[f+'_name'],
-                                 value=fields[f],
-                                 cn_url=cfg['cn_url'])
-    f = 'contact_subject'
-    # add subject for technical contact (step 6)
-    utils.get_or_create_subj(loc=loc,
-                             name=names[f+'_name'],
-                             value=fields['node'][f],
-                             cn_url=cfg['cn_url'])
-    # add node as a subject (step 7)
-    utils.get_or_create_subj(loc=loc,
-                             name=end_node_subj,
-                             value=fields['node']['node_id'],
-                             cn_url=cfg['cn_url'])
+    for f in ('default_owner', 'default_submitter', 'contact_subject'):
+        # add a subject for owner and submitter (may not be necessary if they exist already)
+        # add subject for technical contact (step 6)
+        val = fields[f] if f not in 'contact_subject' else fields['node'][f]
+        utils.get_or_create_subj(loc=loc, value=val, cn_url=cfg['cn_url'], title=f)
+    # add node as a subject (step 7) 
+    utils.get_or_create_subj(loc=loc, value=fields['node']['node_id'],
+                             cn_url=cfg['cn_url'],
+                             name=end_node_subj)
     # set the update schedule and set the state to up
     fields['node']['schedule'] = utils.set_schedule()
     fields['node']['state'] = 'up'

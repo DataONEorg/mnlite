@@ -4,7 +4,7 @@ import subprocess
 
 from defs import SCHEDULES
 from mnonboard import L, NODE_PATH_REL, CUR_PATH_ABS, LOG_DIR, HARVEST_LOG_NAME
-from mnonboard.info_chx import record_lookup, enter_schedule
+from mnonboard.info_chx import record_lookup, enter_schedule, orcid_name
 
 def load_json(loc):
     """
@@ -76,11 +76,28 @@ def new_subject(loc, name, value):
         L.error('opersist subject creation command failed for %s (%s): %s' % (name, value, e))
         exit(1)
 
-def get_or_create_subj(loc, name, value, cn_url):
+def get_or_create_subj(loc, value, cn_url, title='unspecified subject', name=False):
     """
     Get an existing subject using their ORCiD or create a new one with the specified values.
+
+    This one I will definitely have to explain in the docstring.
     """
-    if not record_lookup(value, cn_url):
+    create = False
+    if name:
+        # we are probably creating a node record
+        L.info('Creating a node subject.')
+        create = True
+    else:
+        # name was not given. look up the orcid record in the database
+        name = record_lookup(value, cn_url)
+        if not name:
+            # if the name is not in the database, we will create it; else it's already there and we ignore it
+            L.info('%s does not exist in this database. Will create a record. Need a name first...' % (value))
+            # ask the user for a name with the associated position and ORCiD record
+            name = orcid_name(value, title)
+            create = True
+    if create:
+        # finally, use opersist to create the subject
         new_subject(loc, name, value)
 
 def set_schedule():
