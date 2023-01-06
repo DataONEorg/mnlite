@@ -23,7 +23,7 @@ def start_logging():
         format=LOG_FORMAT,
         datefmt=LOG_DATE_FORMAT,
     )
-    l = logging.getLogger("main")
+    l = logging.getLogger("init")
     formatter = logging.Formatter(fmt=LOG_FORMAT, datefmt=LOG_DATE_FORMAT)
     # this initializes logging to file
     f = logging.FileHandler(LOG_LOC)
@@ -32,9 +32,9 @@ def start_logging():
     # warnings also go to file
     # initialize logging
     l.addHandler(f)
-    return l
+    return l, f
 
-L = start_logging()
+L, F = start_logging()
 L.info('----- mnonboard %s start -----' % __version__)
 
 # absolute path of current file

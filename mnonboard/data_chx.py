@@ -2,7 +2,9 @@ import random
 from pyshacl import validate
 from pyshacl.errors import ShapeLoadError, ConstraintLoadError, \
                            ReportableRuntimeError
-from mnonboard import L
+import logging
+
+from mnonboard import F
 from mnonboard.defs import SHACL_URL
 from opersist.cli import getOpersistInstance
 from opersist.models.thing import Thing
@@ -12,6 +14,8 @@ def test_mdata(loc, shp_graph=SHACL_URL, format='json-ld', num_tests=3, debug=Tr
     """
     Use pyshacl to test harvested metadata.
     """
+    L = logging.getLogger('test_mdata')
+    L.addHandler(F)
     L.info('Starting metadata checks. Shape graph: %s' % (shp_graph))
     L.info('Checking %s files.' % num_tests)
     op = getOpersistInstance(loc)

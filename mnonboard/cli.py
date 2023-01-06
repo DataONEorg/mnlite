@@ -1,20 +1,18 @@
 import os, sys
 import getopt
+import logging
 
 import utils
 import info_chx
 import data_chx
 from defs import CFG, HELP_TEXT
-from mnonboard import L
-from mnonboard import default_json
+from mnonboard import default_json, F
 
 def run(cfg):
     """
     Wrapper around opersist that simplifies the process of onboarding a new
     member node to DataONE.
     """
-    fields = default_json(fx='mnonboard.cli.run()')
-    names = {}
     if cfg['info'] == 'user':
         # do the full user-driven info gathering process
         ufields = info_chx.user_input()
@@ -56,6 +54,8 @@ def main():
     """
     Uses getopt to set config values in order to call run().
     """
+    L = logging.getLogger('main')
+    L.addHandler(F)
     # get arguments
     try:
         opts = getopt.getopt(sys.argv[1:], 'hiPd:l:c:',

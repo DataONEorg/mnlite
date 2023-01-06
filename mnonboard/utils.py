@@ -1,15 +1,18 @@
 import os
 import json
 import subprocess
+import logging
 
 from defs import SCHEDULES
-from mnonboard import L, NODE_PATH_REL, CUR_PATH_ABS, LOG_DIR, HARVEST_LOG_NAME
+from mnonboard import NODE_PATH_REL, CUR_PATH_ABS, LOG_DIR, HARVEST_LOG_NAME, F
 from mnonboard.info_chx import cn_subj_lookup, local_subj_lookup, enter_schedule, orcid_name
 
 def load_json(loc):
     """
     Load json from file.
     """
+    L = logging.getLogger('load_json')
+    L.addHandler(F)
     L.info('Loading member node json from %s' % loc)
     try:
         with open(loc, 'r') as f:
@@ -27,6 +30,8 @@ def save_json(loc, jf):
     """
     Output json to file.
     """
+    L = logging.getLogger('save_json')
+    L.addHandler(F)
     L.info('Writing member node json to %s' % loc)
     try:
         with open(loc, 'w') as f:
@@ -58,6 +63,8 @@ def init_repo(loc):
     '''
     Initialize a new instance using opersist.
     '''
+    L = logging.getLogger('init_repo')
+    L.addHandler(F)
     try:
         L.info('Using opersist to init new member node folder: %s' % loc)
         subprocess.run(['opersist',
@@ -67,10 +74,12 @@ def init_repo(loc):
         L.error('opersist init command failed (node folder: %s): %s' % (loc, e))
         exit(1)
 
-def new_subject(loc, name, value):
+def new_subj(loc, name, value):
     """
     Create new subject in the database using opersist.
     """
+    L = logging.getLogger('new_subj')
+    L.addHandler(F)
     try:
         L.info('opersist creating new subject. Name: %s Value: %s Location: %s' % (name, value, loc))
         subprocess.run(['opersist',
@@ -89,6 +98,8 @@ def get_or_create_subj(loc, value, cn_url, title='unspecified subject', name=Fal
 
     This one I will definitely have to explain in the docstring.
     """
+    L = logging.getLogger('get_or_create_subj')
+    L.addHandler(F)
     create = False
     if name:
         # we are probably creating a node record
@@ -107,7 +118,7 @@ def get_or_create_subj(loc, value, cn_url, title='unspecified subject', name=Fal
             create = True
     if create:
         # finally, use opersist to create the subject (sloppy, could create it directly, but this does the same thing)
-        new_subject(loc, name, value)
+        new_subj(loc, name, value)
 
 def set_schedule():
     """
@@ -120,6 +131,8 @@ def restart_mnlite():
     """
     Subprocess call to restart the mnlite system service. Requires sudo.
     """
+    L = logging.getLogger('restart_mnlite')
+    L.addHandler(F)
     L.info('Restarting mnlite systemctl service...')
     try:
         subprocess.run(['sudo', 'systemctl', 'restart', 'mnlite.service'], check=True)
@@ -143,6 +156,8 @@ def harvest_data(loc, mn_name):
     """
     
     """
+    L = logging.getLogger('harvest_data')
+    L.addHandler(F)
     log_loc = os.path.join(LOG_DIR, mn_name + HARVEST_LOG_NAME)
     L.info('Starting scrapy crawl, saving to %s' % (loc))
     L.info('scrapy log location is %s' % (log_loc))
