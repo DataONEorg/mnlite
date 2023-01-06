@@ -112,7 +112,7 @@ def get_or_create_subj(loc, value, cn_url, title='unspecified subject', name=Fal
             name = local_subj_lookup(subj=value, loc=loc)
         if not name:
             # if the name is not in either database, we will create it; else it's already there and we ignore it
-            L.info('%s does not exist either locally or at %s. Will create a record. Need a name first...' % (value))
+            L.info('%s does not exist either locally or at %s. Will create a record. Need a name first...' % (value, cn_url))
             # ask the user for a name with the associated position and ORCiD record
             name = orcid_name(value, title)
             create = True
