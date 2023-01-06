@@ -4,7 +4,7 @@ import subprocess
 
 from defs import SCHEDULES
 from mnonboard import L, NODE_PATH_REL, CUR_PATH_ABS, LOG_DIR, HARVEST_LOG_NAME
-from mnonboard.info_chx import record_lookup, enter_schedule, orcid_name
+from mnonboard.info_chx import cn_subj_lookup, local_subj_lookup, enter_schedule, orcid_name
 
 def load_json(loc):
     """
@@ -60,7 +60,9 @@ def init_repo(loc):
     '''
     try:
         L.info('Using opersist to init new member node folder: %s' % loc)
-        subprocess.run(['opersist', '-f', loc, 'init'], check=True)
+        subprocess.run(['opersist',
+                        '--folder=%s' % (loc),
+                        'init'], check=True)
     except Exception as e:
         L.error('opersist init command failed (node folder: %s): %s' % (loc, e))
         exit(1)
@@ -71,7 +73,12 @@ def new_subject(loc, name, value):
     """
     try:
         L.info('opersist creating new subject. Name: %s Value: %s Location: %s' % (name, value, loc))
-        subprocess.run(['opersist', '-f', loc, 'sub', '-n', '"%s"' % name, '-s', value], check=True)
+        subprocess.run(['opersist',
+                        '--folder=%s' % (loc),
+                        'sub',
+                        '--operation=create',
+                        '--name=%s' % name,
+                        '--subj=%s' % value], check=True)
     except Exception as e:
         L.error('opersist subject creation command failed for %s (%s): %s' % (name, value, e))
         exit(1)
@@ -89,15 +96,17 @@ def get_or_create_subj(loc, value, cn_url, title='unspecified subject', name=Fal
         create = True
     else:
         # name was not given. look up the orcid record in the database
-        name = record_lookup(value, cn_url)
+        name = cn_subj_lookup(subj=value, cn_url=cn_url)
         if not name:
-            # if the name is not in the database, we will create it; else it's already there and we ignore it
-            L.info('%s does not exist in this database. Will create a record. Need a name first...' % (value))
+            name = local_subj_lookup(subj=value, loc=loc)
+        if not name:
+            # if the name is not in either database, we will create it; else it's already there and we ignore it
+            L.info('%s does not exist either locally or at %s. Will create a record. Need a name first...' % (value))
             # ask the user for a name with the associated position and ORCiD record
             name = orcid_name(value, title)
             create = True
     if create:
-        # finally, use opersist to create the subject
+        # finally, use opersist to create the subject (sloppy, could create it directly, but this does the same thing)
         new_subject(loc, name, value)
 
 def set_schedule():

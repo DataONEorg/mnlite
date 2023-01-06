@@ -7,6 +7,7 @@ from defs import FIELDS, SITEMAP_URLS, ORCID_PREFIX, SCHEDULES, NODE_ID_PREFIX
 from mnonboard import L
 from mnonboard import default_json
 from opersist.utils import JSON_TIME_FORMAT, dtnow
+from opersist.cli import getOpersistInstance
 
 D1_AUTH_TOKEN = environ.get('D1_AUTH_TOKEN')
 
@@ -156,7 +157,7 @@ def enter_int(prompt):
             L.warning("Number of database sitemap URLs can't be less than 1. (%s entered)" % i)
             print('Please enter 1 or greater.')
 
-def record_lookup(search, cn_url='https://cn.dataone.org/cn', debug=False):
+def cn_subj_lookup(subj, cn_url='https://cn.dataone.org/cn', debug=False):
     """
     Use the DataONE API to look up whether a given ORCiD number already exists in the system.
     """
@@ -167,11 +168,11 @@ def record_lookup(search, cn_url='https://cn.dataone.org/cn', debug=False):
     client = CoordinatingNodeClient(cn_url, **options)
     try:
         # Get records
-        L.info('Starting record lookup for %s from %s' % (search, cn_url))
-        subject = client.getSubjectInfo(search)
+        L.info('Starting record lookup for %s from %s' % (subj, cn_url))
+        subject = client.getSubjectInfo(subj)
         r = subject.content()[0].content()
         name = '%s %s' % (r[1], r[2])
-        L.info('Name associated with record %s found in %s: %s.' % (search, cn_url, name))
+        L.info('Name associated with record %s found in %s: %s.' % (subj, cn_url, name))
         rt = name if not debug else r
         return rt
     except exceptions.NotFound as e:
@@ -185,6 +186,22 @@ def record_lookup(search, cn_url='https://cn.dataone.org/cn', debug=False):
     except exceptions.DataONEException as e:
         L.error('Unspecified error from %s:\n%s' % (cn_url, e))
         exit(1)
+
+def local_subj_lookup(subj, loc):
+    """
+    Use the local opersist instance to look up a subject.
+    """
+    L.info('Looking up %s in sqlite database at %s' % (subj, loc))
+    op = getOpersistInstance(loc)
+    rec = op.getSubject(subj=subj)
+    op.close()
+    if rec:
+        rec = rec.asJsonDict()
+        L.info('Found record: %s' % (rec))
+        return rec['name']
+    else:
+        L.info('No subject found.')
+        return False
 
 def orcid_name(orcid, f):
     """
