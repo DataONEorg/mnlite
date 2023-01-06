@@ -94,3 +94,25 @@ SCHEDULES = {
       "year": "*"
     }
 }
+
+SHACL_ERRORS = {
+  'essential': {
+    'MalformedJSON': 'Metadata files must be properly formatted json-ld',
+    'soso:DatasetNS1Shape': 'Expecting SO namespace of <http://schema.org/> not <https://schema.org/>',
+    'soso:DatasetNS2Shape': 'Expecting SO namespace of <http://schema.org/> not <https://schema.org/>',
+    'soso:DatasetNS3Shape': 'Expecting SO namespace of <http://schema.org/> not <https://schema.org/>',
+    'soso:IDShape': 'Dataset must have an ID',
+    'SO:Dataset-description': 'Dataset must have a description',
+    'SO:Dataset-identifier': 'Dataset identifiers must be a URL, Text or PropertyValue',
+    'SO:Dataset-keywords': 'A Dataset should include descriptive keywords as literals or DefinedTerm',
+    'SO:Dataset-name': 'Name is required for a Dataset',
+    'SO:Dataset-url': 'Dataset requires a URL for the location of a page describing the dataset',
+    'SO:Dataset-version': 'Dataset must have a version as Literal or Number',
+  },
+  'optional': {
+    'SO:Dataset-isAccessibleForFree': 'It is recommended that a Dataset indicates accessibility for free or otherwise',
+    'SO:Dataset-sameAs': 'It is recommended that a Dataset includes a sameAs URL',
+    'schema:GeoCoordinates-longitude': 'It is recommended that a Dataset has a longitude coordinate in WGS-84 format',
+    'schema:GeoCoordinates-latitude': 'It is recommended that a Dataset has a latitude coordinate in WGS-84 format',
+  }
+}
