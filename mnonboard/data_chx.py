@@ -8,7 +8,7 @@ from opersist.cli import getOpersistInstance
 from opersist.models.thing import Thing
 from json.decoder import JSONDecodeError
 
-def test_mdata(loc, shp_graph=SHACL_URL, format='json-ld', num_tests=3):
+def test_mdata(loc, shp_graph=SHACL_URL, format='json-ld', num_tests=3, debug=True):
     """
     Use pyshacl to test harvested metadata.
     """
@@ -39,7 +39,9 @@ def test_mdata(loc, shp_graph=SHACL_URL, format='json-ld', num_tests=3):
         try:
             with open(pth, 'rb') as f:
                 record = f.read().decode('utf-8')
-            L.info('Success; record follows:\n%s' % (record))
+            L.info('Success.')
+            if debug:
+                ('Record follows:\n%s' % (record))
             conforms, res_graph, res_text = validate(data_graph=record,
                                                     data_graph_format=format,
                                                     shacl_graph=shp_graph,
@@ -47,7 +49,9 @@ def test_mdata(loc, shp_graph=SHACL_URL, format='json-ld', num_tests=3):
             if not conforms:
                 violati1 = int(res_text.split('\n')[2].split('(')[1].split(')')[0])
                 constraint_viol = ' including Constraint Violations' if 'Constraint Violation' in res_text else ''
-                L.error('pyshacl found %s violation(s):\n%s' % (violati1, res_text))
+                L.error('pyshacl found %s violations.' % (violati1))
+                if debug:
+                    L.error('Details:\n%s' % (res_text))
                 if (violati1 == 1) and ('<http://schema.org/> not <https://schema.org/>' in res_text):
                     # under this condition there is one constraint violation where the record uses https
                     constraint_viol = ' including https vs http namespace violation'
@@ -60,8 +64,9 @@ def test_mdata(loc, shp_graph=SHACL_URL, format='json-ld', num_tests=3):
                                                     shacl_graph_format='turtle',)
                     if not conforms2:
                         violati2 = int(res_text2.split('\n')[2].split('(')[1].split(')')[0])
-                        L.error('pyshacl found %s additional violation(s):\n%s' \
-                                % (violati2, res_text2))
+                        L.error('pyshacl found %s additional violations.' % (violati2))
+                        if debug:
+                            L.error('Details:\n%s' % (res_text2))
                     else:
                         L.info('Namespace https/http constraint violation is the only error found')
                 tot_violations = violati1 + violati2
