@@ -10,6 +10,12 @@ from opersist.cli import getOpersistInstance
 from opersist.models.thing import Thing
 from json.decoder import JSONDecodeError
 
+def violation_cat(viol):
+    """
+    A function that determines the severity of a passed shacl violation.
+    """
+    pass
+
 def test_mdata(loc, shp_graph=SHACL_URL, format='json-ld', num_tests=3, debug=True):
     """
     Use pyshacl to test harvested metadata.
