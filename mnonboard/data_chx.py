@@ -20,6 +20,12 @@ def violation_cat(viol):
 def test_mdata(loc, shp_graph=SHACL_URL, format='json-ld', num_tests=3, debug=True):
     """
     Use pyshacl to test harvested metadata.
+
+    Args:
+        loc: The base MN folder path in which opersist keeps its data and databases
+        shp_graph: Shape graph to be used for testing (defaults to soso v1.2.3)
+        num_tests: Number of metadata files to test (randomly selected; default=3)
+        debug: If True, will print a lot of debug information including metadata file contents
     """
     L = logging.getLogger('test_mdata')
     L.addHandler(F)
