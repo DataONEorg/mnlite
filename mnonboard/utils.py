@@ -169,3 +169,29 @@ def harvest_data(loc, mn_name):
         L.info('scrapy crawl complete.')
     except Exception as e:
         L.error('Error running scrapy: %s' % e)
+
+def limit_tests(num_things):
+    """
+    Ask the user to limit the number of tests to run on a given set of metadata.
+    """
+    L = logging.getLogger('limit_tests')
+    while True:
+        i = input('Testing more than 500 objects is not recommended due to performance concerns.\n\
+This may take several minutes and use critical server resources. (est: %s min)\n\
+Are you sure you want to test all %s metadata objects in this set? (y/N): ' % (round(num_things/500), num_things))
+        if (i.lower() in 'n') or (i.lower() in ''):
+            L.info('User has chosen enter a new number of objects to test.')
+            while True:
+                n = input('Please enter a new number of metadata objects to test: ')
+                try:
+                    num_things = int(n)
+                    break
+                except ValueError as e:
+                    L.error('User has not entered a number ("%s")' % n)
+            if num_things <= 500:
+                L.info('User has chosen to test %s metadata objects.' % num_things)
+                break
+        else:
+            L.info('User has chosen to continue testing %s objects.' % (num_things))
+            break
+    return num_things
