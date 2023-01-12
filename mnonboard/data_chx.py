@@ -36,7 +36,7 @@ def test_mdata(loc, shp_graph=SHACL_URL, format='json-ld', num_tests=3, debug=Tr
         L.warning('User has chosen to shacl test all %s files in the set. Asking to limit...' % num_things)
         # 500 will take about a minute and use a bunch of resources. let's suggest keeping it shorter than that
         num_tests = limit_tests(num_things)
-    num_tests = num_things if num_tests == 'all' else num_tests # still might have to test all the things
+    num_tests = num_things if num_tests == 'all' else num_tests # still might have to test all things if (num_things < 500)
     L.info('Checking %s files.' % num_tests)
     q = op.getSession().query(Thing) # this might be too inefficient for large sets; may need to change
     i, valid_files, load_errs = 0, 0, 0
