@@ -97,11 +97,15 @@ SCHEDULES = {
 
 SHACL_ERRORS = {
   'essential': {
-    'MalformedJSON': 'Metadata files must be properly formatted json-ld',
+    # load errors
+    'ShapeLoadError': 'Shape graph must load correctly',
+    'JSONDecodeError': 'Metadata files must be properly formatted json-ld',
+    # science-on-schema.org violations
     'soso:DatasetNS1Shape': 'Expecting SO namespace of <http://schema.org/> not <https://schema.org/>',
     'soso:DatasetNS2Shape': 'Expecting SO namespace of <http://schema.org/> not <https://schema.org/>',
     'soso:DatasetNS3Shape': 'Expecting SO namespace of <http://schema.org/> not <https://schema.org/>',
     'soso:IDShape': 'Dataset must have an ID',
+    # schema.org violations
     'SO:Dataset-description': 'Dataset must have a description',
     'SO:Dataset-identifier': 'Dataset identifiers must be a URL, Text or PropertyValue',
     'SO:Dataset-keywords': 'A Dataset should include descriptive keywords as literals or DefinedTerm',
@@ -110,9 +114,17 @@ SHACL_ERRORS = {
     'SO:Dataset-version': 'Dataset must have a version as Literal or Number',
   },
   'optional': {
+    # schema.org violations
     'SO:Dataset-isAccessibleForFree': 'It is recommended that a Dataset indicates accessibility for free or otherwise',
     'SO:Dataset-sameAs': 'It is recommended that a Dataset includes a sameAs URL',
+    # SO coordinates
     'schema:GeoCoordinates-longitude': 'It is recommended that a Dataset has a longitude coordinate in WGS-84 format',
     'schema:GeoCoordinates-latitude': 'It is recommended that a Dataset has a latitude coordinate in WGS-84 format',
+  },
+  'internal': {
+    # errors we at NCEAS had testing data
+    'ConstraintLoadError': 'Constraints must load correctly',
+    'ReportableRuntimeError': 'No errors can occur at runtime',
+    'FileNotFoundError': 'Files must exist in the location specified',
   }
 }

@@ -5,17 +5,55 @@ from pyshacl.errors import ShapeLoadError, ConstraintLoadError, \
 import logging
 
 from mnonboard import F
-from mnonboard.defs import SHACL_URL
+from mnonboard.defs import SHACL_URL, SHACL_ERRORS
 from mnonboard.utils import limit_tests
 from opersist.cli import getOpersistInstance
 from opersist.models.thing import Thing
 from json.decoder import JSONDecodeError
 
+def violation_extract(viol):
+    """
+    A function that extracts the name of the violation from a dictionary entry.
+    """
+    pass
+
 def violation_cat(viol):
     """
     A function that determines the severity of a passed shacl violation.
     """
-    pass
+    L = logging.getLogger('violation_cat')
+    L.addHandler(F)
+    cat = '%s - %s: %s'
+    if viol in SHACL_ERRORS['essential']:
+        cat = cat % ('ESSENTIAL', viol, SHACL_ERRORS['essential'][viol])
+    elif viol in SHACL_ERRORS['optional']:
+        cat = cat % ('Optional', viol, SHACL_ERRORS['essential'][viol])
+    elif viol in SHACL_ERRORS['internal']:
+        cat = cat % ('Internal', viol, SHACL_ERRORS['essential'][viol])
+    else:
+        cat = cat % ('Not found', viol, 'Not found in SHACL_ERRORS dictionary! Consult NCEAS node manager for information.')
+    L.info('Violation categorization for %s: %s' % (viol, cat))
+    return cat
+
+def violation_report(viol_dict):
+    """
+    A function that outputs a report containing information on the violations found while shacl testing.
+    """
+    L = logging.getLogger('violation_report')
+    L.addHandler(F)
+    L.info('Creating report.')
+    if len(viol_dict) > 0:
+        rep_str = 'Validation report (sha256 - violations or error):\n'
+        for v in viol_dict:
+            i = 0
+            while i > len(v):
+                viol = violation_extract(v[i])
+                rep_str = rep_str + violation_cat(viol)
+                i += 1
+        L.info(rep_str)
+    else:
+        L.info('All checks passed.')
+
 
 def test_mdata(loc, shp_graph=SHACL_URL, format='json-ld', num_tests=3, debug=True):
     """
@@ -67,6 +105,7 @@ def test_mdata(loc, shp_graph=SHACL_URL, format='json-ld', num_tests=3, debug=Tr
                                                     data_graph_format=format,
                                                     shacl_graph=shp_graph,
                                                     shacl_graph_format='turtle',)
+            viol_dict[t.content] = {0: [conforms, res_graph, res_text]}
             if not conforms:
                 violati1 = int(res_text.split('\n')[2].split('(')[1].split(')')[0])
                 constraint_viol = ' including Constraint Violations' if 'Constraint Violation' in res_text else ''
@@ -83,6 +122,7 @@ def test_mdata(loc, shp_graph=SHACL_URL, format='json-ld', num_tests=3, debug=Tr
                                                     data_graph_format=format,
                                                     shacl_graph=shp_graph,
                                                     shacl_graph_format='turtle',)
+                    viol_dict[t.content][1] = [conforms2, res_graph2, res_text2]
                     if not conforms2:
                         violati2 = int(res_text2.split('\n')[2].split('(')[1].split(')')[0])
                         L.error('pyshacl found %s additional violations.' % (violati2))
@@ -92,51 +132,47 @@ def test_mdata(loc, shp_graph=SHACL_URL, format='json-ld', num_tests=3, debug=Tr
                         L.info('Namespace https/http constraint violation is the only error found')
                 tot_violations = violati1 + violati2
                 L.info('Total shacl violations in file: %s' % (tot_violations))
-                viol_dict[t.content] = 'shacl violations%s (%s total)' % (constraint_viol, tot_violations, )
+                viol_dict[t.content] = {0: [False, None, 'shacl violations%s (%s total)' % (constraint_viol, tot_violations)]}
             else:
                 L.info('No violations found in %s' % (pth))
-                viol_dict[t.content] = None
+                viol_dict[t.content] = {0: [True, None, 'No violations.']}
                 valid_files += 1
         except ShapeLoadError as e:
             # could be an error with either data or shacl file
             L.error('pyshacl threw ShapeLoadError: %s' % e)
-            viol_dict[t.content] = 'ShapeLoadError'
+            viol_dict[t.content] = {0: [False, None, 'ShapeLoadError: %s' % e]}
             load_errs += 1
         except ConstraintLoadError as e:
             # I think this is only possible when loading the shacl graph (i.e. w/ constraints)
             L.error('pyshacl threw ConstraintLoadError: %s' % e)
-            viol_dict[t.content] = 'ConstraintLoadError'
+            viol_dict[t.content] = {0: [False, None, 'ConstraintLoadError']}
             load_errs += 1
         except ReportableRuntimeError as e:
             # not exactly sure what this is
             L.error('pyshacl threw ReportableRuntimeError: %s' % e)
-            viol_dict[t.content] = 'ReportableRuntimeError'
+            viol_dict[t.content] = {0: [False, None, 'ReportableRuntimeError']}
             load_errs += 1
         except JSONDecodeError as e:
             # malformed json in the json-ld record, this is definitely related to the data graph
             L.error('JSON is malformed, this record cannot be validated. Details:\n%s' % e)
-            viol_dict[t.content] = 'JSONDecodeError'
+            viol_dict[t.content] = {0: [False, None, 'JSONDecodeError']}
             load_errs += 1
         except FileNotFoundError as e:
             # somehow the file we got from the database does not exist
             L.error('Could not find a file at %s' % (pth))
+            viol_dict[t.content] = {0: [False, None, 'FileNotFoundError']}
+            load_errs += 1
         except Exception as e:
             # this might have something to do with code in this function
             # if it's a TypeError, it could have to do with the creation of violati1/violati2
             L.error('Error validating record %s' % (pth))
             L.error('Uncaught exception (%s): %s' % (repr(e), e))
-            viol_dict[t.content] = repr(e)
+            viol_dict[t.content] = {0: [False, None, repr(e)]}
             load_errs += 1
         finally:
             i += 1
     L.info('Found %s valid records out of %s checked.' % (valid_files, i))
     L.info('%s failures due to load and/or decode errors.' % (load_errs))
-    if len(viol_dict) > 0:
-        rep_str = 'Validation report (sha256 - violations or error):\n'
-        for v in viol_dict:
-            rep_str = rep_str + '%s - %s\n' % (v, viol_dict[v])
-        L.info(rep_str)
-    else:
-        L.info('All checks passed.')
+    violation_report(viol_dict)
     # close the opersist instance
     op.close()
