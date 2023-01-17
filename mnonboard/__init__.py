@@ -12,7 +12,7 @@ __version__ = 'v0.0.1'
 FN_DATE = datetime.now().strftime('%Y-%m-%d')
 YM_DATE = datetime.now().strftime('%Y-%m')
 LOG_DIR = '/var/log/mnlite/'
-LOG_NAME = 'mnonboard-%s.log' % FN_DATE
+LOG_NAME = 'mnonboard-%s.log' % (FN_DATE)
 LOG_LOC = os.path.join(LOG_DIR, LOG_NAME)
 
 HARVEST_LOG_NAME = '-crawl-%s.log' % YM_DATE
