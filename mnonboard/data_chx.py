@@ -15,7 +15,10 @@ def violation_extract(viol):
     """
     A function that extracts the name of the violation from a dictionary entry.
     """
-    pass
+    lines = ['Validation Result in', 'Constraint Violation in']
+    #
+    viol_text = viol
+    return viol_text
 
 def violation_cat(viol):
     """
