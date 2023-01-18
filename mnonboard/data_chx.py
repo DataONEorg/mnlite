@@ -6,7 +6,7 @@ import logging
 
 from mnonboard import F
 from mnonboard.defs import SHACL_URL, SHACL_ERRORS
-from mnonboard.utils import limit_tests
+from mnonboard.utils import limit_tests, save_report
 from opersist.cli import getOpersistInstance
 from opersist.models.thing import Thing
 from json.decoder import JSONDecodeError
@@ -30,43 +30,51 @@ def violation_extract(viol):
         L.warning('Violation name was not extracted. Text block follows:\n%s' % (viol))
         return vx
 
-def violation_cat(viol):
+def violation_cat(hash, viol):
     """
-    A function that determines the severity of a passed shacl violation.
+    A function that returns a string that contains the severity of a passed shacl violation and a comment.
     """
     L = logging.getLogger('violation_cat')
     L.addHandler(F)
-    cat = '%s - %s: %s'
+    csvl = '%s,%s,%s,%s\n'
+    cat, comment = '', ''
     if viol in SHACL_ERRORS['essential']:
-        cat = cat % ('ESSENTIAL', viol, SHACL_ERRORS['essential'][viol])
+        cat = 'ESSENTIAL'
+        comment = SHACL_ERRORS['essential'][viol]
     elif viol in SHACL_ERRORS['optional']:
-        cat = cat % ('Optional', viol, SHACL_ERRORS['essential'][viol])
+        cat = 'Optional'
+        comment = SHACL_ERRORS['optional'][viol]
     elif viol in SHACL_ERRORS['internal']:
-        cat = cat % ('Internal', viol, SHACL_ERRORS['essential'][viol])
+        cat = 'Internal'
+        comment = SHACL_ERRORS['internal'][viol]
     else:
-        cat = cat % ('Not found', viol, 'Not found in SHACL_ERRORS dictionary! Consult NCEAS node manager for information.')
+        cat = 'Not found'
+        comment = 'Violation name %s not found in SHACL_ERRORS dictionary! Consult NCEAS node manager for information.' % viol
+        L.warning(comment)
+    csvl = csvl % (hash, cat, viol, comment)
     L.info('Violation categorization for %s: %s' % (viol, cat))
-    return cat
+    return csvl
 
-def violation_report(viol_dict):
+def violation_report(viol_dict, loc):
     """
     A function that outputs a report containing information on the violations found while shacl testing.
     """
     L = logging.getLogger('violation_report')
     L.addHandler(F)
     L.info('Creating report.')
+    rep_str = 'Hash,Violation level,Violation name,Comment\n'
     if len(viol_dict) > 0:
-        rep_str = 'Validation report (sha256 - violations or error):\n'
-        for v in viol_dict:
+        for hash in viol_dict:
             i = 0
-            while i > len(v):
-                viol = violation_extract(v[i])
-                rep_str = rep_str + violation_cat(viol)
+            while i > len(viol_dict[hash]):
+                viol = violation_extract(viol_dict[hash][i][2])
+                rep_str = rep_str + violation_cat(hash, viol)
                 i += 1
         L.info(rep_str)
     else:
-        L.info('All checks passed.')
-
+        rep_str = rep_str + ',,,No violations found.\n'
+        L.info('No violations.')
+    save_report(rep_str=rep_str, loc=loc)
 
 def test_mdata(loc, shp_graph=SHACL_URL, format='json-ld', num_tests=3, debug=True):
     """
@@ -186,6 +194,6 @@ def test_mdata(loc, shp_graph=SHACL_URL, format='json-ld', num_tests=3, debug=Tr
             i += 1
     L.info('Found %s valid records out of %s checked.' % (valid_files, i))
     L.info('%s failures due to load and/or decode errors.' % (load_errs))
-    violation_report(viol_dict)
+    violation_report(viol_dict, loc)
     # close the opersist instance
     op.close()

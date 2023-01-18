@@ -4,7 +4,7 @@ import subprocess
 import logging
 
 from defs import SCHEDULES
-from mnonboard import NODE_PATH_REL, CUR_PATH_ABS, LOG_DIR, HARVEST_LOG_NAME, F
+from mnonboard import NODE_PATH_REL, CUR_PATH_ABS, LOG_DIR, HARVEST_LOG_NAME, F, HM_DATE
 from mnonboard.info_chx import cn_subj_lookup, local_subj_lookup, enter_schedule, orcid_name
 
 def load_json(loc):
@@ -44,6 +44,18 @@ def save_json(loc, jf):
     except Exception as e:
         L.error('Error: %s' % e)
         exit(1)
+
+def save_report(rep_str, loc, format='.csv'):
+    """
+    Output a validation report for a set of metadata.
+    """
+    L = logging.getLogger('save_report')
+    L.addHandler(F)
+    fn = os.path.join(loc, 'report-%s%s' % (HM_DATE, format))
+    L.info('Writing report to %s' % (fn))
+    with open(fn, 'w') as f:
+        f.write(rep_str)
+    L.info('Done.')
 
 def dumps_json(js):
     """
