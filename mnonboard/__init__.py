@@ -28,7 +28,7 @@ def start_logging():
     formatter = logging.Formatter(fmt=LOG_FORMAT, datefmt=LOG_DATE_FORMAT)
     # this initializes logging to file
     f = logging.FileHandler(LOG_LOC)
-    f.setLevel('INFO')
+    f.setLevel('DEBUG')
     f.setFormatter(formatter)
     # warnings also go to file
     # initialize logging

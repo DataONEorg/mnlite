@@ -76,7 +76,7 @@ def violation_report(viol_dict, loc):
         L.info('No violations.')
     save_report(rep_str=rep_str, loc=loc)
 
-def test_mdata(loc, shp_graph=SHACL_URL, format='json-ld', num_tests=3, debug=True):
+def test_mdata(loc, shp_graph=SHACL_URL, format='json-ld', num_tests=3, debug=False):
     """
     Use pyshacl to test harvested metadata.
 
@@ -86,6 +86,7 @@ def test_mdata(loc, shp_graph=SHACL_URL, format='json-ld', num_tests=3, debug=Tr
         num_tests: Number of metadata files to test (randomly selected; default=3)
         debug: If True, will print a lot of debug information including metadata file contents
     """
+    debug = True if (debug == 'debug') or (debug == True) else False
     L = logging.getLogger('test_mdata')
     L.addHandler(F)
     L.info('Starting metadata checks. Shape graph: %s' % (shp_graph))
@@ -121,7 +122,7 @@ def test_mdata(loc, shp_graph=SHACL_URL, format='json-ld', num_tests=3, debug=Tr
                 record = f.read().decode('utf-8')
             L.info('Success.')
             if debug:
-                L.info('Record follows:\n%s' % (record))
+                L.debug('Record follows:\n%s' % (record))
             conforms, res_graph, res_text = validate(data_graph=record,
                                                     data_graph_format=format,
                                                     shacl_graph=shp_graph,
@@ -132,7 +133,7 @@ def test_mdata(loc, shp_graph=SHACL_URL, format='json-ld', num_tests=3, debug=Tr
                 constraint_viol = ' including Constraint Violations' if 'Constraint Violation' in res_text else ''
                 L.error('pyshacl found %s violations.' % (violati1))
                 if debug:
-                    L.info('Details:\n%s' % (res_text))
+                    L.debug('Details:\n%s' % (res_text))
                 if (violati1 == 1) and ('<http://schema.org/> not <https://schema.org/>' in res_text):
                     # under this condition there is one constraint violation where the record uses https
                     constraint_viol = ' including https vs http namespace violation'
@@ -148,7 +149,7 @@ def test_mdata(loc, shp_graph=SHACL_URL, format='json-ld', num_tests=3, debug=Tr
                         violati2 = int(res_text2.split('\n')[2].split('(')[1].split(')')[0])
                         L.error('pyshacl found %s additional violations.' % (violati2))
                         if debug:
-                            L.info('Details:\n%s' % (res_text2))
+                            L.debug('Details:\n%s' % (res_text2))
                     else:
                         L.info('Namespace https/http constraint violation is the only error found')
                 tot_violations = violati1 + violati2

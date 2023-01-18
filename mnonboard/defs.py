@@ -10,6 +10,7 @@ CFG = {
     'cn_url': 'https://cn-stage.test.dataone.org/cn',
     'mode': 'staging',
     'check_files': 5,
+    'verbosity': 'info',
 }
 
 HELP_TEXT = """DataONE member node onboard script
