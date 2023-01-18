@@ -15,10 +15,20 @@ def violation_extract(viol):
     """
     A function that extracts the name of the violation from a dictionary entry.
     """
-    lines = ['Validation Result in', 'Constraint Violation in']
-    #
-    viol_text = viol
-    return viol_text
+    L = logging.getLogger('violation_extract')
+    L.addHandler(F)
+    lines = ['Validation Result in ', 'Constraint Violation in ']
+    end = ' (http://'
+    vx = None
+    for line in lines:
+        if line in viol:
+            vx = viol.split(line)[1].split(end)[0]
+    if vx:
+        L.info('Found violation name: %s' % (vx))
+        return vx
+    else:
+        L.warning('Violation name was not extracted. Text block follows:\n%s' % (viol))
+        return vx
 
 def violation_cat(viol):
     """
