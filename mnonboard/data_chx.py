@@ -56,6 +56,7 @@ def violation_cat(hash, viol):
         cat = 'Not found'
         comment = 'Violation name %s not found in SHACL_ERRORS dictionary! Consult NCEAS node manager for information.' % viol
         L.warning(comment)
+    hash = hash.split('/')[-1].split('.bin')[0] # split path and file extension from string
     csvl = csvl % (hash, cat, viol, comment)
     L.info('Violation categorization for %s: %s' % (viol, cat))
     return csvl
