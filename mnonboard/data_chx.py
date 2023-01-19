@@ -21,6 +21,7 @@ def violation_extract(viol):
     end = ' (http://'
     vx = []
     for line in lines:
+        L.info('Checking %ss' % line.split(' in ')[0])
         if line in viol:
             for seg in viol.split(line)[1:]:
                 s = seg.split(end)[0]
