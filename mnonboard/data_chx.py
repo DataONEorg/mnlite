@@ -17,16 +17,15 @@ def violation_extract(viol):
     """
     L = logging.getLogger('violation_extract')
     L.addHandler(F)
-    L.info('Extracting...')
     lines = ['Source Shape: ']
     end = '\n'
     vx = []
     for line in lines:
-        L.info('Checking %ss' % line.split(' in ')[0])
+        L.info('Checking %ss' % line.split(':')[0])
         if line in viol:
             for seg in viol.split(line)[1:]:
                 s = seg.split(end)[0]
-                L.info('Found violation name: %s' % (s))
+                L.debug('Found violation name: %s' % (s))
                 vx.append(s)
     if len(vx) > 0:
         L.info('Found violations: %s' % (vx))
@@ -58,7 +57,7 @@ def violation_cat(hash, viol):
         L.warning(comment)
     hash = hash.split('/')[-1].split('.bin')[0] # split path and file extension from string
     csvl = csvl % (hash, cat, viol, comment)
-    L.info('Violation categorization for %s: %s' % (viol, cat))
+    L.debug('Violation categorization for %s: %s' % (viol, cat))
     return csvl
 
 def violation_report(viol_dict, loc):
@@ -139,13 +138,13 @@ def test_mdata(loc, shp_graph=SHACL_URL, format='json-ld', num_tests=3):
             if not conforms:
                 violati1 = int(res_text.split('\n')[2].split('(')[1].split(')')[0])
                 constraint_viol = ' including Constraint Violations' if 'Constraint Violation' in res_text else ''
-                L.error('pyshacl found %s violations.' % (violati1))
+                L.warning('pyshacl found %s violations.' % (violati1))
                 L.debug('Details:\n%s' % (res_text))
                 if (violati1 == 1) and ('<http://schema.org/> not <https://schema.org/>' in res_text):
                     # under this condition there is one constraint violation where the record uses https
                     constraint_viol = ' including https vs http namespace violation'
                     # do a quick replace and test again for lower level violations
-                    L.info('Found https vs http namespace violation...replacing and testing again...')
+                    L.debug('Found https vs http namespace violation...replacing and testing again...')
                     record = record.replace('https://schema.org/', 'http://schema.org/')
                     conforms2, res_graph2, res_text2 = validate(data_graph=record,
                                                     data_graph_format=format,
@@ -154,7 +153,7 @@ def test_mdata(loc, shp_graph=SHACL_URL, format='json-ld', num_tests=3):
                     viol_dict[t.content][1] = [conforms2, res_graph2, res_text2]
                     if not conforms2:
                         violati2 = int(res_text2.split('\n')[2].split('(')[1].split(')')[0])
-                        L.error('pyshacl found %s additional violations.' % (violati2))
+                        L.warning('pyshacl found %s additional violations after correcting for https/http violation.' % (violati2))
                         L.debug('Details:\n%s' % (res_text2))
                     else:
                         L.info('Namespace https/http constraint violation is the only error found')
