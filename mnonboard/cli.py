@@ -6,7 +6,7 @@ import utils
 import info_chx
 import data_chx
 from defs import CFG, HELP_TEXT
-from mnonboard import default_json, start_logging
+from mnonboard import default_json, L
 
 def run(cfg):
     """
@@ -55,7 +55,7 @@ def main():
     """
     Uses getopt to set config values in order to call run().
     """
-    L = start_logging('main')
+    L.name = __name__
     # get arguments
     try:
         opts = getopt.getopt(sys.argv[1:], 'hiPvLd:l:c:',

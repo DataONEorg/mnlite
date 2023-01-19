@@ -14,6 +14,7 @@ def violation_extract(viol):
     """
     A function that extracts the name of the violation from a dictionary entry.
     """
+    L.name = __name__
     lines = ['Source Shape: ']
     end = '\n'
     vx = []
@@ -35,6 +36,7 @@ def violation_cat(hash, viol):
     """
     A function that returns a string that contains the severity of a passed shacl violation and a comment.
     """
+    L.name = __name__
     csvl = '%s,%s,%s,%s\n'
     cat, comment = '', ''
     if viol in SHACL_ERRORS['essential']:
@@ -59,6 +61,7 @@ def violation_report(viol_dict, loc):
     """
     A function that outputs a report containing information on the violations found while shacl testing.
     """
+    L.name = __name__
     L.info('Creating report.')
     L.debug(viol_dict)
     L.info('Violation dictionary length: %s' % (len(viol_dict)))
@@ -88,6 +91,7 @@ def test_mdata(loc, shp_graph=SHACL_URL, format='json-ld', num_tests=3):
         num_tests: Number of metadata files to test (randomly selected; default=3)
         debug: If True, will print a lot of debug information including metadata file contents
     """
+    L.name = __name__
     L.info('Starting metadata checks. Shape graph: %s' % (shp_graph))
     op = getOpersistInstance(loc)
     num_things = op.countThings()
