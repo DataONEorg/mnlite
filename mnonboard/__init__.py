@@ -23,6 +23,9 @@ HARVEST_LOG_NAME = '-crawl-%s.log' % YM_DATE
 def start_logging():
     """
     Initialize logger.
+
+    Returns:
+        (logging.Logger): The logger to use.
     """
     logger = logging.getLogger('mnonboard')
     logger.setLevel(logging.DEBUG)
@@ -51,7 +54,10 @@ NODE_PATH_REL = 'instance/nodes/'
 
 def default_json(fx='Unspecified'):
     """
-    A function that spits out a json file to be used in onboarding.
+    A function that spits out a dict to be used in onboarding.
+
+    Returns:
+        (dict): A dict of values to be used in member node creation.
     """
     L.info('%s function loading default json template.' % (fx))
     return DEFAULT_JSON

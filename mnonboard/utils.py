@@ -9,6 +9,12 @@ from mnonboard.info_chx import cn_subj_lookup, local_subj_lookup, enter_schedule
 def load_json(loc):
     """
     Load json from file.
+
+    Args:
+        loc (str): File location of the json file to be loaded.
+
+    Returns:
+        j (str): Serialized json file contents.
     """
     L.info('Loading member node json from %s' % loc)
     try:
@@ -26,6 +32,13 @@ def load_json(loc):
 def save_json(loc, jf):
     """
     Output json to file.
+
+    Args:
+        loc (str): File location where the json file is to be written.
+        jf (dict): Dictionary to be written as json.
+
+    Returns:
+        (No variable is returned)
     """
     L.info('Writing member node json to %s' % loc)
     try:
@@ -43,6 +56,11 @@ def save_json(loc, jf):
 def save_report(rep_str, loc, format='.csv'):
     """
     Output a validation report for a set of metadata.
+
+    Args:
+        rep_str (str): Report string to be written.
+        loc (str): File location where the report file is to be written.
+        jf (dict): File extension (default: .csv).
     """
     fn = os.path.join(loc, 'report-%s%s' % (HM_DATE, format))
     L.info('Writing report to %s' % (fn))
@@ -53,6 +71,9 @@ def save_report(rep_str, loc, format='.csv'):
 def dumps_json(js):
     """
     Quick and dirty way to output formatted json.
+
+    Args:
+        js (dict): Dictionary to be written as json.
     """
     print(json.dumps(js, indent=2))
 
@@ -61,12 +82,23 @@ def node_path(nodepath=NODE_PATH_REL, curpath=CUR_PATH_ABS, nodedir=''):
     Get the absolute path of the nodes directory where new members will go.
     Currently the nodes directory lives at `../instance/nodes/` (relative to
     the mnonboard dir that this file is in).
+
+    Args:
+        nodepath (str): Location of the nodes directory relative to the project directory (default: 'instance/nodes/').
+        curpath (str): Current absolute path of this function (default: os.path.dirname(os.path.abspath(__file__))).
+        nodedir (str): Name of the node directory (example: 'HAKAI_IYS'; default: '')
+
+    Returns:
+        (str): Absolute path of the node directory
     """
     return os.path.abspath(os.path.join(curpath, '../', nodepath, nodedir))
 
 def init_repo(loc):
     '''
     Initialize a new instance using opersist.
+
+    Args:
+        loc (str): Location of the member node directory in which to initialize an opersist instance.
     '''
     try:
         L.info('Using opersist to init new member node folder: %s' % loc)
@@ -80,6 +112,11 @@ def init_repo(loc):
 def new_subj(loc, name, value):
     """
     Create new subject in the database using opersist.
+
+    Args:
+        loc (str): Location of the opersist instance.
+        name (str): Subject name (human readable).
+        value (str): Subject value (unique subject id, such as orcid or member node id).
     """
     try:
         L.info('opersist creating new subject. Name: %s Value: %s Location: %s' % (name, value, loc))
@@ -96,8 +133,14 @@ def new_subj(loc, name, value):
 def get_or_create_subj(loc, value, cn_url, title='unspecified subject', name=False):
     """
     Get an existing subject using their ORCiD or create a new one with the specified values.
+    Search is conducted first at the given coordinating node URL, then locally.
+    If no subject is found, a new record is created in the local opersist instance.
 
-    This one I will definitely have to explain in the docstring.
+    Args:
+        loc (str): Location of the opersist instance.
+        value (str): Subject value (unique subject id, such as orcid or member node id).
+        cn_url (str): The base URL of the rest API with which to search for the given subject.
+        name (str or bool): Subject name (human readable).
     """
     create = False
     if name:
@@ -121,7 +164,11 @@ def get_or_create_subj(loc, value, cn_url, title='unspecified subject', name=Fal
 
 def set_schedule():
     """
-    
+    Ask the user what schedule on which they would like to run scrapes.
+    Options are: monthly, daily, and every 3 minutes.
+
+    Returns:
+        (dict): Dictionary entry formatted based on the chosen schedule option.
     """
     s = enter_schedule()
     return SCHEDULES[s]
@@ -151,7 +198,9 @@ def restart_mnlite():
 
 def harvest_data(loc, mn_name):
     """
-    
+    Args:
+        loc (str): Location of the opersist instance.
+        mn_name (str): Name of the member node (used to name the crawl log).
     """
     log_loc = os.path.join(LOG_DIR, mn_name + HARVEST_LOG_NAME)
     L.info('Starting scrapy crawl, saving to %s' % (loc))
@@ -168,6 +217,15 @@ def harvest_data(loc, mn_name):
 def limit_tests(num_things):
     """
     Ask the user to limit the number of tests to run on a given set of metadata.
+    This will execute if the user decides to try and test more than 500 metadata objects.
+    The prompt will ask them if they wish to limit the number, then return a
+    number based on their decision.
+
+    Args:
+        num_things (int): Initial number of things to test.
+
+    Returns:
+        num_things (int): Modified number of things to test.
     """
     while True:
         i = input('Testing more than 500 objects is not recommended due to performance concerns.\n\

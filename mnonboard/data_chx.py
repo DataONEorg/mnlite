@@ -12,7 +12,13 @@ from json.decoder import JSONDecodeError
 
 def violation_extract(viol):
     """
-    A function that extracts the name of the violation from a dictionary entry.
+    A function that extracts the name of the violation from pyshacl.validate()[2] (res_text).
+
+    Args:
+        viol (str): The result text, third item returned of a pyshacl.validate() run.
+
+    Returns:
+        vx (list of str): List of violation names found in the res_text
     """
     lines = ['Source Shape: ']
     end = '\n'
@@ -34,6 +40,13 @@ def violation_extract(viol):
 def violation_cat(hash, viol):
     """
     A function that returns a string that contains the severity of a passed shacl violation and a comment.
+
+    Args:
+        hash (str): Path to the metadata file (based on file hash).
+        viol (str): The violation name.
+
+    Returns:
+        csvl (str): Comma-separated list of: hash, violation category, violation name, comment
     """
     csvl = '%s,%s,%s,%s\n'
     cat, comment = '', ''
@@ -58,6 +71,10 @@ def violation_cat(hash, viol):
 def violation_report(viol_dict, loc):
     """
     A function that outputs a report containing information on the violations found while shacl testing.
+
+    Args:
+        viol_dict (dict): Dictionary of violations compiled from this run of metadata checks.
+        loc (str): Directory of the opersist instance, where the report file will be written.
     """
     L.info('Creating report.')
     L.debug(viol_dict)
@@ -83,10 +100,10 @@ def test_mdata(loc, shp_graph=SHACL_URL, format='json-ld', num_tests=3):
     Use pyshacl to test harvested metadata.
 
     Args:
-        loc: The base MN folder path in which opersist keeps its data and databases
-        shp_graph: Shape graph to be used for testing (defaults to soso v1.2.3)
-        num_tests: Number of metadata files to test (randomly selected; default=3)
-        debug: If True, will print a lot of debug information including metadata file contents
+        loc (str): The base MN folder path in which opersist keeps its data and databases
+        shp_graph (str): Shape graph to be used for testing (defaults to soso v1.2.3)
+        format (str): Format of the data graphs (default: json-ld)
+        num_tests (int): Number of metadata files to test (randomly selected; default=3)
     """
     L.info('Starting metadata checks. Shape graph: %s' % (shp_graph))
     op = getOpersistInstance(loc)

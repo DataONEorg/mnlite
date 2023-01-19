@@ -11,6 +11,9 @@ def run(cfg):
     """
     Wrapper around opersist that simplifies the process of onboarding a new
     member node to DataONE.
+
+    Args:
+        cfg (dict): Dict containing config variables.
     """
     if cfg['info'] == 'user':
         # do the full user-driven info gathering process
@@ -53,6 +56,9 @@ def run(cfg):
 def main():
     """
     Uses getopt to set config values in order to call run().
+
+    Returns:
+        (dict): Config variable dict to use in run().
     """
     # get arguments
     try:
