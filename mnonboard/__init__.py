@@ -18,7 +18,7 @@ LOG_LOC = os.path.join(LOG_DIR, LOG_NAME)
 
 HARVEST_LOG_NAME = '-crawl-%s.log' % YM_DATE
 
-def start_logging(name='init'):
+def start_logging(name=__name__):
     # logging.basicConfig(
     #     level=LOG_LEVELS.get("DEBUG", logging.DEBUG),
     #     format=LOG_FORMAT,

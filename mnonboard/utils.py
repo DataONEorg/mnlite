@@ -3,14 +3,13 @@ import json
 import subprocess
 
 from defs import SCHEDULES
-from mnonboard import NODE_PATH_REL, CUR_PATH_ABS, LOG_DIR, HARVEST_LOG_NAME, HM_DATE, start_logging
+from mnonboard import NODE_PATH_REL, CUR_PATH_ABS, LOG_DIR, HARVEST_LOG_NAME, HM_DATE, L
 from mnonboard.info_chx import cn_subj_lookup, local_subj_lookup, enter_schedule, orcid_name
 
 def load_json(loc):
     """
     Load json from file.
     """
-    L = start_logging('load_json')
     L.info('Loading member node json from %s' % loc)
     try:
         with open(loc, 'r') as f:
@@ -28,7 +27,6 @@ def save_json(loc, jf):
     """
     Output json to file.
     """
-    L = start_logging('save_json')
     L.info('Writing member node json to %s' % loc)
     try:
         with open(loc, 'w') as f:
@@ -46,7 +44,6 @@ def save_report(rep_str, loc, format='.csv'):
     """
     Output a validation report for a set of metadata.
     """
-    L = start_logging('save_report')
     fn = os.path.join(loc, 'report-%s%s' % (HM_DATE, format))
     L.info('Writing report to %s' % (fn))
     with open(fn, 'w') as f:
@@ -71,7 +68,6 @@ def init_repo(loc):
     '''
     Initialize a new instance using opersist.
     '''
-    L = start_logging('init_repo')
     try:
         L.info('Using opersist to init new member node folder: %s' % loc)
         subprocess.run(['opersist',
@@ -85,7 +81,6 @@ def new_subj(loc, name, value):
     """
     Create new subject in the database using opersist.
     """
-    L = start_logging('new_subj')
     try:
         L.info('opersist creating new subject. Name: %s Value: %s Location: %s' % (name, value, loc))
         subprocess.run(['opersist',
@@ -104,7 +99,6 @@ def get_or_create_subj(loc, value, cn_url, title='unspecified subject', name=Fal
 
     This one I will definitely have to explain in the docstring.
     """
-    L = start_logging('get_or_create_subj')
     create = False
     if name:
         # we are probably creating a node record
@@ -136,7 +130,6 @@ def restart_mnlite():
     """
     Subprocess call to restart the mnlite system service. Requires sudo.
     """
-    L = start_logging('restart_mnlite')
     L.info('Restarting mnlite systemctl service...')
     try:
         subprocess.run(['sudo', 'systemctl', 'restart', 'mnlite.service'], check=True)
@@ -160,7 +153,6 @@ def harvest_data(loc, mn_name):
     """
     
     """
-    L = start_logging('harvest_data')
     log_loc = os.path.join(LOG_DIR, mn_name + HARVEST_LOG_NAME)
     L.info('Starting scrapy crawl, saving to %s' % (loc))
     L.info('scrapy log location is %s' % (log_loc))
@@ -177,7 +169,6 @@ def limit_tests(num_things):
     """
     Ask the user to limit the number of tests to run on a given set of metadata.
     """
-    L = start_logging('limit_tests')
     while True:
         i = input('Testing more than 500 objects is not recommended due to performance concerns.\n\
 This may take several minutes and use critical server resources. (est: %s min)\n\
