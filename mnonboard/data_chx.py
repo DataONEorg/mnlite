@@ -67,6 +67,7 @@ def violation_report(viol_dict, loc):
     L.addHandler(F)
     L.info('Creating report.')
     L.debug(viol_dict)
+    L.info('Violation dictionary length: %s' % (len(viol_dict)))
     rep_str = 'Hash,Violation level,Violation name,Comment\n'
     if len(viol_dict) > 0:
         for hash in viol_dict:
