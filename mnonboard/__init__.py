@@ -20,11 +20,11 @@ LOG_LOC = os.path.join(LOG_DIR, LOG_NAME)
 
 HARVEST_LOG_NAME = '-crawl-%s.log' % YM_DATE
 
-def start_logging(name=__name__):
+def start_logging():
     """
     Initialize logger.
     """
-    logger = logging.getLogger(name)
+    logger = logging.getLogger('mnonboard')
     logger.setLevel(logging.DEBUG)
     formatter = logging.Formatter(fmt=LOG_FORMAT, datefmt=LOG_DATE_FORMAT)
     s = logging.StreamHandler()

@@ -55,7 +55,6 @@ def main():
     """
     Uses getopt to set config values in order to call run().
     """
-    L.name = __name__
     # get arguments
     try:
         opts = getopt.getopt(sys.argv[1:], 'hiPvLd:l:c:',

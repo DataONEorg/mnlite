@@ -20,7 +20,6 @@ def req_input(desc):
     """
     Require user input for a given prompt.
     """
-    L.name = __name__
     while True:
         i = input(desc)
         L.info('User entry for %s"%s"' % (desc, i))
@@ -42,7 +41,6 @@ def valid_orcid(orcid):
     This seems like overkill but is probably good to have since it will be
     used to store contacts for database upkeep/maintenance.
     """
-    L.name = __name__
     if (len(orcid) == 19):
         # it's 19 characters long. start test loop
         for i in range(0,19):
@@ -77,7 +75,6 @@ def base_url(descrip):
     """
     Validate the base URL of the member node. Should include trailing slash.
     """
-    L.name = __name__
     while True:
         url = req_input(descrip)
         if url[-1] in '/':
@@ -91,7 +88,6 @@ def valid_url_prefix(url, prefix, f):
     Validate a URL prefix (such as for an ORCiD number).
     """
     # orcid number will be preceded by a url prefix but no trailing slash
-    L.name = __name__
     if prefix not in url:
         L.error('ORCiD number in "%s" field does not have the correct URL prefix. (URL: %s)' % (f, url))
         print('Please ensure the correct URL prefix (%s) preceeds the ORCiD number in field "%s"' % (ORCID_PREFIX, f))
@@ -107,7 +103,6 @@ def sitemap_urls(num_urls):
     Collect the sitemap URLs.
     Usually there will be just one of these but we will prepare for more.
     """
-    L.name = __name__
     i = 0
     while i < num_urls:
         # add URLs one at a time (should only be a few at most)
@@ -121,7 +116,6 @@ def enter_schedule():
     """
     Give the user a choice between three basic scheduling options.
     """
-    L.name = __name__
     p = 'Select a starting frequency with which to scrape data from this member node.\n' \
         '1: Monthly\n' \
         '2: Daily\n' \
@@ -145,7 +139,6 @@ def enter_int(prompt):
     """
     Make sure the user enters an integer value of 1 or greater.
     """
-    L.name = __name__
     i = None
     while True:
         # make sure user enters an int
@@ -169,7 +162,6 @@ def cn_subj_lookup(subj, cn_url='https://cn.dataone.org/cn', debug=False):
     """
     Use the DataONE API to look up whether a given ORCiD number already exists in the system.
     """
-    L.name = __name__
     # this authentication method was adapted from:
     # https://github.com/DataONEorg/dataone_examples/blob/master/python_examples/update_object.ipynb
     options = {"headers": {"Authorization": "Bearer %s" % (D1_AUTH_TOKEN)}}
@@ -200,7 +192,6 @@ def local_subj_lookup(subj, loc):
     """
     Use the local opersist instance to look up a subject.
     """
-    L.name = __name__
     L.info('Looking up %s in sqlite database at %s' % (subj, loc))
     op = getOpersistInstance(loc)
     rec = op.getSubject(subj=subj)
@@ -217,7 +208,6 @@ def orcid_name(orcid, f):
     """
     Ask the user for the name of an orcid number.
     """
-    L.name = __name__
     L.info('Asking for name of %s (ORCiD number %s)' % (f, orcid))
     name = req_input('Please enter the name of %s (ORCiD number %s): ' % (f, orcid))
     L.info('User has entered "%s"' % name)
@@ -227,7 +217,6 @@ def enter_orcid(prompt):
     """
     Make sure the user enters an integer value of 1 or greater.
     """
-    L.name = __name__
     while True:
         # ask the user for an ORCiD number
         o = req_input(prompt)
@@ -243,7 +232,6 @@ def valid_nodeid(node_id):
     """
     Make sure the node_id contains the correct prefix.
     """
-    L.name = __name__
     if NODE_ID_PREFIX in node_id:
         # if valid, return
         return node_id
@@ -270,7 +258,6 @@ def enter_nodeid(prompt='Unique node_id: ', id=False):
     """
     Have the user enter a node_id and make sure it contains the correct id prefix.
     """
-    L.name = __name__
     while True:
         L.info('In loop, vars are prompt="%s", id="%s"' % (prompt, id))
         # ask the user for a node id
@@ -287,7 +274,6 @@ def user_input():
     """
     We need a few pieces of information to fill the json fields.
     """
-    L.name = __name__
     baseurl = ''
     L.info('Collecting user input.')
     for f in FIELDS:
@@ -336,7 +322,6 @@ def transfer_info(ufields):
     """
     Take a user fields dict and translate it to the default json object.
     """
-    L.name = __name__
     fields = default_json(fx='mnonboard.info_chx.transfer_info()')
     L.info('Adding user fields to default fields.')
     for f in ufields:
@@ -355,7 +340,6 @@ def input_test(fields):
     """
     Testing the manually filled json file.
     """
-    L.name = __name__
     L.info('Running tests on imported json.')
     # first, test that there are the fields we need
     test_fields = default_json(fx='mnonboard.info_chx.input_test()')
