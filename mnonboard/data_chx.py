@@ -19,12 +19,15 @@ def violation_extract(viol):
     L.addHandler(F)
     lines = ['Validation Result in ', 'Constraint Violation in ']
     end = ' (http://'
-    vx = None
+    vx = []
     for line in lines:
         if line in viol:
-            vx = viol.split(line)[1].split(end)[0]
-    if vx:
-        L.info('Found violation name: %s' % (vx))
+            for seg in viol.split(line)[1:]:
+                s = seg.split(end)[0]
+                L.info('Found violation name: %s' % (s))
+                vx.append(s)
+    if len(vx) > 0:
+        L.info('Found violations: %s' % (vx))
         return vx
     else:
         L.warning('Violation name was not extracted. Text block follows:\n%s' % (viol))
@@ -65,11 +68,11 @@ def violation_report(viol_dict, loc):
     rep_str = 'Hash,Violation level,Violation name,Comment\n'
     if len(viol_dict) > 0:
         for hash in viol_dict:
-            print('%s - %s' % (hash,viol_dict[hash]))
             i = 0
             while i > len(viol_dict[hash]):
                 viol = violation_extract(viol_dict[hash][i][2])
-                rep_str = rep_str + violation_cat(hash, viol)
+                for v in viol:
+                    rep_str = rep_str + violation_cat(hash, viol)
                 i += 1
         L.info(rep_str)
     else:
