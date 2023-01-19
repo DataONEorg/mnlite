@@ -9,6 +9,8 @@ DEFAULT_JSON = DEFAULT_NODE_CONFIG
 
 __version__ = 'v0.0.1'
 
+LOG_FORMAT = "%(asctime)s %(funcName)s:%(levelname)s: %(message)s" # overrides import
+
 FN_DATE = datetime.now().strftime('%Y-%m-%d')
 HM_DATE = datetime.now().strftime('%Y-%m-%d-%H%M')
 YM_DATE = datetime.now().strftime('%Y-%m')
