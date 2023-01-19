@@ -45,7 +45,8 @@ def run(cfg):
     # restart the mnlite process to pick up the new node.json (step 9)
     utils.restart_mnlite()
     # run scrapy to harvest metadata (step 10)
-    utils.harvest_data(loc, end_node_subj)
+    if not cfg['local']:
+        utils.harvest_data(loc, end_node_subj)
     # now run tests
     data_chx.test_mdata(loc, num_tests=cfg['check_files'], debug=cfg['verbosity'])
 
@@ -96,6 +97,10 @@ def main():
                     exit(1)
         if o in ('-v', '--verbose'):
             CFG['verbosity'] = 'debug'
+            L.info('Running in debug/verbose mode.')
+        if o in ('-L', '--local'):
+            CFG['local'] = True
+            L.info('Local mode (-L) will not scrape the remote site and will only test local files.')
     L.info('running mnonboard in %s mode.\n\
 data gathering from: %s\n\
 cn_url: %s\n\

@@ -11,6 +11,7 @@ CFG = {
     'mode': 'staging',
     'check_files': 5,
     'verbosity': 'info',
+    'local': False,
 }
 
 HELP_TEXT = """DataONE member node onboard script
