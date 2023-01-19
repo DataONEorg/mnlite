@@ -65,9 +65,9 @@ def violation_report(viol_dict, loc):
     rep_str = 'Hash,Violation level,Violation name,Comment\n'
     if len(viol_dict) > 0:
         for hash in viol_dict:
+            print('%s - %s' % (hash,viol_dict[hash]))
             i = 0
             while i > len(viol_dict[hash]):
-                print('%s - %s' % (hash,viol_dict[hash]))
                 viol = violation_extract(viol_dict[hash][i][2])
                 rep_str = rep_str + violation_cat(hash, viol)
                 i += 1
