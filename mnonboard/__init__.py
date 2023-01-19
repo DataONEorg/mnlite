@@ -20,11 +20,12 @@ HARVEST_LOG_NAME = '-crawl-%s.log' % YM_DATE
 
 def start_logging():
     logging.basicConfig(
-        level=LOG_LEVELS.get("INFO", logging.INFO),
+        level=LOG_LEVELS.get("DEBUG", logging.DEBUG),
         format=LOG_FORMAT,
         datefmt=LOG_DATE_FORMAT,
     )
     l = logging.getLogger("init")
+    l.setLevel('INFO')
     formatter = logging.Formatter(fmt=LOG_FORMAT, datefmt=LOG_DATE_FORMAT)
     # this initializes logging to file
     f = logging.FileHandler(LOG_LOC)
