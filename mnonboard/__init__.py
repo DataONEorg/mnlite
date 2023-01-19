@@ -18,25 +18,29 @@ LOG_LOC = os.path.join(LOG_DIR, LOG_NAME)
 
 HARVEST_LOG_NAME = '-crawl-%s.log' % YM_DATE
 
-def start_logging():
-    logging.basicConfig(
-        level=LOG_LEVELS.get("DEBUG", logging.DEBUG),
-        format=LOG_FORMAT,
-        datefmt=LOG_DATE_FORMAT,
-    )
-    l = logging.getLogger("init")
-    l.setLevel(logging.INFO)
+def start_logging(name='init'):
+    # logging.basicConfig(
+    #     level=LOG_LEVELS.get("DEBUG", logging.DEBUG),
+    #     format=LOG_FORMAT,
+    #     datefmt=LOG_DATE_FORMAT,
+    # )
+    logger = logging.getLogger(name)
+    logger.setLevel(logging.DEBUG)
     formatter = logging.Formatter(fmt=LOG_FORMAT, datefmt=LOG_DATE_FORMAT)
+    s = logging.StreamHandler()
+    s.setLevel(logging.INFO)
+    s.setFormatter(formatter)
     # this initializes logging to file
     f = logging.FileHandler(LOG_LOC)
     f.setLevel(logging.DEBUG)
     f.setFormatter(formatter)
     # warnings also go to file
     # initialize logging
-    l.addHandler(f)
-    return l, f
+    logger.addHandler(s) # stream
+    logger.addHandler(f) # file
+    return logger
 
-L, F = start_logging()
+L = start_logging()
 L.info('----- mnonboard %s start -----' % __version__)
 
 # absolute path of current file
