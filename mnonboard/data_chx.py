@@ -155,7 +155,6 @@ def test_mdata(loc, shp_graph=SHACL_URL, format='json-ld', num_tests=3, debug=Fa
                         L.info('Namespace https/http constraint violation is the only error found')
                 tot_violations = violati1 + violati2
                 L.info('Total shacl violations in file: %s' % (tot_violations))
-                viol_dict[t.content] = {0: [False, None, 'shacl violations%s (%s total)' % (constraint_viol, tot_violations)]}
             else:
                 L.info('No violations found in %s' % (pth))
                 viol_dict[t.content] = {0: [True, None, 'No violations.']}
