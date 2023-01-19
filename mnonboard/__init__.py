@@ -2,7 +2,7 @@ import os
 import logging
 from datetime import datetime
 
-from opersist.cli import LOG_LEVELS, LOG_DATE_FORMAT, LOG_FORMAT
+from opersist.cli import LOG_DATE_FORMAT, LOG_FORMAT
 from mnlite.mnode import DEFAULT_NODE_CONFIG
 
 DEFAULT_JSON = DEFAULT_NODE_CONFIG
