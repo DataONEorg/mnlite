@@ -65,7 +65,7 @@ def violation_report(viol_dict, loc):
     L = logging.getLogger('violation_report')
     L.addHandler(F)
     L.info('Creating report.')
-    L.info(viol_dict)
+    L.debug(viol_dict)
     rep_str = 'Hash,Violation level,Violation name,Comment\n'
     if len(viol_dict) > 0:
         for hash in viol_dict:
