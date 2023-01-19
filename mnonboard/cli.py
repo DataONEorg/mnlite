@@ -59,8 +59,8 @@ def main():
     L.addHandler(F)
     # get arguments
     try:
-        opts = getopt.getopt(sys.argv[1:], 'hiPd:l:c:',
-            ['help', 'init', 'production', 'dump=', 'load=', 'check=']
+        opts = getopt.getopt(sys.argv[1:], 'hiPvLd:l:c:',
+            ['help', 'init', 'production', 'verbose', 'local' 'dump=', 'load=', 'check=']
             )[0]
     except Exception as e:
         L.error('Error: %s' % e)
