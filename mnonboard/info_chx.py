@@ -1,7 +1,6 @@
 from d1_client.cnclient import CoordinatingNodeClient
 from d1_common.types import exceptions
 from os import environ
-import logging
 
 from defs import FIELDS, SITEMAP_URLS, ORCID_PREFIX, SCHEDULES, NODE_ID_PREFIX
 from mnonboard import default_json, L
