@@ -48,7 +48,7 @@ def run(cfg):
     if not cfg['local']:
         utils.harvest_data(loc, end_node_subj)
     # now run tests
-    data_chx.test_mdata(loc, num_tests=cfg['check_files'], debug=cfg['verbosity'])
+    data_chx.test_mdata(loc, num_tests=cfg['check_files'])
 
 
 def main():
@@ -95,9 +95,6 @@ def main():
                     L.error('Option -c (--check) requires an integer number of files to check.')
                     print(HELP_TEXT)
                     exit(1)
-        if o in ('-v', '--verbose'):
-            CFG['verbosity'] = 'debug'
-            L.info('Running in debug/verbose mode.')
         if o in ('-L', '--local'):
             CFG['local'] = True
             L.info('Local mode (-L) will not scrape the remote site and will only test local files.')
