@@ -31,6 +31,10 @@ where OPTIONS := {
             initialize a new member node from a json file
     -P | --production
             run this script in production mode (uses the D1 cn API in searches)
+    -v | --verbose
+            output some extra text describing violations and metadata file contents
+    -L | --local
+            run this script in local mode (will not scrape the remote site for new metadata)
 }
 """ % __version__
 
