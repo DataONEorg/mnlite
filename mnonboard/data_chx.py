@@ -17,7 +17,7 @@ def violation_extract(viol):
     """
     L = logging.getLogger('violation_extract')
     L.addHandler(F)
-    lines = ['Validation Result in ', 'Constraint Violation in ']
+    lines = ['Constraint Violation in ', 'Validation Result in ']
     end = ' (http://'
     vx = []
     for line in lines:
@@ -65,6 +65,7 @@ def violation_report(viol_dict, loc):
     L = logging.getLogger('violation_report')
     L.addHandler(F)
     L.info('Creating report.')
+    L.debug(viol_dict)
     rep_str = 'Hash,Violation level,Violation name,Comment\n'
     if len(viol_dict) > 0:
         for hash in viol_dict:
@@ -74,7 +75,7 @@ def violation_report(viol_dict, loc):
                 for v in viol:
                     rep_str = rep_str + violation_cat(hash, viol)
                 i += 1
-        L.info(rep_str)
+        L.info('Report:\n%s' % (rep_str))
     else:
         rep_str = rep_str + ',,,No violations found.\n'
         L.info('No violations.')
