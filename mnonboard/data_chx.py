@@ -73,7 +73,7 @@ def violation_report(viol_dict, loc):
             while i > len(viol_dict[hash]):
                 viol = violation_extract(viol_dict[hash][i][2])
                 for v in viol:
-                    rep_str = rep_str + violation_cat(hash, viol)
+                    rep_str = rep_str + violation_cat(hash, v)
                 i += 1
         L.info('Report:\n%s' % (rep_str))
     else:
