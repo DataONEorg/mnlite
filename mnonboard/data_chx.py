@@ -18,8 +18,8 @@ def violation_extract(viol):
     L = logging.getLogger('violation_extract')
     L.addHandler(F)
     L.info('Extracting...')
-    lines = ['Constraint Violation in ', 'Validation Result in ']
-    end = ' (http://'
+    lines = ['Source Shape: ']
+    end = '\n'
     vx = []
     for line in lines:
         L.info('Checking %ss' % line.split(' in ')[0])
