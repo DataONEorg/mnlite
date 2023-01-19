@@ -38,10 +38,10 @@ def start_logging():
     # initialize logging
     logger.addHandler(s) # stream
     logger.addHandler(f) # file
+    logger.info('----- mnonboard %s start -----' % __version__)
     return logger
 
 L = start_logging()
-L.info('----- mnonboard %s start -----' % __version__)
 
 # absolute path of current file
 CUR_PATH_ABS = os.path.dirname(os.path.abspath(__file__))
