@@ -71,6 +71,7 @@ def violation_report(viol_dict, loc):
     rep_str = 'Hash,Violation level,Violation name,Comment\n'
     if len(viol_dict) > 0:
         for hash in viol_dict:
+            L.info('Working on hash %s' % (hash.split('/')[-1].split('.bin')[0]))
             i = 0
             while i > len(viol_dict[hash]):
                 viol = violation_extract(viol_dict[hash][i][2])
