@@ -39,7 +39,7 @@ def violation_extract(viol):
 
 def violation_cat(hash, viol):
     """
-    A function that returns a string that contains the severity of a passed shacl violation and a comment.
+    A function that returns a CSV linestring that contains the severity of a passed shacl violation and a comment.
 
     Args:
         hash (str): Path to the metadata file (based on file hash).

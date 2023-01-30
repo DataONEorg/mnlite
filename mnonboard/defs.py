@@ -8,10 +8,17 @@ CFG = {
     'info': 'user',
     'json_file': 'node.json',
     'cn_url': 'https://cn-stage.test.dataone.org/cn',
-    'mode': 'staging',
+    'mode': 'testing',
     'check_files': 5,
     'local': False,
 }
+
+CN_SRVR = {
+    'production': 'cn.dataone.org',
+    'testing': 'cn-stage.test.dataone.org'
+}
+
+CN_SRVR_BASEURL = 'https://%s/cn'
 
 HELP_TEXT = """DataONE member node onboard script
 %s NCEAS/Ian Nesbitt
@@ -131,3 +138,12 @@ SHACL_ERRORS = {
     'FileNotFoundError': 'Files must exist in the location specified',
   }
 }
+
+NAMES_XML = """<?xml version="1.0" encoding="UTF-8"?>
+<ns2:person xmlns:ns2="http://ns.dataone.org/service/types/v1">
+  <subject>%s</subject>
+  <givenName>%s</givenName>
+  <familyName>%s</familyName>
+  <verified>false</verified>
+</ns2:person>
+"""

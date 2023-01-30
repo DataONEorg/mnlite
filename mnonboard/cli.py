@@ -4,7 +4,7 @@ import getopt
 import utils
 import info_chx
 import data_chx
-from defs import CFG, HELP_TEXT
+from defs import CFG, HELP_TEXT, CN_SRVR, CN_SRVR_BASEURL
 from mnonboard import default_json, L
 
 def run(cfg):
@@ -30,11 +30,14 @@ def run(cfg):
     loc = utils.node_path(nodedir=end_node_subj)
     # initialize a repository there (step 5)
     utils.init_repo(loc)
+    names = {}
     for f in ('default_owner', 'default_submitter', 'contact_subject'):
         # add a subject for owner and submitter (may not be necessary if they exist already)
         # add subject for technical contact (step 6)
         val = fields[f] if f not in 'contact_subject' else fields['node'][f]
-        utils.get_or_create_subj(loc=loc, value=val, cn_url=cfg['cn_url'], title=f)
+        name = utils.get_or_create_subj(loc=loc, value=val, cn_url=cfg['cn_url'], title=f)
+        # store this for a few steps later
+        names[f] = name
     # add node as a subject (step 7) 
     utils.get_or_create_subj(loc=loc, value=fields['node']['node_id'],
                              cn_url=cfg['cn_url'],
@@ -51,6 +54,7 @@ def run(cfg):
         utils.harvest_data(loc, end_node_subj)
     # now run tests
     data_chx.test_mdata(loc, num_tests=cfg['check_files'])
+    utils.create_names_xml(names, cfg['cn_url'])
 
 
 def main():
@@ -79,7 +83,12 @@ def main():
             CFG['info'] = 'user'
         if o in ('-P', '--production'):
             # production case
-            CFG['cn_url'] = 'https://cn.dataone.org/cn'
+            CFG['cn_url'] = CN_SRVR_BASEURL % CN_SRVR['production']
+            CFG['mode'] = 'production'
+        else:
+            # testing case
+            CFG['cn_url'] = CN_SRVR_BASEURL % CN_SRVR['testing']
+            CFG['mode'] = 'testing'
         if o in ('-d', '--dump'):
             # dump default json to file
             utils.save_json(a, default_json())

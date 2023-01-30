@@ -2,7 +2,7 @@ import os
 import json
 import subprocess
 
-from defs import SCHEDULES
+from defs import SCHEDULES, NAMES_XML
 from mnonboard import NODE_PATH_REL, CUR_PATH_ABS, LOG_DIR, HARVEST_LOG_NAME, HM_DATE, L
 from mnonboard.info_chx import cn_subj_lookup, local_subj_lookup, enter_schedule, orcid_name
 
@@ -161,6 +161,7 @@ def get_or_create_subj(loc, value, cn_url, title='unspecified subject', name=Fal
     if create:
         # finally, use opersist to create the subject (sloppy, could create it directly, but this does the same thing)
         new_subj(loc, name, value)
+    return name
 
 def set_schedule():
     """
@@ -247,3 +248,10 @@ Are you sure you want to test all %s metadata objects in this set? (y/N): ' % (r
             L.info('User has chosen to continue testing %s objects.' % (num_things))
             break
     return num_things
+
+def create_names_xml(names, cn_url):
+    """
+    Format and send names XML document to the CN server.
+    """
+    # format NAMES_XML
+    pass
