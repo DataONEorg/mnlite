@@ -37,7 +37,7 @@ def run(cfg):
         val = fields[f] if f not in 'contact_subject' else fields['node'][f]
         name = utils.get_or_create_subj(loc=loc, value=val, cn_url=cfg['cn_url'], title=f)
         # store this for a few steps later
-        names[f] = name
+        names[val] = name
     # add node as a subject (step 7) 
     utils.get_or_create_subj(loc=loc, value=fields['node']['node_id'],
                              cn_url=cfg['cn_url'],
@@ -54,7 +54,10 @@ def run(cfg):
         utils.harvest_data(loc, end_node_subj)
     # now run tests
     data_chx.test_mdata(loc, num_tests=cfg['check_files'])
-    utils.create_names_xml(names, cfg['cn_url'])
+    # create xml to upload for validation (step 15)
+    utils.create_names_xml(loc, node_id=fields['node']['node_id'], names=names)
+    # uploading xml (proceed to step 14 and ssh to find xml in ~/d1_xml)
+    utils.upload_xml(loc, cfg['cn_url'])
 
 
 def main():

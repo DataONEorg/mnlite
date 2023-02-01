@@ -53,6 +53,27 @@ def save_json(loc, jf):
         L.error('Error: %s' % e)
         exit(1)
 
+def save_xml(loc, xst):
+    """
+    Output XML string to file.
+
+    Args:
+        loc (str): File location where the XML file is to be written.
+        xst (str): XML-formatted string to be written to file.
+
+    Returns:
+        (No variable is returned)
+    """
+    L.info('Writing XML to %s' % loc)
+    try:
+        with open(loc, 'w+') as f:
+            json.dump(xst, f, indent=4)
+            L.info('File written to %s' % loc)
+            return
+    except Exception as e:
+        L.error('Error: %s' % e)
+        exit(1)
+
 def save_report(rep_str, loc, format='.csv'):
     """
     Output a validation report for a set of metadata.
@@ -249,9 +270,55 @@ Are you sure you want to test all %s metadata objects in this set? (y/N): ' % (r
             break
     return num_things
 
-def create_names_xml(names, cn_url):
+def create_names_xml(loc, node_id, names):
     """
-    Format and send names XML document to the CN server.
+    Format subject XML documents and return list of names.
+
+    Args:
+        loc (str): Location (dir) to write file to.
+        node_id (str): Node id of current MN.
+        names (dict): Dict of subject names with ORCiD as index.
+
+    Returns:
+        files (list): List of files written.
     """
+    # make dir
+    loc = os.path.join(loc, 'xml')
+    try:
+        os.makedirs(loc, exist_ok=True)
+    except OSError as e:
+        L.error('OSError creating XML directory: %s' % (e))
+        exit(1)
+    except Exception as e:
+        L.error('%s creating XML directory: %s' % (repr(e), e))
+        exit(1)
     # format NAMES_XML
-    pass
+    node_id = node_id.split(':')[-1]
+    files = []
+    for id in names:
+        first, last = names[id].split()
+        xst = NAMES_XML % (id, first, last)
+        fn = os.path.join(loc, '%s_%s%s.xml' % (node_id, first[0], last))
+        L.debug('XML content:\n%s' % (xst))
+        save_xml(fn, xst)
+        files.append(fn)
+    return files
+
+def upload_xml(files, server):
+    """
+    Format subject XML documents and return list of names.
+
+    Args:
+        files (list): List of files to upload.
+        server (str): Location of CN server to upload to.
+    """
+    op = ''
+    L.info('Running "ssh %s \'mkdir -p d1_xml\'"' % (server))
+    try:
+        op = 'mkdir on remote server'
+        subprocess.run(['ssh', server, 'mkdir -p d1_xml'], check=True)
+        for fn in files:
+            op = 'scp to remote server'
+            subprocess.run(['scp', fn, '%s:~/d1_xml'], check=True)
+    except Exception as e:
+        L.error('%s running %s. Details: %s' % (repr(e), op, e))
