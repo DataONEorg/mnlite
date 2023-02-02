@@ -313,12 +313,12 @@ def upload_xml(files, server):
         server (str): Location of CN server to upload to.
     """
     op = ''
-    L.info('Running "ssh %s \'mkdir -p d1_xml\'"' % (server))
+    L.info('Running "ssh %s \'mkdir -p ~/d1_xml/\'"' % (server))
     try:
         op = 'mkdir on remote server'
-        subprocess.run(['ssh', server, 'mkdir -p d1_xml'], check=True)
+        subprocess.run(['ssh', server, 'mkdir -p ~/d1_xml/'], check=True)
         for fn in files:
             op = 'scp to remote server'
-            subprocess.run(['scp', fn, '%s:~/d1_xml'], check=True)
+            subprocess.run(['scp', fn, '%s:~/d1_xml/'], check=True)
     except Exception as e:
         L.error('%s running %s. Details: %s' % (repr(e), op, e))
