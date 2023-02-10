@@ -313,6 +313,7 @@ def upload_xml(files, server):
         server (str): Location of CN server to upload to.
     """
     op = ''
+    server = server.split('https://')[1].split('/')[0]
     L.info('Running "ssh %s \'mkdir -p ~/d1_xml/\'"' % (server))
     try:
         op = 'mkdir on remote server'
