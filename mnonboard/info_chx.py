@@ -378,7 +378,7 @@ def user_input():
                 # the second level beneath 'node'
                 if nf in 'node_id':
                     FIELDS[f][nf][1] = enter_nodeid(prompt=FIELDS[f][nf][0])
-                if nf in ['contact_subject']:
+                elif nf in ['contact_subject']:
                     FIELDS[f][nf][1] = enter_orcid(FIELDS[f][nf][0])
                 elif '_name' in nf:
                     # put the contact subject name in a different dict
