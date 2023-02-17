@@ -26,7 +26,7 @@ def run(cfg):
         # still need to ask the user for some names
     # now we're cooking
     # get the node path using the end of the path in the 'subject' field (differs from operation.md documentation)
-    end_node_subj = fields['node']['subject'].split('/')[-1]
+    end_node_subj = fields['node']['node_id'].split(':')[-1]
     loc = utils.node_path(nodedir=end_node_subj)
     # initialize a repository there (step 5)
     utils.init_repo(loc)
