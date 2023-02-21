@@ -2031,7 +2031,7 @@ docs = []
 
 [package.source]
 type = "directory"
-url = "../../sonormal"
+url = "../sonormal"
 
 [[package]]
 name = "soupsieve"
