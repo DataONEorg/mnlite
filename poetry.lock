@@ -629,7 +629,7 @@ python-versions = ">=3.7"
 debugpy = ">=1.0.0"
 ipython = ">=7.23.1"
 jupyter-client = "*"
-matplotlib-inline = {version = ">=0.1.0,<0.2.0appnope", markers = "platform_system == \"Darwin\""}
+matplotlib-inline = {version = ">=0.1.0,<0.2.0", markers = "platform_system == \"Darwin\""}
 tornado = ">=4.2"
 traitlets = ">=4.1.0"
 
@@ -2017,7 +2017,7 @@ flask_accept = "^0.0.6"
 Flask-Cors = "^3.0.10"
 httpx = "^0.16.1"
 jupyterlab = "^3.0.9"
-"org.webpki.json" = "rev develop"
+"org.webpki.json" = "*"
 pyjnius = "^1.3.0"
 pyld = "tag 2.0.4-dev_ddv-0.1"
 pyppeteer = "^0.2.5"
