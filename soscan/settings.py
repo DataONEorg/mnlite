@@ -16,7 +16,7 @@ DATABASE_URL = "postgresql+psycopg2://soscanrw@localhost/soscan"
 
 
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
-# USER_AGENT = 'soscan (+http://www.yourdomain.com)'
+USER_AGENT = 'soscan (+https://dataone.org/)'
 
 # Obey robots.txt rules
 ROBOTSTXT_OBEY = True
