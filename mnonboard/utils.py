@@ -296,7 +296,8 @@ def create_names_xml(loc, node_id, names):
     node_id = node_id.split(':')[-1]
     files = []
     for id in names:
-        first, last = names[id].split()
+        namesplit = names[id].split()
+        first, last = namesplit[0], namesplit[-1]
         xst = NAMES_XML % (id, first, last)
         fn = os.path.join(loc, '%s_%s%s.xml' % (node_id, first[0], last))
         L.debug('XML content:\n%s' % (xst))
