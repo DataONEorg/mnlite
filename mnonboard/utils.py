@@ -321,6 +321,6 @@ def upload_xml(files, server):
         subprocess.run(['ssh', server, 'mkdir -p ~/d1_xml/'], check=True)
         for fn in files:
             op = 'scp to remote server'
-            subprocess.run(['scp', fn, '%s:~/d1_xml/'], check=True)
+            subprocess.run(['scp', fn, '%s:~/d1_xml/' % server], check=True)
     except Exception as e:
         L.error('%s running %s. Details: %s' % (repr(e), op, e))
