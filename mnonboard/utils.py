@@ -2,7 +2,7 @@ import os
 import json
 import subprocess
 
-from defs import SCHEDULES, NAMES_XML
+from mnonboard.defs import SCHEDULES, NAMES_XML
 from mnonboard import NODE_PATH_REL, CUR_PATH_ABS, LOG_DIR, HARVEST_LOG_NAME, HM_DATE, L
 from mnonboard.info_chx import cn_subj_lookup, local_subj_lookup, enter_schedule, orcid_name
 

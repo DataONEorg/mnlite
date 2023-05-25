@@ -1,10 +1,10 @@
 import os, sys
 import getopt
 
-import utils
-import info_chx
-import data_chx
-from defs import CFG, HELP_TEXT, CN_SRVR, CN_SRVR_BASEURL
+from mnonboard import utils
+from mnonboard import info_chx
+from mnonboard import data_chx
+from mnonboard.defs import CFG, HELP_TEXT, CN_SRVR, CN_SRVR_BASEURL
 from mnonboard import default_json, L
 
 def run(cfg):
