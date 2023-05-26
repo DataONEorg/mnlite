@@ -140,11 +140,12 @@ SHACL_ERRORS = {
   }
 }
 
-NAMES_XML = """<?xml version="1.0" encoding="UTF-8"?>
-<ns2:person xmlns:ns2="http://ns.dataone.org/service/types/v1">
-  <subject>%s</subject>
-  <givenName>%s</givenName>
-  <familyName>%s</familyName>
-  <verified>false</verified>
-</ns2:person>
-"""
+NAMES_DICT = {
+    'ns2:person': {
+        '@xmlns:ns2': 'http://ns.dataone.org/service/types/v1',
+        'subject': '',
+        'givenName': '',
+        'familyName': '',
+        'verified': 'false'
+    }
+}

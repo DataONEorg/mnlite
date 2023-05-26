@@ -1,8 +1,9 @@
 import os
 import json
 import subprocess
+import xmltodict
 
-from mnonboard.defs import SCHEDULES, NAMES_XML
+from mnonboard.defs import SCHEDULES, NAMES_DICT
 from mnonboard import NODE_PATH_REL, CUR_PATH_ABS, LOG_DIR, HARVEST_LOG_NAME, HM_DATE, L
 from mnonboard.info_chx import cn_subj_lookup, local_subj_lookup, enter_schedule, orcid_name
 
@@ -298,10 +299,15 @@ def create_names_xml(loc, node_id, names):
     for id in names:
         namesplit = names[id].split()
         first, last = namesplit[0], namesplit[-1]
-        xst = NAMES_XML % (id, first, last)
+        xd = NAMES_DICT
+        xd['ns2:person']['subject'] = id
+        xd['ns2:person']['givenName'] = first
+        xd['ns2:person']['familyName'] = last
+        xm = xmltodict.unparse(xd)
         fn = os.path.join(loc, '%s_%s%s.xml' % (node_id, first[0], last))
-        L.debug('XML content:\n%s' % (xst))
-        save_xml(fn, xst)
+        L.debug('XML path: %s' % fn)
+        L.debug('XML content:\n%s' % (xm))
+        save_xml(fn, xm)
         files.append(fn)
     return files
 
