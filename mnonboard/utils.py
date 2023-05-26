@@ -336,20 +336,19 @@ def start_ssh(server: str, node_id):
         L.error('%s running %s. Details: %s' % (repr(e), op, e))
         exit(1)
 
-def upload_xml(ssh: SSHClient, files: list, server: str, target_dir: str):
+def upload_xml(ssh: SSHClient, files: list, target_dir: str):
     """
     Format subject XML documents and return list of names.
 
     Args:
         files (list): List of files to upload.
-        server (str): Location of CN server to upload to.
     """
     op = ''
     try:
         op = 'mkdir on remote server'
         with SCPClient(ssh.get_transport()) as scp:
             op = 'scp to remote server'
-            L.info('Copying files to %s:%s : %s' % (server, target_dir, files))
+            L.info('Copying files to remote %s : %s' % (target_dir, files))
             scp.put(files=files, remote_path=target_dir)
     except Exception as e:
         L.error('%s running %s. Details: %s' % (repr(e), op, e))
