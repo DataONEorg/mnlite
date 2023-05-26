@@ -34,6 +34,8 @@ dataone-libclient = "^3.5.0"
 pyshacl = "^0.22.2"
 attrs = ">=21.3.0"
 uwsgi = "^2.0.21"
+paramiko = "^3.2.0"
+scp = "^0.14.5"
 
 [tool.poetry.dev-dependencies]
 pytest = "^6.1.2"
