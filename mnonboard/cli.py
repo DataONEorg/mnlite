@@ -55,10 +55,11 @@ def run(cfg):
     # now run tests
     data_chx.test_mdata(loc, num_tests=cfg['check_files'])
     # create xml to upload for validation (step 15)
-    names = utils.create_names_xml(loc, node_id=fields['node']['node_id'], names=names)
+    files = utils.create_names_xml(loc, node_id=fields['node']['node_id'], names=names)
     # uploading xml (proceed to step 14 and ssh to find xml in ~/d1_xml)
-    utils.upload_xml(names, cfg['cn_url'])
-
+    ssh = utils.upload_xml(files=files, server=cfg['cn_url'])
+    # close connection
+    ssh.close()
 
 def main():
     """

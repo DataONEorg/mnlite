@@ -311,7 +311,7 @@ def create_names_xml(loc, node_id, names):
         files.append(fn)
     return files
 
-def upload_xml(files, server):
+def upload_xml(files: list, server: str):
     """
     Format subject XML documents and return list of names.
 
@@ -321,12 +321,21 @@ def upload_xml(files, server):
     """
     op = ''
     server = server.split('https://')[1].split('/')[0]
-    L.info('Running "ssh %s \'mkdir -p ~/d1_xml/\'"' % (server))
+    mkdir_dir = '~/d1_xml/'
+    mkdir_cmd = 'mkdir -p %s' % mkdir_dir
+    L.info('Running "%s" on %s' % (mkdir_cmd, server))
     try:
         op = 'mkdir on remote server'
-        subprocess.run(['ssh', server, "mkdir -p ~/d1_xml/"], check=True)
-        for fn in files:
+        ssh = SSHClient()
+        ssh.load_system_host_keys()
+        ssh.connect(server)
+        ssh.exec_command(mkdir_cmd)
+        with SCPClient(ssh.get_transport()) as scp:
             op = 'scp to remote server'
-            subprocess.run(['cat', fn, '|', 'ssh', server, "cat >> ~/d1_xml/%s" % fn], check=True)
+            L.info('Copying files to %s:%s : %s' % (server, mkdir_dir, files))
+            scp.put(files=files, remote_path='~/d1_xml/')
+        return ssh
     except Exception as e:
         L.error('%s running %s. Details: %s' % (repr(e), op, e))
+        exit(1)
+
