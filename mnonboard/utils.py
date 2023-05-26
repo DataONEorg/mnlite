@@ -1,6 +1,9 @@
 import os
 import json
 import subprocess
+from paramiko import SSHClient
+from scp import SCPClient
+import urllib.parse as urlparse
 import xmltodict
 
 from mnonboard.defs import SCHEDULES, NAMES_DICT
@@ -311,7 +314,29 @@ def create_names_xml(loc, node_id, names):
         files.append(fn)
     return files
 
-def upload_xml(files: list, server: str):
+def start_ssh(server: str, node_id):
+    """
+    """
+    server = server.split('https://')[1].split('/')[0]
+    xml_dir = '~/d1_xml/%s' % node_id
+    mkdir_cmd = 'mkdir -p %s' % xml_dir
+    cd_cmd = 'cd %s' % xml_dir
+    try:
+        ssh = SSHClient()
+        ssh.load_system_host_keys()
+        ssh.connect(server)
+        L.info('Running "%s" on %s' % (mkdir_cmd, server))
+        op = 'mkdir on remote server'
+        ssh.exec_command(mkdir_cmd)
+        L.info('Running "%s" on %s' % (cd_cmd, server))
+        op = 'cd on remote server'
+        ssh.exec_command(cd_cmd)
+        return ssh, xml_dir
+    except Exception as e:
+        L.error('%s running %s. Details: %s' % (repr(e), op, e))
+        exit(1)
+
+def upload_xml(ssh: SSHClient, files: list, server: str, target_dir: str):
     """
     Format subject XML documents and return list of names.
 
@@ -320,22 +345,59 @@ def upload_xml(files: list, server: str):
         server (str): Location of CN server to upload to.
     """
     op = ''
-    server = server.split('https://')[1].split('/')[0]
-    mkdir_dir = '~/d1_xml/'
-    mkdir_cmd = 'mkdir -p %s' % mkdir_dir
-    L.info('Running "%s" on %s' % (mkdir_cmd, server))
     try:
         op = 'mkdir on remote server'
-        ssh = SSHClient()
-        ssh.load_system_host_keys()
-        ssh.connect(server)
-        ssh.exec_command(mkdir_cmd)
         with SCPClient(ssh.get_transport()) as scp:
             op = 'scp to remote server'
-            L.info('Copying files to %s:%s : %s' % (server, mkdir_dir, files))
-            scp.put(files=files, remote_path='~/d1_xml/')
-        return ssh
+            L.info('Copying files to %s:%s : %s' % (server, target_dir, files))
+            scp.put(files=files, remote_path=target_dir)
     except Exception as e:
         L.error('%s running %s. Details: %s' % (repr(e), op, e))
         exit(1)
 
+def create_subj_in_acct_svc(ssh: SSHClient, cert: str, files: list, cn: str):
+    """
+    """
+    for f in files:
+        f = os.path.split(f)[1]
+        command = 'curl -s --cert %s -F person=@%s -X POST https://%s/cn/v2/accounts' % (
+            cert, f, cn
+        )
+        L.info('Creating subject: %s' % (command))
+        ssh.exec_command(command)
+
+def validate_subj_in_acct_svc(ssh: SSHClient, cert: str, names: dict, cn: str):
+    """
+    """
+    for n in names:
+        orcid_urlenc = urlparse.quote(n)
+        command = 'curl -s --cert %s -X PUT https://%s/cn/v2/accounts/verification/%s' % (
+            cert, cn, orcid_urlenc
+        )
+        L.info('Validating subject: %s' % (command))
+        ssh.exec_command(command)
+
+def dl_node_capabilities(ssh: SSHClient, baseurl: str, node_id: str):
+    """
+    """
+    node_filename = '%s-node.xml' % (node_id)
+    command = 'curl "https://%s/v2/node" > %s' % (baseurl, node_filename)
+    L.info('Downloading node capabilities: %s' % (command))
+    ssh.exec_command(command)
+    return node_filename
+
+def register_node(ssh: SSHClient, cert: str, node_filename: str, cn: str):
+    """
+    """
+    command = """sudo curl --cert %s -X post -F 'node=@%s' "https://%s/cn/v2/node" """ % (
+        cert, node_filename, cn
+    )
+    L.info('Registering node: %s' % (command))
+    ssh.exec_command(command)
+
+def approve_node(ssh: SSHClient, script_loc: str):
+    """
+    """
+    command = 'sudo %s' % script_loc
+    L.info('Starting approval script: %s' % (command))
+    ssh.exec_command(command)

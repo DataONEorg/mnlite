@@ -13,12 +13,19 @@ CFG = {
     'local': False,
 }
 
+SO_SRVR = {
+    'production': 'sonode.dataone.org',
+    'testing': 'so.test.dataone.org'
+}
 CN_SRVR = {
     'production': 'cn.dataone.org',
     'testing': 'cn-stage.test.dataone.org'
 }
 
 CN_SRVR_BASEURL = 'https://%s/cn'
+
+CN_CERT_LOC = '/etc/dataone/client/private/urn_node_cnStageUCSB1.pem'
+APPROVE_SCRIPT_LOC = '/usr/local/bin/dataone-approve-node'
 
 HELP_TEXT = """DataONE member node onboard script
 %s NCEAS/Ian Nesbitt

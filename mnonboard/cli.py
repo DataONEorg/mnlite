@@ -4,7 +4,7 @@ import getopt
 from mnonboard import utils
 from mnonboard import info_chx
 from mnonboard import data_chx
-from mnonboard.defs import CFG, HELP_TEXT, CN_SRVR, CN_SRVR_BASEURL
+from mnonboard.defs import CFG, HELP_TEXT, SO_SRVR, CN_SRVR, CN_SRVR_BASEURL, CN_CERT_LOC, APPROVE_SCRIPT_LOC
 from mnonboard import default_json, L
 
 def run(cfg):
@@ -57,7 +57,15 @@ def run(cfg):
     # create xml to upload for validation (step 15)
     files = utils.create_names_xml(loc, node_id=fields['node']['node_id'], names=names)
     # uploading xml (proceed to step 14 and ssh to find xml in ~/d1_xml)
-    ssh = utils.upload_xml(files=files, server=cfg['cn_url'])
+    ssh, work_dir = utils.start_ssh(server=cfg['cn_url'], node_id=fields['node']['node_id'])
+    utils.upload_xml(ssh=ssh, files=files, target_dir=work_dir)
+    # create and validate the subject in the accounts service (step 16)
+    utils.create_subj_in_acct_svc(ssh=ssh, cert=CN_CERT_LOC, files=files, cn=cfg['cn_url'])
+    utils.validate_subj_in_acct_svc(ssh=ssh, cert=CN_CERT_LOC, names=names, cn=cfg['cn_url'])
+    # download the node capabilities and register the node
+    node_filename = utils.dl_node_capabilities(ssh=ssh, baseurl=SO_SRVR[cfg['mode']], node_id=fields['node']['node_id'])
+    utils.register_node(ssh=ssh, cert=CN_CERT_LOC, node_filename=node_filename, cn=cfg['cn_url'])
+    #utils.approve_node(ssh=ssh, script_loc=APPROVE_SCRIPT_LOC)
     # close connection
     ssh.close()
 
