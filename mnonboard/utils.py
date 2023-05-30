@@ -377,10 +377,10 @@ def validate_subj_in_acct_svc(ssh: SSHClient, cert: str, names: dict, cn: str):
         L.info('Validating subject: %s' % (command))
         ssh.exec_command(command)
 
-def dl_node_capabilities(ssh: SSHClient, baseurl: str, node_id: str):
+def dl_node_capabilities(ssh: SSHClient, baseurl: str, node_dir: str, node_id: str):
     """
     """
-    node_filename = '%s-node.xml' % (node_id)
+    node_filename = '%s/%s-node.xml' % (node_dir, node_id)
     command = 'curl "https://%s/v2/node" > %s' % (baseurl, node_filename)
     L.info('Downloading node capabilities: %s' % (command))
     ssh.exec_command(command)

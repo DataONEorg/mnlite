@@ -65,7 +65,7 @@ def run(cfg):
     utils.create_subj_in_acct_svc(ssh=ssh, cert=CN_CERT_LOC, files=files, cn=cfg['cn_url'])
     utils.validate_subj_in_acct_svc(ssh=ssh, cert=CN_CERT_LOC, names=names, cn=cfg['cn_url'])
     # download the node capabilities and register the node
-    node_filename = utils.dl_node_capabilities(ssh=ssh, baseurl=SO_SRVR[cfg['mode']], node_id=fields['node']['node_id'])
+    node_filename = utils.dl_node_capabilities(ssh=ssh, baseurl=SO_SRVR[cfg['mode']], node_dir=work_dir, node_id=node_id)
     utils.register_node(ssh=ssh, cert=CN_CERT_LOC, node_filename=node_filename, cn=cfg['cn_url'])
     #utils.approve_node(ssh=ssh, script_loc=APPROVE_SCRIPT_LOC)
     # close connection
