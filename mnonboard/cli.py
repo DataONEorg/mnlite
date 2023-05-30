@@ -1,5 +1,6 @@
 import os, sys
 import getopt
+import time
 
 from mnonboard import utils
 from mnonboard import info_chx
@@ -57,7 +58,7 @@ def run(cfg):
     # create xml to upload for validation (step 15)
     files = utils.create_names_xml(loc, node_id=fields['node']['node_id'], names=names)
     # uploading xml (proceed to step 14 and ssh to find xml in ~/d1_xml)
-    ssh, work_dir = utils.start_ssh(server=cfg['cn_url'], node_id=fields['node']['node_id'])
+    time.sleep(0.5)
     utils.upload_xml(ssh=ssh, files=files, target_dir=work_dir)
     # create and validate the subject in the accounts service (step 16)
     utils.create_subj_in_acct_svc(ssh=ssh, cert=CN_CERT_LOC, files=files, cn=cfg['cn_url'])
