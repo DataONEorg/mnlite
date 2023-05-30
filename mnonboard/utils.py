@@ -398,6 +398,6 @@ def register_node(ssh: SSHClient, cert: str, node_filename: str, cn: str):
 def approve_node(ssh: SSHClient, script_loc: str):
     """
     """
-    command = 'sudo %s' % script_loc
+    command = 'sudo %s' % (script_loc)
     L.info('Starting approval script: %s' % (command))
     ssh.exec_command(command)
