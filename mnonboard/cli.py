@@ -58,6 +58,7 @@ def run(cfg):
     # create xml to upload for validation (step 15)
     files = utils.create_names_xml(loc, node_id=fields['node']['node_id'], names=names)
     # uploading xml (proceed to step 14 and ssh to find xml in ~/d1_xml)
+    ssh, work_dir, node_id = utils.start_ssh(server=cfg['cn_url'], node_id=fields['node']['node_id'])
     time.sleep(0.5)
     utils.upload_xml(ssh=ssh, files=files, target_dir=work_dir)
     # create and validate the subject in the accounts service (step 16)

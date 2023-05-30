@@ -318,8 +318,9 @@ def start_ssh(server: str, node_id):
     """
     """
     server = server.split('https://')[1].split('/')[0]
-    xml_dir = '~/d1_xml/%s' % node_id
-    mkdir_cmd = 'mkdir -p %s' % xml_dir
+    node_id = node_id.split(':')[-1]
+    xml_dir = '~/d1_xml/%s' % (node_id)
+    mkdir_cmd = 'mkdir -p %s' % (xml_dir)
     cd_cmd = 'cd %s' % xml_dir
     try:
         ssh = SSHClient()
@@ -331,7 +332,7 @@ def start_ssh(server: str, node_id):
         L.info('Running "%s" on %s' % (cd_cmd, server))
         op = 'cd on remote server'
         ssh.exec_command(cd_cmd)
-        return ssh, xml_dir
+        return ssh, xml_dir, node_id
     except Exception as e:
         L.error('%s running %s. Details: %s' % (repr(e), op, e))
         exit(1)
