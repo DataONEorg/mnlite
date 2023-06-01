@@ -57,27 +57,6 @@ def save_json(loc, jf):
         L.error('Error: %s' % e)
         exit(1)
 
-def save_xml(loc, xst):
-    """
-    Output XML string to file.
-
-    Args:
-        loc (str): File location where the XML file is to be written.
-        xst (str): XML-formatted string to be written to file.
-
-    Returns:
-        (No variable is returned)
-    """
-    L.info('Writing XML to %s' % loc)
-    try:
-        with open(loc, 'w+') as f:
-            json.dump(xst, f, indent=4)
-            L.info('File written to %s' % loc)
-            return
-    except Exception as e:
-        L.error('Error: %s' % e)
-        exit(1)
-
 def save_report(rep_str, loc, format='.csv'):
     """
     Output a validation report for a set of metadata.
