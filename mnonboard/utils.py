@@ -337,7 +337,7 @@ def create_subj_in_acct_svc(ssh: SSHClient, cert: str, files: list, cn: str):
     """
     for f in files:
         f = os.path.split(f)[1]
-        command = 'curl -s --cert %s -F person=@%s -X POST %s/v2/accounts' % (
+        command = 'sudo curl -s --cert %s -F person=@%s -X POST %s/v2/accounts' % (
             cert, f, cn
         )
         L.info('Creating subject: %s' % (command))
@@ -348,7 +348,7 @@ def validate_subj_in_acct_svc(ssh: SSHClient, cert: str, names: dict, cn: str):
     """
     for n in names:
         orcid_urlenc = urlparse.quote(n)
-        command = 'curl -s --cert %s -X PUT %s/v2/accounts/verification/%s' % (
+        command = 'sudo curl -s --cert %s -X PUT %s/v2/accounts/verification/%s' % (
             cert, cn, orcid_urlenc
         )
         L.info('Validating subject: %s' % (command))
@@ -358,7 +358,7 @@ def dl_node_capabilities(ssh: SSHClient, baseurl: str, node_dir: str, node_id: s
     """
     """
     node_filename = '%s/%s-node.xml' % (node_dir, node_id)
-    command = 'curl "https://%s/v2/node" > %s' % (baseurl, node_filename)
+    command = 'sudo curl "https://%s/v2/node" > %s' % (baseurl, node_filename)
     L.info('Downloading node capabilities: %s' % (command))
     ssh.exec_command(command)
     return node_filename
