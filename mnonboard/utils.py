@@ -306,11 +306,9 @@ def create_names_xml(loc, node_id, names):
         xd['ns2:person']['subject'] = id
         xd['ns2:person']['givenName'] = first
         xd['ns2:person']['familyName'] = last
-        xm = xmltodict.unparse(xd)
         fn = os.path.join(loc, '%s_%s%s.xml' % (node_id, first[0], last))
+        xmltodict.unparse(xd, output=fn)
         L.debug('XML path: %s' % fn)
-        L.debug('XML content:\n%s' % (xm))
-        save_xml(fn, xm)
         files.append(fn)
     return files
 
@@ -360,7 +358,7 @@ def create_subj_in_acct_svc(ssh: SSHClient, cert: str, files: list, cn: str):
     """
     for f in files:
         f = os.path.split(f)[1]
-        command = 'curl -s --cert %s -F person=@%s -X POST https://%s/cn/v2/accounts' % (
+        command = 'curl -s --cert %s -F person=@%s -X POST %s/v2/accounts' % (
             cert, f, cn
         )
         L.info('Creating subject: %s' % (command))
@@ -371,7 +369,7 @@ def validate_subj_in_acct_svc(ssh: SSHClient, cert: str, names: dict, cn: str):
     """
     for n in names:
         orcid_urlenc = urlparse.quote(n)
-        command = 'curl -s --cert %s -X PUT https://%s/cn/v2/accounts/verification/%s' % (
+        command = 'curl -s --cert %s -X PUT %s/v2/accounts/verification/%s' % (
             cert, cn, orcid_urlenc
         )
         L.info('Validating subject: %s' % (command))
