@@ -5,6 +5,7 @@ from paramiko import SSHClient
 from scp import SCPClient
 import urllib.parse as urlparse
 import xmltodict
+from pathlib import Path
 
 from mnonboard.defs import SCHEDULES, NAMES_DICT
 from mnonboard import NODE_PATH_REL, CUR_PATH_ABS, LOG_DIR, HARVEST_LOG_NAME, HM_DATE, L
@@ -286,7 +287,8 @@ def create_names_xml(loc, node_id, names):
         xd['ns2:person']['givenName'] = first
         xd['ns2:person']['familyName'] = last
         fn = os.path.join(loc, '%s_%s%s.xml' % (node_id, first[0], last))
-        xmltodict.unparse(xd, output=fn)
+        with open(fn, 'w') as f:
+            xmltodict.unparse(xd, output=f)
         L.debug('XML path: %s' % fn)
         files.append(fn)
     return files
@@ -366,8 +368,10 @@ def dl_node_capabilities(ssh: SSHClient, baseurl: str, node_dir: str, node_id: s
 def register_node(ssh: SSHClient, cert: str, node_filename: str, cn: str):
     """
     """
-    command = """sudo curl --cert %s -X post -F 'node=@%s' "https://%s/cn/v2/node" """ % (
-        cert, node_filename, cn
+    node_filename = os.path.split(node_filename)[1]
+    mn = node_filename.split('-')[0]
+    command = """sudo curl --cert %s -X post -F 'node=@%s' "%s/%s/v2/node" """ % (
+        cert, node_filename, cn, mn
     )
     L.info('Registering node: %s' % (command))
     ssh.exec_command(command)
