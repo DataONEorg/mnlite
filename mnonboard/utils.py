@@ -347,7 +347,7 @@ def validate_subj_in_acct_svc(ssh: SSHClient, cert: str, names: dict, cn: str):
     """
     """
     for n in names:
-        orcid_urlenc = urlparse.quote(n)
+        orcid_urlenc = urlparse.quote(n, safe='-')
         command = 'sudo curl -s --cert %s -X PUT %s/v2/accounts/verification/%s' % (
             cert, cn, orcid_urlenc
         )
