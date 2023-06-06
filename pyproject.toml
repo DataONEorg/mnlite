@@ -37,6 +37,7 @@ uwsgi = "^2.0.21"
 paramiko = "^3.2.0"
 scp = "^0.14.5"
 xmltodict = "^0.13.0"
+dataone-common = "^3.5.2"
 
 [tool.poetry.dev-dependencies]
 pytest = "^6.1.2"

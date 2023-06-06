@@ -628,22 +628,22 @@ files = [
 
 [[package]]
 name = "dataone-common"
-version = "3.5.0"
+version = "3.5.2"
 description = "Contains functionality common to projects that interact with the DataONE infrastructure via Python"
 category = "main"
 optional = false
 python-versions = "*"
 files = [
-    {file = "dataone.common-3.5.0-py3-none-any.whl", hash = "sha256:4a7e5b0c737fb418d46780b8cd4fdfba0ece9c0ee9bf2fc8d2d4ded04ba60952"},
+    {file = "dataone.common-3.5.2-py3-none-any.whl", hash = "sha256:8cbe7fe282f09fcf7846fa3131814db9fefdff15da29a0910086201cd45226f6"},
 ]
 
 [package.dependencies]
-cryptography = ">=3.0"
-iso8601 = ">=0.1.12"
-pyasn1 = ">=0.4.8"
-PyJWT = ">=1.7.1"
-pyxb = ">=1.2.6"
-rdflib = ">=5.0.0"
+cryptography = ">=40.0.2"
+iso8601 = ">=1.1.0"
+pyasn1 = ">=0.5.0"
+PyJWT = ">=2.7.0"
+pyxb-x = ">=1.2.6.1"
+rdflib = ">=6.3.2"
 zipstream = ">=1.1.4"
 
 [[package]]
@@ -2017,6 +2017,18 @@ files = [
 ]
 
 [[package]]
+name = "pyxb-x"
+version = "1.2.6.1"
+description = "PyXB-X (\"pixbix\") is a pure Python package that generates Python source code for classes that correspond to data structures defined by XMLSchema."
+category = "main"
+optional = false
+python-versions = "*"
+files = [
+    {file = "PyXB-X-1.2.6.1.tar.gz", hash = "sha256:60e908d2555882c81aff54a24f27ed097c5feec61ac97ebdf6684cdf6aa6f209"},
+    {file = "PyXB_X-1.2.6.1-py3-none-any.whl", hash = "sha256:09a12a8c3b82f3ef8f9b3fd460b435236500b65270c6f39a0dc47a11231b3667"},
+]
+
+[[package]]
 name = "queuelib"
 version = "1.6.2"
 description = "Collection of persistent (disk-based) and non-persistent (memory-based) queues"
@@ -3179,4 +3191,4 @@ testing = ["coverage (>=5.0.3)", "zope.event", "zope.testing"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.8"
-content-hash = "e8636553583eddd301440f14f03e93c84d58f454ea9de8f87796c3cda180d398"
+content-hash = "f1a9232f97baeaf304dc183b87a967dbbc4d261cf8301d29c9b0bea828f2c9ca"
