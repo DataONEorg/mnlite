@@ -39,15 +39,15 @@ def run(cfg):
         name = utils.get_or_create_subj(loc=loc, value=val, cn_url=cfg['cn_url'], title=f)
         # store this for a few steps later
         names[val] = name
-    # add node as a subject (step 7) 
-    utils.get_or_create_subj(loc=loc, value=fields['node']['node_id'],
-                             cn_url=cfg['cn_url'],
-                             name=end_node_subj)
     # set the update schedule and set the state to up
     fields['node']['schedule'] = utils.set_schedule()
     fields['node']['state'] = 'up'
     # okay, now overwrite the default node.json with our new one (step 8)
     utils.save_json(loc=os.path.join(loc, 'node.json'), jf=fields)
+    # add node as a subject (step 7) 
+    utils.get_or_create_subj(loc=loc, value=fields['node']['node_id'],
+                             cn_url=cfg['cn_url'],
+                             name=end_node_subj)
     # restart the mnlite process to pick up the new node.json (step 9)
     utils.restart_mnlite()
     # run scrapy to harvest metadata (step 10)
