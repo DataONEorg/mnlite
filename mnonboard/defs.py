@@ -9,6 +9,7 @@ CFG = {
     'json_file': 'node.json',
     'cn_url': 'https://cn-stage.test.dataone.org/cn',
     'mode': 'testing',
+    'token': None,
     'check_files': 5,
     'local': False,
 }

@@ -5,6 +5,7 @@ import time
 from mnonboard import utils
 from mnonboard import info_chx
 from mnonboard import data_chx
+from mnonboard import cn
 from mnonboard.defs import CFG, HELP_TEXT, SO_SRVR, CN_SRVR, CN_SRVR_BASEURL, CN_CERT_LOC, APPROVE_SCRIPT_LOC
 from mnonboard import default_json, L
 
@@ -16,6 +17,13 @@ def run(cfg):
     Args:
         cfg (dict): Dict containing config variables.
     """
+    # auth
+    if not cfg['token']:
+        cfg['token'] = os.environ.get('D1_AUTH_TOKEN')
+    if not cfg['token']:
+        print('Your DataONE auth token is missing. Please enter it here and/or store it in the env variable "D1_AUTH_TOKEN".')
+        cfg['token'] = info_chx.req_input('Please enter your DataONE authentication token: ')
+    DC = cn.init_client(cn_url=cfg['cn_url'], auth_token=cfg['token'])
     if cfg['info'] == 'user':
         # do the full user-driven info gathering process
         ufields = info_chx.user_input()
