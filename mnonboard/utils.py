@@ -360,7 +360,7 @@ def dl_node_capabilities(ssh: SSHClient, baseurl: str, node_dir: str, node_id: s
     """
     """
     node_filename = '%s/%s-node.xml' % (node_dir, node_id)
-    command = 'sudo curl "https://%s/v2/node" > %s' % (baseurl, node_filename)
+    command = 'sudo curl "https://%s/%s/v2/node" > %s' % (baseurl, node_id, node_filename)
     L.info('Downloading node capabilities: %s' % (command))
     ssh.exec_command(command)
     return node_filename
