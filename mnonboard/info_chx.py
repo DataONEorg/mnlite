@@ -267,6 +267,25 @@ def local_subj_lookup(subj, loc):
         L.info('No subject found.')
         return False
 
+def set_role(loc, title, value):
+    """
+    Set the subject's role in the opersist database accordingly.
+    This should be done before harvest time in order for mnlite to be able to
+    populate this information when requested by the web front-end or API.
+
+    :param str loc: The location of the opersist database parent folder
+    :param str title: ``default_submitter`` or ``default_owner``
+    """
+    L.info('Setting %s as "%s" in sqlite database at %s' % (value, title, loc))
+    op = getOpersistInstance(loc)
+    rec = op.getSubject(subj=value)
+    if title in 'default_submitter':
+        op.setDefaultSubmitter(rec)
+    if title in 'default_owner':
+        op.setDefaultOwner(rec)
+    op.close()
+    L.info('OPersist record set.')
+
 def orcid_name(orcid, f):
     """
     Ask the user for the name of an orcid number.

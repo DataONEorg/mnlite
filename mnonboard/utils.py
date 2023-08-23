@@ -9,7 +9,7 @@ from pathlib import Path
 
 from mnonboard.defs import SCHEDULES, NAMES_DICT
 from mnonboard import NODE_PATH_REL, CUR_PATH_ABS, LOG_DIR, HARVEST_LOG_NAME, HM_DATE, L
-from mnonboard.info_chx import cn_subj_lookup, local_subj_lookup, enter_schedule, orcid_name
+from mnonboard.info_chx import cn_subj_lookup, local_subj_lookup, enter_schedule, orcid_name, set_role
 
 def load_json(loc):
     """
@@ -145,6 +145,7 @@ def get_or_create_subj(loc, value, cn_url, title='unspecified subject', name=Fal
         loc (str): Location of the opersist instance.
         value (str): Subject value (unique subject id, such as orcid or member node id).
         cn_url (str): The base URL of the rest API with which to search for the given subject.
+        title (str): The subject's role in relation to the database.
         name (str or bool): Subject name (human readable).
     """
     create = False
@@ -166,6 +167,9 @@ def get_or_create_subj(loc, value, cn_url, title='unspecified subject', name=Fal
     if create:
         # finally, use opersist to create the subject (sloppy, could create it directly, but this does the same thing)
         new_subj(loc, name, value)
+        # then use opersist to set the subject's role
+        if title in ('default_owner', 'default_submitter'):
+            set_role(loc=loc, title=title, value=value)
     return name
 
 def set_schedule():
