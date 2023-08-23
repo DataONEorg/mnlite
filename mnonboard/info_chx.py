@@ -244,28 +244,29 @@ def cn_subj_lookup(subj, cn_url='https://cn.dataone.org/cn', debug=False):
         L.error('Unspecified error from %s:\n%s' % (cn_url, e))
         exit(1)
 
-def local_subj_lookup(subj, loc):
+def local_subj_lookup(subj, name, loc, retn=False):
     """
     Use the local opersist instance to look up a subject.
  
     Args:
         subj (str): Subject id (unique).
         loc (str): Location of the opersist instance.
+        name (str): Name of subject.
+        retn (bool): Whether to return the record.
     
     Returns:
         (str or False): Returns subject name or False if not found.
     """
     L.info('Looking up %s in sqlite database at %s' % (subj, loc))
     op = getOpersistInstance(loc)
-    rec = op.getSubject(subj=subj)
+    rec = op.getSubject(subj=subj, name=name, create_if_missing=True)
     op.close()
-    if rec:
+    if retn:
         rec = rec.asJsonDict()
-        L.info('Found record: %s' % (rec))
+        L.info('Record: %s' % (rec))
         return rec['name']
     else:
-        L.info('No subject found.')
-        return False
+        return
 
 def set_role(loc, title, value):
     """
@@ -279,10 +280,11 @@ def set_role(loc, title, value):
     L.info('Setting %s as "%s" in sqlite database at %s' % (value, title, loc))
     op = getOpersistInstance(loc)
     rec = op.getSubject(subj=value)
-    if title in 'default_submitter':
-        op.setDefaultSubmitter(rec)
-    if title in 'default_owner':
-        op.setDefaultOwner(rec)
+    if rec:
+        if title in 'default_submitter':
+            op.setDefaultSubmitter(value)
+        if title in 'default_owner':
+            op.setDefaultOwner(value)
     op.close()
     L.info('OPersist record set.')
 

@@ -135,7 +135,7 @@ def new_subj(loc, name, value):
         L.error('opersist subject creation command failed for %s (%s): %s' % (name, value, e))
         exit(1)
 
-def get_or_create_subj(loc, value, cn_url, title='unspecified subject', name=False):
+def get_or_create_subj(loc, value, cn_url, title='unspecified subject', name=None):
     """
     Get an existing subject using their ORCiD or create a new one with the specified values.
     Search is conducted first at the given coordinating node URL, then locally.
@@ -148,28 +148,22 @@ def get_or_create_subj(loc, value, cn_url, title='unspecified subject', name=Fal
         title (str): The subject's role in relation to the database.
         name (str or bool): Subject name (human readable).
     """
-    create = False
     if name:
         # we are probably creating a node record
         L.info('Creating a node subject.')
-        create = True
     else:
         # name was not given. look up the orcid record in the database
         name = cn_subj_lookup(subj=value, cn_url=cn_url)
         if not name:
-            name = local_subj_lookup(subj=value, loc=loc)
-        if not name:
             # if the name is not in either database, we will create it; else it's already there and we ignore it
-            L.info('%s does not exist either locally or at %s. Will create a record. Need a name first...' % (value, cn_url))
+            L.info('%s does not exist at %s. Need a name for local record creation...' % (value, cn_url))
             # ask the user for a name with the associated position and ORCiD record
             name = orcid_name(value, title)
-            create = True
-    if create:
-        # finally, use opersist to create the subject (sloppy, could create it directly, but this does the same thing)
-        new_subj(loc, name, value)
-        # then use opersist to set the subject's role
-        if title in ('default_owner', 'default_submitter'):
-            set_role(loc=loc, title=title, value=value)
+    # finally, use opersist to create the subject
+    local_subj_lookup(loc=loc, subj=value, name=name)
+    # then use opersist to set the subject's role
+    if title in ('default_owner', 'default_submitter'):
+        set_role(loc=loc, title=title, value=value)
     return name
 
 def set_schedule():
