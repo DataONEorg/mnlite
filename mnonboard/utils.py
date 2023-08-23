@@ -369,7 +369,7 @@ def register_node(ssh: SSHClient, cert: str, node_filename: str, cn: str):
     node_filename = os.path.split(node_filename)[1]
     mn = node_filename.split('-')[0]
     command = """sudo curl --cert %s -X POST -F 'node=@%s' "%s/v2/node" """ % (
-        cert, node_filename, cn, mn
+        cert, node_filename, cn
     )
     L.info('Registering node: %s' % (command))
     ssh.exec_command(command)
