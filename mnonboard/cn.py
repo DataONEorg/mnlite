@@ -1,7 +1,7 @@
 from os import environ
 from d1_client.cnclient import CoordinatingNodeClient
 from d1_common.types.dataoneTypes import Subject, person
-import d1_admin_tools as d1np
+#import d1_admin_tools as d1np
 
 from . import defs
 
