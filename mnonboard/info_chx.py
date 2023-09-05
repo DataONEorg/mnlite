@@ -123,11 +123,11 @@ def valid_url_prefix(url, prefix, f):
     if prefix not in url:
         L.error('ORCiD number in "%s" field does not have the correct URL prefix. (URL: %s)' % (f, url))
         print('Please ensure the correct URL prefix (%s) preceeds the ORCiD number in field "%s"' % (ORCID_PREFIX, f))
-        exit(1)
+        return False
     if url[-1] in '/':
         L.error('ORCiD number in "%s" field has a trailing slash.')
         print('Please remove the trailing slash (/) from the end of the ORCiD number in field "%s"' % f)
-        exit(1)
+        return False
     return True
 
 def sitemap_urls(num_urls):
@@ -159,10 +159,11 @@ def enter_schedule():
         (int): User-entered integer indicating schedule choice.
     """
     p = 'Select a starting frequency with which to scrape data from this member node.\n' \
-        '1: Monthly\n' \
-        '2: Daily\n' \
+        '0: Monthly\n' \
+        '1: Daily\n' \
+        '2: Hourly\n' \
         '3: Every 3 minutes\n' \
-        'Enter 1/2/3: '
+        'Enter 0/1/2/3: '
     while True:
         i = input(p)
         et = 'Please enter a choice of the frequency options above.'
@@ -479,8 +480,17 @@ def input_test(fields):
                 raise ValueError('Value in field "%s" is an empty string.' % (f))
             if f in ['default_owner', 'default_submitter']:
                 # test orcid records while we're here
-                assert valid_url_prefix(fields[f], ORCID_PREFIX, f)
-                assert valid_orcid(fields[f].split('/')[-1])
+                if valid_url_prefix(fields[f], NODE_ID_PREFIX, f):
+                    L.info('%s looks like a valid nodeid')
+                    # could test for uniqueness as well?
+                elif valid_url_prefix(fields[f], ORCID_PREFIX, f):
+                    L.info('%s has a valid ORCiD url prefix')
+                    if valid_orcid(fields[f].split('/')[-1]):
+                        L.info('%s is a valid ORCiD')
+                    else:
+                        raise ValueError('Invalid ORCiD number "%s" in field %s' % (fields[f], f))
+                else:
+                    raise ValueError('Invalid value "%s" in field %s (must either be ORCiD number or "urn:node:NODE_NAME")' % (fields[f], f))
     except KeyError as e:
         L.error('No "%s" field found in json.' % f)
         print('Please add the "%s" field to the json you loaded and re-run the script.')
@@ -491,7 +501,8 @@ def input_test(fields):
         exit(1)
     except ValueError as e:
         L.error(e)
-        print('Please add a value in field "%s" and re-run the script.' % (f))
+        print('Please add a supported value in field "%s" and re-run the script.' % (f))
+        exit(1)
     # nest level 2
     nf = ''
     try:
@@ -502,7 +513,7 @@ def input_test(fields):
                 if 'contact_subject' in nf:
                     # test orcid record
                     assert valid_url_prefix(fields[f][nf], ORCID_PREFIX, nf)
-                    assert valid_orcid(fields[f][nf].split('/')[-1])
+                    assert valid_orcid(fields[f][nf].split('/')[-1]), 'Invalid ORCiD number %s in field "%s > %s"' % (fields[f][nf], f, nf)
                 if 'node_id' in nf:
                     # check that the node_id is valid and prompt user to change if it's not
                     fields[f][nf] = enter_nodeid(id=fields[f][nf])
@@ -511,7 +522,7 @@ def input_test(fields):
         print('Please add the "%s > %s" field to the json you loaded and re-run the script.' % (f, nf))
         exit(1)
     except AssertionError as e:
-        L.error('Invalid ORCiD number %s in field "%s > %s"' % (fields[f][nf], f, nf))
+        L.error()
         print('Please correct the ORCiD number in field "%s > %s"' % (f, nf))
         exit(1)
     except ValueError as e:
