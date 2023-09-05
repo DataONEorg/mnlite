@@ -82,7 +82,7 @@ SITEMAP_URLS = []
 
 SCHEDULES = {
     # monthly on the 1st at 00:30
-    1: {
+    0: {
       "hour": "0",
       "day": "1",
       "min": "30",
@@ -91,11 +91,21 @@ SCHEDULES = {
       "wday": "?",
       "year": "*"
     },
-    # daily at 00:10
-    2: {
+    # daily at 00:20
+    1: {
       "hour": "0",
       "day": "*",
-      "min": "10",
+      "min": "20",
+      "mon": "*",
+      "sec": "0",
+      "wday": "?",
+      "year": "*"
+    },
+    # hourly at :01
+    2: {
+      "hour": "*",
+      "day": "*",
+      "min": "1",
       "mon": "*",
       "sec": "0",
       "wday": "?",
