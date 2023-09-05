@@ -181,24 +181,32 @@ def restart_mnlite():
     """
     Subprocess call to restart the mnlite system service. Requires sudo.
     """
-    L.info('Restarting mnlite systemctl service...')
-    try:
-        subprocess.run(['sudo', 'systemctl', 'restart', 'mnlite.service'], check=True)
-        L.info('Done.')
-    except subprocess.CalledProcessError as e:
-        L.error('Error restarting mnlite system service. Is it installed on your system? Error text:\n%s' % (e))
-        while True:
-            print('mnlite was not restarted.')
-            i = input('Do you wish to continue? (Y/n) ')
-            if i.lower() == 'n':
-                L.info('User has chosen to abort setup after mnlite restart failed.')
-                exit(1)
-            elif i.lower() in ['y', '']:
-                L.info('User has chosen to continue after mnlite restart failed.')
-                break
-            else:
-                L.error('Invalid input at mnlite failure continue prompt: %s' % (i))
-                print('You have selected an invalid option.')
+    i = input('Do you wish to restart the mnlite service? (Y/n) ')
+    while True:
+        if i.lower() == 'n':
+            break
+        elif i.lower() in ['y', '']:
+            L.info('Restarting mnlite systemctl service...')
+            try:
+                subprocess.run(['sudo', 'systemctl', 'restart', 'mnlite.service'], check=True)
+                L.info('Done.')
+            except subprocess.CalledProcessError as e:
+                L.error('Error restarting mnlite system service. Is it installed on your system? Error text:\n%s' % (e))
+                print('mnlite was not restarted.')
+                i = input('Do you wish to continue? (Y/n) ')
+                if i.lower() == 'n':
+                    L.info('User has chosen to abort setup after mnlite restart failed.')
+                    exit(1)
+                elif i.lower() in ['y', '']:
+                    L.info('User has chosen to continue after mnlite restart failed.')
+                    break
+                else:
+                    L.error('Invalid input at mnlite failure continue prompt: %s' % (i))
+                    print('You have selected an invalid option.')
+        else:
+            L.error('Invalid input at mnlite prompt: %s' % (i))
+            print('You have selected an invalid option.')
+
 
 def harvest_data(loc, mn_name):
     """
