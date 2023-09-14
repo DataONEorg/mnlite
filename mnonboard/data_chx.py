@@ -5,7 +5,7 @@ from pyshacl.errors import ShapeLoadError, ConstraintLoadError, \
 
 from mnonboard import L
 from mnonboard.defs import SHACL_URL, SHACL_ERRORS
-from mnonboard.utils import limit_tests, save_report
+from mnonboard.utils import limit_tests, save_report, ask_continue
 from opersist.cli import getOpersistInstance
 from opersist.models.thing import Thing
 from json.decoder import JSONDecodeError
@@ -115,7 +115,7 @@ def test_mdata(loc, shp_graph=SHACL_URL, format='json-ld', num_tests=3):
     num_tests = num_things if num_tests == 'all' else num_tests # still might have to test all things if (num_things < 500)
     L.info('Checking %s files.' % num_tests)
     q = op.getSession().query(Thing) # this might be too inefficient for large sets; may need to change
-    i, valid_files, load_errs = 0, 0, 0
+    i, valid_files, load_errs, tot_violations = 0, 0, 0, 0
     viol_dict = {}
     while i < num_tests:
         if i > 0:
@@ -214,3 +214,5 @@ def test_mdata(loc, shp_graph=SHACL_URL, format='json-ld', num_tests=3):
     violation_report(viol_dict, loc)
     # close the opersist instance
     op.close()
+    msg = f"{tot_violations} violations found (out of {i} checked; with {load_errs} load/decode errors). Continue?"
+    ask_continue(msg)

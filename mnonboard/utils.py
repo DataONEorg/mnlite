@@ -261,6 +261,20 @@ Are you sure you want to test all %s metadata objects in this set? (y/N): ' % (r
             break
     return num_things
 
+def ask_continue(msg: str):
+    """
+    """
+    while True:
+        i = input(msg + ' ')
+        if i.lower() in 'n':
+            exit(1)
+        elif i.lower() in 'y':
+            break
+        else:
+            L.info('User has not entered "y" or "n".')
+            print('You have entered an incorrect value. Please enter "y" to continue or "n" to quit.')
+            continue
+
 def create_names_xml(loc, node_id, names):
     """
     Format subject XML documents and return list of names.
