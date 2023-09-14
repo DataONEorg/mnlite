@@ -263,9 +263,12 @@ Are you sure you want to test all %s metadata objects in this set? (y/N): ' % (r
 
 def ask_continue(msg: str):
     """
+    A user input loop in which the user is prompted whether they want to continue.
+
+    :param str msg: The message to display at the prompt.
     """
     while True:
-        i = input(msg + ' ')
+        i = input(msg + ' (y/n) ')
         if i.lower() in 'n':
             exit(1)
         elif i.lower() in 'y':
