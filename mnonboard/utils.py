@@ -181,8 +181,8 @@ def restart_mnlite():
     """
     Subprocess call to restart the mnlite system service. Requires sudo.
     """
-    i = input('Do you wish to restart the mnlite service? (Y/n) ')
     while True:
+        i = input('Do you wish to restart the mnlite service? (Y/n) ')
         if i.lower() == 'n':
             break
         elif i.lower() in ['y', '']:
@@ -190,6 +190,7 @@ def restart_mnlite():
             try:
                 subprocess.run(['sudo', 'systemctl', 'restart', 'mnlite.service'], check=True)
                 L.info('Done.')
+                break
             except subprocess.CalledProcessError as e:
                 L.error('Error restarting mnlite system service. Is it installed on your system? Error text:\n%s' % (e))
                 print('mnlite was not restarted.')
