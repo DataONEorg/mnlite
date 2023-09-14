@@ -128,7 +128,11 @@ def test_mdata(loc, shp_graph=SHACL_URL, format='json-ld', num_tests=3):
             thing_no = random.randint(0, num_things)
         else:
             thing_no = i
-        t = q[thing_no]
+        if len(q) > 0:
+            t = q[thing_no]
+        else:
+            L.error('No records in mnlite database! Aborting checks and registrations.')
+            exit(1)
         L.info('Selected record number %s of %s in set: %s' % (thing_no, num_things, t.content))
         pth = op.contentAbsPath(t.content)
         # read to object
