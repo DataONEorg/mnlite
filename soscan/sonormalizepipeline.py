@@ -35,7 +35,11 @@ class SoscanNormalizePipeline:
         require_identifier = True
 
         jsonld = item["jsonld"]
-        options = {"base": item["url"]}
+        version = jsonld.get('version', None)
+        version = jsonld.get('@version', '1.1') if not version else version
+        jldversion = f'json-ld-{version}'
+        self.logger.debug(f"process_item: version {jldversion}")
+        options = {"base": item["url"], "processingMode": jldversion}
         try:
             normalized = sonormal.sosoNormalize(jsonld, options=options)
         except Exception as e:
@@ -43,7 +47,7 @@ class SoscanNormalizePipeline:
 
         ids = []
         try:
-            _framed = sonormal.normalize.frameSODataset(normalized)
+            _framed = sonormal.normalize.frameSODataset(normalized, options=options)
             ids = sonormal.normalize.getDatasetsIdentifiers(_framed)
         except Exception as e:
             raise scrapy.exceptions.DropItem(f"JSON-LD identifier extract failed: {e}")
