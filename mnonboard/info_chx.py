@@ -121,12 +121,12 @@ def valid_url_prefix(url, prefix, f):
     """
     # orcid number will be preceded by a url prefix but no trailing slash
     if prefix not in url:
-        L.error('ORCiD number in "%s" field does not have the correct URL prefix. (URL: %s)' % (f, url))
-        print('Please ensure the correct URL prefix (%s) preceeds the ORCiD number in field "%s"' % (ORCID_PREFIX, f))
+        L.error('URL in "%s" field does not have the correct prefix. (prefix: %s; URL: %s)' % (f, prefix, url))
+        print('Please ensure the correct URL prefix (%s) preceeds URL in field "%s" (currently: %s)' % (ORCID_PREFIX, f, prefix))
         return False
     if url[-1] in '/':
-        L.error('ORCiD number in "%s" field has a trailing slash.')
-        print('Please remove the trailing slash (/) from the end of the ORCiD number in field "%s"' % f)
+        L.error('URL in "%s" field has a trailing slash.' % (f))
+        print('Please remove the trailing slash (/) from the end of URL in field "%s"' % (f))
         return False
     return True
 
@@ -478,22 +478,23 @@ def input_test(fields):
         for f in test_fields:
             if fields[f] == '':
                 raise ValueError('Value in field "%s" is an empty string.' % (f))
-            if f in ['default_owner', 'default_submitter']:
-                # test orcid records while we're here
+            if f in ['node_id']:
                 if valid_url_prefix(fields[f], NODE_ID_PREFIX, f):
                     L.info('%s looks like a valid nodeid')
                     # could test for uniqueness as well?
-                elif valid_url_prefix(fields[f], ORCID_PREFIX, f):
-                    L.info('%s has a valid ORCiD url prefix')
+            if f in ['default_owner', 'default_submitter']:
+                # test orcid records while we're here
+                if valid_url_prefix(fields[f], ORCID_PREFIX, f):
+                    L.info('%s has a valid ORCiD url prefix' % (fields[f]))
                     if valid_orcid(fields[f].split('/')[-1]):
-                        L.info('%s is a valid ORCiD')
+                        L.info('%s is a valid ORCiD URL' % (fields[f]))
                     else:
                         raise ValueError('Invalid ORCiD number "%s" in field %s' % (fields[f], f))
                 else:
                     raise ValueError('Invalid value "%s" in field %s (must either be ORCiD number or "urn:node:NODE_NAME")' % (fields[f], f))
     except KeyError as e:
         L.error('No "%s" field found in json.' % f)
-        print('Please add the "%s" field to the json you loaded and re-run the script.')
+        print('Please add the "%s" field to the json you loaded and re-run the script.' % f)
         exit(1)
     except AssertionError as e:
         L.error('Invalid ORCiD number %s in field "%s"' % (fields[f], f))
@@ -512,8 +513,10 @@ def input_test(fields):
                     raise ValueError('Value in field "%s > %s" is an empty string.' % (f, nf))
                 if 'contact_subject' in nf:
                     # test orcid record
-                    assert valid_url_prefix(fields[f][nf], ORCID_PREFIX, nf)
-                    assert valid_orcid(fields[f][nf].split('/')[-1]), 'Invalid ORCiD number %s in field "%s > %s"' % (fields[f][nf], f, nf)
+                    if not valid_url_prefix(fields[f][nf], ORCID_PREFIX, nf):
+                        raise ValueError('Invalid ORCiD URL prefix "%s" in field %s (must be "%s")' % (fields[f][nf], nf, ORCID_PREFIX))
+                    if not valid_orcid(fields[f][nf].split('/')[-1]):
+                        raise ValueError('Invalid ORCiD URL %s in field "%s > %s"' % (fields[f][nf], f, nf))
                 if 'node_id' in nf:
                     # check that the node_id is valid and prompt user to change if it's not
                     fields[f][nf] = enter_nodeid(id=fields[f][nf])
