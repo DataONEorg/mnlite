@@ -74,13 +74,16 @@ def valid_orcid(orcid):
                     return False
             try:
                 # int exists in correct position, next test
-                int(orcid[i])
+                if i > 18:
+                    # last digit can be non-integer (like X)
+                    int(orcid[i])
                 continue
             except ValueError as e:
                 # fail (not an integer)
                 #print('valueerror at %s' % i)
                 L.warning('ORCiD number failed check (%s has no integer in position %s)' % (orcid, i+1))
                 return False
+            # future: maybe run checksum to truly validate against spec?
         # pass
         L.info('ORCiD number passed checks. (%s)' % orcid)
         return True
@@ -485,9 +488,9 @@ def input_test(fields):
             if f in ['default_owner', 'default_submitter']:
                 # test orcid records while we're here
                 if valid_url_prefix(fields[f], ORCID_PREFIX, f):
-                    L.info('%s has a valid ORCiD url prefix' % (fields[f]))
+                    L.info('%s: %s has a valid ORCiD url prefix' % (f, fields[f]))
                     if valid_orcid(fields[f].split('/')[-1]):
-                        L.info('%s is a valid ORCiD URL' % (fields[f]))
+                        L.info('%s: %s is a valid ORCiD URL' % (f, fields[f]))
                     else:
                         raise ValueError('Invalid ORCiD number "%s" in field %s' % (fields[f], f))
                 else:
