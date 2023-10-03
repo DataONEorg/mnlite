@@ -23,6 +23,7 @@ def run(cfg):
     if not cfg['token']:
         print('Your DataONE auth token is missing. Please enter it here and/or store it in the env variable "D1_AUTH_TOKEN".')
         cfg['token'] = info_chx.req_input('Please enter your DataONE authentication token: ')
+        os.environ['D1_AUTH_TOKEN'] = cfg['token']
     DC = cn.init_client(cn_url=cfg['cn_url'], auth_token=cfg['token'])
     if cfg['info'] == 'user':
         # do the full user-driven info gathering process
