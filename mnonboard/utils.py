@@ -325,6 +325,7 @@ def start_ssh(server: str, node_id):
     xml_dir = '~/d1_xml/%s' % (node_id)
     mkdir_cmd = 'mkdir -p %s' % (xml_dir)
     cd_cmd = 'cd %s' % xml_dir
+    op = 'connection to remote server'
     try:
         ssh = SSHClient()
         ssh.load_system_host_keys()
