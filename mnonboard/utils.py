@@ -317,93 +317,142 @@ def create_names_xml(loc, node_id, names):
         files.append(fn)
     return files
 
-def start_ssh(server: str, node_id):
+def write_cmd_to(fn, cmd, desc=None, mode='a'):
+    """
+    """
+    desc = f"# {desc}\n" if desc else ""
+    with open(fn, mode) as f:
+        f.write(f"{desc}{cmd}\n")
+
+def start_ssh(server: str, node_id, loc: str, ssh: bool=True):
     """
     """
     server = server.split('https://')[1].split('/')[0]
     node_id = node_id.split(':')[-1]
     xml_dir = '~/d1_xml/%s' % (node_id)
+    local_xml_dir = f'{loc}/xml'
     mkdir_cmd = 'mkdir -p %s' % (xml_dir)
     cd_cmd = 'cd %s' % xml_dir
-    op = 'connection to remote server'
+    op = f'connection to {server}'
+    if not ssh:
+        return None, local_xml_dir, node_id
     try:
         ssh = SSHClient()
         ssh.load_system_host_keys()
         ssh.connect(server)
         L.info('Running "%s" on %s' % (mkdir_cmd, server))
-        op = 'mkdir on remote server'
+        op = f'mkdir on {server}'
         ssh.exec_command(mkdir_cmd)
         L.info('Running "%s" on %s' % (cd_cmd, server))
-        op = 'cd on remote server'
+        op = f'cd on {server}'
         ssh.exec_command(cd_cmd)
         return ssh, xml_dir, node_id
     except Exception as e:
         L.error('%s running %s. Details: %s' % (repr(e), op, e))
-        exit(1)
+        return None, local_xml_dir, node_id
 
-def upload_xml(ssh: SSHClient, files: list, target_dir: str):
+def upload_xml(ssh: SSHClient, files: list, node_id: str, loc: str, server: str=None):
     """
     Format subject XML documents and return list of names.
+    cmd_fn = f"{loc}/commands.sh"
 
     Args:
         files (list): List of files to upload.
     """
     op = ''
+    target_dir = f'~/d1_xml/{node_id}/'
     try:
         op = 'mkdir on remote server'
-        with SCPClient(ssh.get_transport()) as scp:
-            op = 'scp to remote server'
-            L.info('Copying files to remote %s : %s' % (target_dir, files))
-            scp.put(files=files, remote_path=target_dir)
+        if ssh:
+            with SCPClient(ssh.get_transport()) as scp:
+                op = 'scp to remote server'
+                L.info('Copying files to remote %s : %s' % (target_dir, files))
+                scp.put(files=files, remote_path=target_dir)
+        else:
+            cmd_fn = f"{loc}/commands.sh"
+            write_cmd_to(fn=cmd_fn, cmd=f'mkdir -p {target_dir}', desc='# Copy xml files from so server to cn', mode='w')
+            write_cmd_to(fn=cmd_fn, cmd=f'cd {target_dir}')
+            for f in files:
+                command = f"scp {server}:{f} {target_dir}"
+                write_cmd_to(fn=cmd_fn, cmd=command)
     except Exception as e:
         L.error('%s running %s. Details: %s' % (repr(e), op, e))
         exit(1)
 
-def create_subj_in_acct_svc(ssh: SSHClient, cert: str, files: list, cn: str):
+def create_subj_in_acct_svc(ssh: SSHClient, cert: str, files: list, cn: str, loc: str):
     """
     """
+    cmd_fn = f"{loc}/commands.sh"
     for f in files:
         f = os.path.split(f)[1]
         command = 'sudo curl -s --cert %s -F person=@%s -X POST %s/v2/accounts' % (
             cert, f, cn
         )
-        L.info('Creating subject: %s' % (command))
-        ssh.exec_command(command)
+        if ssh:
+            L.info('Creating subject: %s' % (command))
+            ssh.exec_command(command)
+        else:
+            L.debug(f'Command: {command}')
+            L.info(f'Writing cmd to {cmd_fn}: subject creation')
+            write_cmd_to(fn=cmd_fn, cmd=command, desc=f"Create subject: {f}")
 
-def validate_subj_in_acct_svc(ssh: SSHClient, cert: str, names: dict, cn: str):
+def validate_subj_in_acct_svc(ssh: SSHClient, cert: str, names: dict, cn: str, loc: str):
     """
     """
+    cmd_fn = f"{loc}/commands.sh"
     for n in names:
         orcid_urlenc = urlparse.quote(n, safe='-')
         command = 'sudo curl -s --cert %s -X PUT %s/v2/accounts/verification/%s' % (
             cert, cn, orcid_urlenc
         )
-        L.info('Validating subject: %s' % (command))
-        ssh.exec_command(command)
+        if ssh:
+            L.info('Validating subject: %s' % (command))
+            ssh.exec_command(command)
+        else:
+            L.debug(f'Command: {command}')
+            L.info(f'Writing cmd to {cmd_fn}: subject validation')
+            write_cmd_to(fn=cmd_fn, cmd=command, desc=f"Validate subject: {n}")
 
-def dl_node_capabilities(ssh: SSHClient, baseurl: str, node_dir: str, node_id: str):
+def dl_node_capabilities(ssh: SSHClient, baseurl: str, node_dir: str, node_id: str, loc: str):
     """
     """
+    cmd_fn = f"{loc}/commands.sh"
     node_filename = '%s/%s-node.xml' % (node_dir, node_id)
     command = 'sudo curl "https://%s/%s/v2/node" > %s' % (baseurl, node_id, node_filename)
-    L.info('Downloading node capabilities: %s' % (command))
-    ssh.exec_command(command)
+    if ssh:
+        L.info('Downloading node capabilities: %s' % (command))
+        ssh.exec_command(command)
+    else:
+        L.info(f'Writing cmd to {cmd_fn}: node capabilities')
+        L.debug(f'Command: {command}')
+        write_cmd_to(fn=cmd_fn, cmd=command, desc=f"Download {node_id} node capabilities")
     return node_filename
 
-def register_node(ssh: SSHClient, cert: str, node_filename: str, cn: str):
+def register_node(ssh: SSHClient, cert: str, node_filename: str, cn: str, loc: str):
     """
     """
+    cmd_fn = f"{loc}/commands.sh"
     node_filename = os.path.split(node_filename)[1]
     mn = node_filename.split('-')[0]
     command = """sudo curl --cert %s -X POST -F 'node=@%s' "%s/v2/node" """ % (
         cert, node_filename, cn
     )
-    L.info('Registering node: %s' % (command))
-    ssh.exec_command(command)
+    if ssh:
+        L.info('Registering node: %s' % (command))
+        ssh.exec_command(command)
+    else:
+        L.info(f'Writing cmd to {cmd_fn}: node registration')
+        L.debug(f'Command: {command}')
+        write_cmd_to(fn=cmd_fn, cmd=command, desc=f"Register {node_filename} with CN")
 
-def approve_node(ssh: SSHClient, script_loc: str):
+def approve_node(ssh: SSHClient, script_loc: str, loc: str):
     """
     """
+    cmd_fn = f"{loc}/commands.sh"
     command = 'sudo %s' % (script_loc)
-    L.info('Starting approval script: %s' % (command))
-    ssh.exec_command(command)
+    if ssh:
+        L.info('Starting approval script: %s' % (command))
+        ssh.exec_command(command)
+    else:
+        L.info(f'Writing to {cmd_fn}: node approval')
+        write_cmd_to(fn=cmd_fn, cmd=command, desc="Approve node with CN (interactive script)")

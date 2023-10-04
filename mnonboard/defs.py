@@ -12,6 +12,7 @@ CFG = {
     'token': None,
     'check_files': 5,
     'local': False,
+    'ssh': False,
 }
 
 SO_SRVR = {
@@ -25,7 +26,10 @@ CN_SRVR = {
 
 CN_SRVR_BASEURL = 'https://%s/cn'
 
-CN_CERT_LOC = '/etc/dataone/client/private/urn_node_cnStageUCSB1.pem'
+CN_CERT_LOC = {
+    'production': '/etc/dataone/client/private/urn_node_UCSB1.pem',
+    'testing': '/etc/dataone/client/private/urn_node_cnStageUCSB1.pem'
+}
 APPROVE_SCRIPT_LOC = '/usr/local/bin/dataone-approve-node'
 
 HELP_TEXT = """DataONE member node onboard script

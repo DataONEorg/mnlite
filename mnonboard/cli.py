@@ -24,6 +24,7 @@ def run(cfg):
         print('Your DataONE auth token is missing. Please enter it here and/or store it in the env variable "D1_AUTH_TOKEN".')
         cfg['token'] = info_chx.req_input('Please enter your DataONE authentication token: ')
         os.environ['D1_AUTH_TOKEN'] = cfg['token']
+    cfg['cert_loc'] = CN_CERT_LOC[cfg['mode']]
     DC = cn.init_client(cn_url=cfg['cn_url'], auth_token=cfg['token'])
     if cfg['info'] == 'user':
         # do the full user-driven info gathering process
@@ -67,18 +68,21 @@ def run(cfg):
     # create xml to upload for validation (step 15)
     files = utils.create_names_xml(loc, node_id=fields['node']['node_id'], names=names)
     # uploading xml (proceed to step 14 and ssh to find xml in ~/d1_xml)
-    ssh, work_dir, node_id = utils.start_ssh(server=cfg['cn_url'], node_id=fields['node']['node_id'])
+    ssh, work_dir, node_id = utils.start_ssh(server=cfg['cn_url'],
+                                             node_id=fields['node']['node_id'],
+                                             loc=loc,
+                                             ssh=cfg['ssh'])
     time.sleep(0.5)
-    utils.upload_xml(ssh=ssh, files=files, target_dir=work_dir)
+    utils.upload_xml(ssh=ssh, server=SO_SRVR[cfg['mode']], files=files, node_id=node_id, loc=loc)
     # create and validate the subject in the accounts service (step 16)
-    utils.create_subj_in_acct_svc(ssh=ssh, cert=CN_CERT_LOC, files=files, cn=cfg['cn_url'])
-    utils.validate_subj_in_acct_svc(ssh=ssh, cert=CN_CERT_LOC, names=names, cn=cfg['cn_url'])
+    utils.create_subj_in_acct_svc(ssh=ssh, cert=cfg['cert_loc'], files=files, cn=cfg['cn_url'], loc=loc)
+    utils.validate_subj_in_acct_svc(ssh=ssh, cert=cfg['cert_loc'], names=names, cn=cfg['cn_url'], loc=loc)
     # download the node capabilities and register the node
-    node_filename = utils.dl_node_capabilities(ssh=ssh, baseurl=SO_SRVR[cfg['mode']], node_dir=work_dir, node_id=node_id)
-    utils.register_node(ssh=ssh, cert=CN_CERT_LOC, node_filename=node_filename, cn=cfg['cn_url'])
-    #utils.approve_node(ssh=ssh, script_loc=APPROVE_SCRIPT_LOC)
+    node_filename = utils.dl_node_capabilities(ssh=ssh, baseurl=SO_SRVR[cfg['mode']], node_dir=work_dir, node_id=node_id, loc=loc)
+    utils.register_node(ssh=ssh, cert=cfg['cert_loc'], node_filename=node_filename, cn=cfg['cn_url'], loc=loc)
+    utils.approve_node(ssh=ssh, script_loc=APPROVE_SCRIPT_LOC, loc=loc)
     # close connection
-    ssh.close()
+    ssh.close() if ssh else None
 
 def main():
     """
