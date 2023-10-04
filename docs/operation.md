@@ -9,10 +9,10 @@ Harvesting is implemented as a scrapy crawler[^scrapy]. Given a sitemap, crawls 
 ## DataONE production and testing hosts
 
 - Test server: so.test.dataone.org
-    - Environment: ~vieglais
-    - Virtual env: mnlite
+    - Environment: `~mnlite`
+    - Virtual env: `mnlite`
 - Production server: sonode.dataone.org
-    - Environment: ``~mnlite`
+    - Environment: `~mnlite`
     - Virtual env: `mnlite`
 
 ## Testing
@@ -25,7 +25,7 @@ Harvesting is implemented as a scrapy crawler[^scrapy]. Given a sitemap, crawls 
 
 1. Log in to sonode.dataone.org (or so.test.dataone.org for testing)
 2. `sudo su - mnlite`
-3. `workon mnlite`
+3. `workon mnlite` (`conda activate mnlite` on the test node)
 4. `cd WORK/mnlite`
 5. Initialize a new repository: `opersist -f instance/nodes/HAKAI_IYS init`
 6. Create a contact subject: `opersist -f instance/nodes/HAKAI_IYS sub -o create -n "Brett Johnson" -s "http://orcid.org/0000-0001-9317-0364"`
