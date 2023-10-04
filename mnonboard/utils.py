@@ -416,11 +416,12 @@ def validate_subj_in_acct_svc(ssh: SSHClient, cert: str, names: dict, cn: str, l
             L.info(f'Writing cmd to {cmd_fn}: subject validation')
             write_cmd_to(fn=cmd_fn, cmd=command, desc=f"Validate subject: {n}")
 
-def dl_node_capabilities(ssh: SSHClient, baseurl: str, node_dir: str, node_id: str, loc: str):
+def dl_node_capabilities(ssh: SSHClient, baseurl: str, node_id: str, loc: str):
     """
     """
     cmd_fn = f"{loc}/commands.sh"
-    node_filename = '%s/%s-node.xml' % (node_dir, node_id)
+    target_dir = f'~/d1_xml/{node_id}'
+    node_filename = '%s/%s-node.xml' % (target_dir, node_id)
     command = 'sudo curl "https://%s/%s/v2/node" > %s' % (baseurl, node_id, node_filename)
     if ssh:
         L.info('Downloading node capabilities: %s' % (command))
