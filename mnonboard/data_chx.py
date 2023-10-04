@@ -216,5 +216,5 @@ def test_mdata(loc, shp_graph=SHACL_URL, format='json-ld', num_tests=3):
     violation_report(viol_dict, loc)
     # close the opersist instance
     op.close()
-    msg = f"{tot_violations} violations found (out of {i} checked; with {load_errs} load/decode errors). Continue?"
+    msg = f"{valid_files} fully valid records found (out of {i} checked; with {load_errs} load/decode errors). Continue?"
     ask_continue(msg)
