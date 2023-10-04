@@ -376,7 +376,7 @@ def upload_xml(ssh: SSHClient, files: list, node_id: str, loc: str, server: str=
             write_cmd_to(fn=cmd_fn, cmd=f'mkdir -p {target_dir}', desc='Copy xml files from so server to cn', mode='w')
             write_cmd_to(fn=cmd_fn, cmd=f'cd {target_dir}')
             for f in files:
-                command = f"scp {server}:{f} {target_dir}"
+                command = f"scp mnlite@{server}:{f} {target_dir}"
                 write_cmd_to(fn=cmd_fn, cmd=command)
     except Exception as e:
         L.error('%s running %s. Details: %s' % (repr(e), op, e))
