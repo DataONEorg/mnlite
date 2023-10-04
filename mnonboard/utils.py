@@ -373,7 +373,7 @@ def upload_xml(ssh: SSHClient, files: list, node_id: str, loc: str, server: str=
                 scp.put(files=files, remote_path=target_dir)
         else:
             cmd_fn = f"{loc}/commands.sh"
-            write_cmd_to(fn=cmd_fn, cmd=f'mkdir -p {target_dir}', desc='# Copy xml files from so server to cn', mode='w')
+            write_cmd_to(fn=cmd_fn, cmd=f'mkdir -p {target_dir}', desc='Copy xml files from so server to cn', mode='w')
             write_cmd_to(fn=cmd_fn, cmd=f'cd {target_dir}')
             for f in files:
                 command = f"scp {server}:{f} {target_dir}"
