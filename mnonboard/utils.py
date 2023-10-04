@@ -268,11 +268,14 @@ def ask_continue(msg: str):
     :param str msg: The message to display at the prompt.
     """
     while True:
-        i = input(msg + ' (y/n) ')
-        if i.lower() in 'n':
-            exit(1)
-        elif i.lower() in 'y':
+        i = input(msg + ' (Y/n) ')
+        if i.lower() in 'y':
+            # this also implicitly matches an empty string (i.e. user presses enter)
+            L.info('Continuing.')
             break
+        elif (i.lower() in 'n'):
+            L.info('Exiting.')
+            exit(1)
         else:
             L.info('User has not entered "y" or "n".')
             print('You have entered an incorrect value. Please enter "y" to continue or "n" to quit.')
