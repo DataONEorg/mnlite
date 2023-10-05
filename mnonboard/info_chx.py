@@ -2,7 +2,7 @@ from d1_client.cnclient import CoordinatingNodeClient
 from d1_common.types import exceptions
 from os import environ
 
-from mnonboard.defs import FIELDS, SITEMAP_URLS, ORCID_PREFIX, SCHEDULES, NODE_ID_PREFIX
+from mnonboard.defs import FIELDS, SITEMAP_URLS, ORCID_PREFIX, SCHEDULES, NODE_ID_PREFIX, NODE_ID_POSTFIX
 from mnonboard import default_json, L
 from opersist.utils import JSON_TIME_FORMAT, dtnow
 from opersist.cli import getOpersistInstance
@@ -331,7 +331,7 @@ def enter_orcid(prompt):
 
 def valid_nodeid(node_id):
     """
-    Make sure the node_id contains the correct prefix.
+    Make sure the node_id contains the correct format.
 
     Args:
         node_id (str): Member node unique id.
@@ -340,8 +340,28 @@ def valid_nodeid(node_id):
         (bool): Whether or not the node_id is valid.
     """
     if NODE_ID_PREFIX in node_id:
-        # if valid, return
-        return True
+        if NODE_ID_POSTFIX in node_id:
+            # if valid, return
+            return True
+        else:
+            # if invalid, ask user if they meant to do that
+            L.warning('Entered node_id does not contain the "%s" postfix. Entry: "%s"' % (NODE_ID_POSTFIX, node_id))
+            while True:
+                # prompt loop
+                c = input('node_id usually contains the postfix "%s" but the entered one (%s) does not.\n\
+                    The subject should look like this: CN=urn:node:KNB,DC=dataone,DC=org\n\
+                    This could have *serious* downstream consequences!\n\
+                    Do you wish to modify the node_id entry to fit the standard?\n\
+                    Please answer "yes" or "no" (yes is default): ' % (NODE_ID_POSTFIX, node_id))
+                if c.lower() == 'no':
+                    L.warning('User has chosen to continue with node_id entry of %s' % (node_id))
+                    return True
+                elif (c.lower() == 'yes') or (c.lower() == ''):
+                    L.info('User has chosen to re-enter node_id. Entry: "%s"' % (c))
+                    return False
+                else:
+                    L.info('User has entered something other than "yes", "", or "no" and will be prompted again. Entry: "%s"' % (c))
+                    pass
     else:
         # if invalid, ask user if they meant to do that
         L.warning('Entered node_id does not contain the "%s" prefix. Entry: "%s"' % (NODE_ID_PREFIX, node_id))
@@ -353,7 +373,7 @@ def valid_nodeid(node_id):
                 Please answer "yes" or "no" (yes is default): ' % (NODE_ID_PREFIX, node_id))
             if c.lower() == 'no':
                 L.warning('User has chosen to continue with node_id entry of %s' % (node_id))
-                return True
+                break
             elif (c.lower() == 'yes') or (c.lower() == ''):
                 L.info('User has chosen to re-enter node_id. Entry: "%s"' % (c))
                 return False

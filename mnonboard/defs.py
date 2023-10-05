@@ -2,7 +2,8 @@ from mnonboard import __version__
 
 ORCID_PREFIX = 'http://orcid.org/'
 SHACL_URL = 'https://raw.githubusercontent.com/ESIPFed/science-on-schema.org/master/validation/shapegraphs/soso_common_v1.2.3.ttl'
-NODE_ID_PREFIX = 'urn:node:'
+NODE_ID_PREFIX = 'CN=urn:node:'
+NODE_ID_POSTFIX = ',DC=dataone,DC=org'
 
 CFG = {
     'info': 'user',
