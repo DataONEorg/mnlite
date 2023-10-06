@@ -388,7 +388,7 @@ def create_subj_in_acct_svc(ssh: SSHClient, cert: str, files: list, cn: str, loc
     cmd_fn = f"{loc}/commands.sh"
     for f in files:
         f = os.path.split(f)[1]
-        command = 'sudo curl -s --cert %s -F person=@%s -X POST %s/v2/accounts' % (
+        command = 'curl -s --cert %s -F person=@%s -X POST %s/v2/accounts' % (
             cert, f, cn
         )
         if ssh:
@@ -405,7 +405,7 @@ def validate_subj_in_acct_svc(ssh: SSHClient, cert: str, names: dict, cn: str, l
     cmd_fn = f"{loc}/commands.sh"
     for n in names:
         orcid_urlenc = urlparse.quote(n, safe='-')
-        command = 'sudo curl -s --cert %s -X PUT %s/v2/accounts/verification/%s' % (
+        command = 'curl -s --cert %s -X PUT %s/v2/accounts/verification/%s' % (
             cert, cn, orcid_urlenc
         )
         if ssh:
@@ -422,7 +422,7 @@ def dl_node_capabilities(ssh: SSHClient, baseurl: str, node_id: str, loc: str):
     cmd_fn = f"{loc}/commands.sh"
     target_dir = f'~/d1_xml/{node_id}'
     node_filename = '%s/%s-node.xml' % (target_dir, node_id)
-    command = 'sudo curl "https://%s/%s/v2/node" > %s' % (baseurl, node_id, node_filename)
+    command = 'curl "https://%s/%s/v2/node" > %s' % (baseurl, node_id, node_filename)
     if ssh:
         L.info('Downloading node capabilities: %s' % (command))
         ssh.exec_command(command)
@@ -438,7 +438,7 @@ def register_node(ssh: SSHClient, cert: str, node_filename: str, cn: str, loc: s
     cmd_fn = f"{loc}/commands.sh"
     node_filename = os.path.split(node_filename)[1]
     mn = node_filename.split('-')[0]
-    command = """sudo curl --cert %s -X POST -F 'node=@%s' "%s/v2/node" """ % (
+    command = """curl --cert %s -X POST -F 'node=@%s' "%s/v2/node" """ % (
         cert, node_filename, cn
     )
     if ssh:
