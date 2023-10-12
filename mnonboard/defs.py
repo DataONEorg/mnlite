@@ -15,23 +15,52 @@ CFG = {
     'local': False,
     'ssh': False,
 }
+"""
+Config dictionary.
+
+``'info'`` - Where the script gets data from. ``'json'`` for loaded node document or ``'user'`` for user-entered. Default: ``'user'``
+``'json_file'`` - JSON file to load, usually at ``../instance/nodes/<NODEID>/node.json``. See :py:data:`mnlite.mnode.DEFAULT_NODE_CONFIG`. Default: ``node.json``
+``'cn_url'`` - The URL of the coordinating node. Defined by ``'mode'``. Default: ``'https://cn-stage.test.dataone.org/cn'``
+``'mode'`` - The environment to run in: ``'production'`` or default ``'testing'``
+``'token'`` - The DataONE auth token. Can be loaded from ``https://search.dataone.org/profile/http://orcid.org/<ORCID ID>/s=settings/s=token`` in production
+``'check_files'`` - How many schema.org records to check. Default: ``5``
+``'local'`` - If ``True``, run locally (do not run the scraper to harvest from the remote sitemap)
+``'ssh'`` - If ``True``, run registration commands on the CN after checking schema.org records. Only works in ``'mode': 'testing'``. Otherwise, output a file with a list of commands to run to register the node on the CN.
+"""
 
 SO_SRVR = {
     'production': 'sonode.dataone.org',
     'testing': 'so.test.dataone.org'
 }
+"""
+The location of the mnlite instance serving schema.org metadata.
+"""
 CN_SRVR = {
     'production': 'cn.dataone.org',
     'testing': 'cn-stage.test.dataone.org'
 }
+"""
+The location of the coordinating node.
+"""
 
 CN_SRVR_BASEURL = 'https://%s/cn'
+"""
+The URL format of the CN API.
+Populated with one of the servers defined in :py:data:`mnonboard.defs.CN_SRVR`.
+"""
 
 CN_CERT_LOC = {
     'production': '/etc/dataone/client/private/urn_node_CNUCSB1.pem',
     'testing': '/etc/dataone/client/private/urn_node_cnStageUCSB1.pem'
 }
+"""
+The location of the CN cert, used for registration.
+"""
+
 APPROVE_SCRIPT_LOC = '/usr/local/bin/dataone-approve-node'
+"""
+The location of the Hazelcast node approval script.
+"""
 
 HELP_TEXT = """DataONE member node onboard script
 %s NCEAS/Ian Nesbitt
@@ -54,6 +83,11 @@ where OPTIONS := {
             run this script in local mode (will not scrape the remote site for new metadata)
 }
 """ % __version__
+"""
+Help text for command line use.
+
+.. warning:: Soon to be deprecated in favor of using ``argparse``.
+"""
 
 FIELDS = {
     'node': {
