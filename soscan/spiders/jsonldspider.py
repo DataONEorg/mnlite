@@ -138,7 +138,10 @@ class JsonldSpider(soscan.spiders.ldsitemapspider.LDSitemapSpider):
                 "extractAllScripts": True,
                 "json_parse_strict": json_parse_strict,
             }
-            jsonld = pyld.jsonld.load_html(response.body, response.url, None, options)
+            if "application/ld+json" in response.headers.get("Content-Type"):
+                jsonld = json.loads(response.body.decode(), strict=options.get("json_parse_strict", True))
+            else:
+                jsonld = pyld.jsonld.load_html(response.body, response.url, None, options)
             # for j_item in jsonld:
             #    item = soscan.items.SoscanItem()
             #    item["source"] = response.url
