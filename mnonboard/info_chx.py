@@ -2,7 +2,7 @@ from d1_client.cnclient import CoordinatingNodeClient
 from d1_common.types import exceptions
 from os import environ
 
-from mnonboard.defs import FIELDS, SITEMAP_URLS, ORCID_PREFIX, SCHEDULES, NODE_ID_PREFIX, NODE_ID_POSTFIX
+from mnonboard.defs import FIELDS, SITEMAP_URLS, ORCID_PREFIX, SCHEDULES, NODE_ID_PREFIX, SUBJECT_PREFIX, SUBJECT_POSTFIX
 from mnonboard import default_json, L
 from opersist.utils import JSON_TIME_FORMAT, dtnow
 from opersist.cli import getOpersistInstance
@@ -46,12 +46,14 @@ def valid_orcid(orcid):
     """
     Checks the validity of an ORCiD number.
 
-    ORCiDs have 4 groupings of 4 of integers separated by dashes (-)
-    for a total of 19 characters, thus `0000-0000-0000-0000` is valid
-    but `0000-0000-00000-000` and `0000-0000-0000-000` are not.
+    ORCiDs have 4 groupings of 4 of alphanumerics separated by dashes (-)
+    for a total of 19 characters, thus ``0000-0000-0000-0000`` is valid
+    but ``0000-0000-00000-000`` and ``0000-0000-0000-000`` are not.
+    Also, the last character is a checksum and can be ``X`` but we do not
+    validate that yet.
 
-    This seems like overkill but is probably good to have since it will be
-    used to store contacts for database upkeep/maintenance.
+    This seems like overkill but is probably good to have a simple check
+    since it will be used to store contacts for database upkeep/maintenance.
 
     Args:
         orcid (str): The orcid number.
@@ -329,53 +331,51 @@ def enter_orcid(prompt):
             L.warning("Invalid ORCiD number entered: %s" % o)
             print('Please enter a valid ORCiD number (ex: 0000-0000-0000-0000).')
 
-def valid_nodeid(node_id):
+def valid_format(test_value: str, prefix: str='', postfix: str=''):
     """
     Make sure the node_id contains the correct format.
 
-    Args:
-        node_id (str): Member node unique id.
-    
-    Returns:
-        (bool): Whether or not the node_id is valid.
+    :param str test_value: String to test against, for example ``node_id`` or ``subject``.
+    :returns: Whether or not the node_id is valid.
+    :rtype: bool
     """
-    if NODE_ID_PREFIX in node_id:
-        if NODE_ID_POSTFIX in node_id:
+    if prefix in test_value:
+        if postfix in test_value:
             # if valid, return
             return True
         else:
             # if invalid, ask user if they meant to do that
-            L.warning('Entered node_id does not contain the "%s" postfix. Entry: "%s"' % (NODE_ID_POSTFIX, node_id))
+            L.warning('Entered test value does not contain the "%s" postfix. Entry: "%s"' % (postfix, test_value))
             while True:
                 # prompt loop
-                c = input('node_id usually contains the postfix "%s" but the entered one (%s) does not.\n\
+                c = input('This field usually contains the postfix "%s" but the entered one (%s) does not.\n\
                     The subject should look like this: CN=urn:node:KNB,DC=dataone,DC=org\n\
                     This could have *serious* downstream consequences!\n\
-                    Do you wish to modify the node_id entry to fit the standard?\n\
-                    Please answer "yes" or "no" (yes is default): ' % (NODE_ID_POSTFIX, node_id))
+                    Do you wish to modify the entry to fit the standard?\n\
+                    Please answer "yes" or "no" (yes is default): ' % (postfix, test_value))
                 if c.lower() == 'no':
-                    L.warning('User has chosen to continue with node_id entry of %s' % (node_id))
+                    L.warning('User has chosen to continue with entry of %s' % (test_value))
                     return True
                 elif (c.lower() == 'yes') or (c.lower() == ''):
-                    L.info('User has chosen to re-enter node_id. Entry: "%s"' % (c))
+                    L.info('User has chosen to re-enter test_value. Entry: "%s"' % (c))
                     return False
                 else:
                     L.info('User has entered something other than "yes", "", or "no" and will be prompted again. Entry: "%s"' % (c))
                     pass
     else:
         # if invalid, ask user if they meant to do that
-        L.warning('Entered node_id does not contain the "%s" prefix. Entry: "%s"' % (NODE_ID_PREFIX, node_id))
+        L.warning('Entered test_value does not contain the "%s" prefix. Entry: "%s"' % (prefix, test_value))
         while True:
             # prompt loop
-            c = input('node_id usually contains the prefix "%s" but the entered one (%s) does not.\n\
+            c = input('test_value usually contains the prefix "%s" but the entered one (%s) does not.\n\
                 This could have *serious* downstream consequences!\n\
-                Do you wish to modify the node_id entry to fit the standard?\n\
-                Please answer "yes" or "no" (yes is default): ' % (NODE_ID_PREFIX, node_id))
+                Do you wish to modify the test_value entry to fit the standard?\n\
+                Please answer "yes" or "no" (yes is default): ' % (prefix, test_value))
             if c.lower() == 'no':
-                L.warning('User has chosen to continue with node_id entry of %s' % (node_id))
-                break
+                L.warning('User has chosen to continue with test_value entry of %s' % (test_value))
+                return True
             elif (c.lower() == 'yes') or (c.lower() == ''):
-                L.info('User has chosen to re-enter node_id. Entry: "%s"' % (c))
+                L.info('User has chosen to re-enter test_value. Entry: "%s"' % (c))
                 return False
             else:
                 L.info('User has entered something other than "yes", "", or "no" and will be prompted again. Entry: "%s"' % (c))
@@ -400,7 +400,7 @@ def enter_nodeid(prompt='Unique node_id: ', id=False):
             print('Please ensure that the node_id is unique from that of all other member nodes!')
             id = req_input(prompt)
         # validate and return
-        if valid_nodeid(id):
+        if valid_format(id, prefix=NODE_ID_PREFIX):
             return id
         else:
             # loop again
@@ -435,8 +435,10 @@ def user_input():
                     baseurl = base_url(FIELDS[f][nf][0])
                     FIELDS[f][nf][1] = baseurl
                 elif nf in 'subject':
-                    # set the subject field as the base_url without trailing slash
-                    FIELDS[f][nf][1] = baseurl[:-1]
+                    pass
+                    # # set the subject field as the node id in LDAP record format (CN=urn:node:NODEID,DC=dataone,DC=org)
+                    # # postponing this step for later as we don't know if node_id has been set yet
+                    # FIELDS[f][nf][1] = baseurl[:-1]
                 else:
                     FIELDS[f][nf][1] = req_input(FIELDS[f][nf][0])
         elif f in ('default_submitter', 'default_owner'):
@@ -449,6 +451,8 @@ def user_input():
             pass
         else:
             FIELDS[f][1] = req_input(FIELDS[f][0])
+    # add the subject field now that ['node']['node_id'] is definitely populated: should be "CN=urn:node:NODEID,DC=dataone,DC=org"
+    FIELDS['node']['subject'] = f"{SUBJECT_PREFIX}{FIELDS['node']['node_id']}{SUBJECT_POSTFIX}"
     # add the sitemap URLs field now that we're done with the loops
     FIELDS['spider'] = {}
     FIELDS['spider']['sitemap_urls'] = ['Sitemap URLs: ', []]

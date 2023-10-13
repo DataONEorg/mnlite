@@ -7,7 +7,7 @@ import urllib.parse as urlparse
 import xmltodict
 from pathlib import Path
 
-from mnonboard.defs import SCHEDULES, NAMES_DICT
+from mnonboard.defs import SCHEDULES, NAMES_DICT, SUBJECT_PREFIX, SUBJECT_POSTFIX
 from mnonboard import NODE_PATH_REL, CUR_PATH_ABS, LOG_DIR, HARVEST_LOG_NAME, HM_DATE, L
 from mnonboard.info_chx import cn_subj_lookup, local_subj_lookup, enter_schedule, orcid_name, set_role
 
@@ -138,7 +138,10 @@ def get_or_create_subj(loc: str, value: str, cn_url: str, title: str='unspecifie
     """
     if name:
         # we are probably creating a node record
-        L.info('Creating a node subject.')
+        L.info(f'Creating a node subject. Given node_id: {value}')
+        if (not SUBJECT_PREFIX in value) and (not SUBJECT_POSTFIX in value):
+            value = f"{SUBJECT_PREFIX}{value}{SUBJECT_POSTFIX}"
+        L.info(f'Node subject value: "{value}"')
     else:
         # name was not given. look up the orcid record in the database
         name = cn_subj_lookup(subj=value, cn_url=cn_url)

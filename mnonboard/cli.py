@@ -36,7 +36,7 @@ def run(cfg):
         info_chx.input_test(fields)
         # still need to ask the user for some names
     # now we're cooking
-    # get the node path using the end of the path in the 'subject' field (differs from operation.md documentation)
+    # get the node path using the end of the path in the 'node_id' field
     end_node_subj = fields['node']['node_id'].split(':')[-1]
     loc = utils.node_path(nodedir=end_node_subj)
     # initialize a repository there (step 5)
