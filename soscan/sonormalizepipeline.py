@@ -37,6 +37,7 @@ class SoscanNormalizePipeline:
         jsonld = item["jsonld"]
         version = jsonld.get('version', None)
         version = jsonld.get('@version', '1.1') if not version else version
+        version = '1.0' if version == '1' else version
         jldversion = f'json-ld-{version}'
         self.logger.debug(f"process_item: version {jldversion}")
         options = {"base": item["url"], "processingMode": jldversion}
