@@ -101,6 +101,7 @@ class SoscanDownloaderMiddleware:
         # - return a Response object
         # - return a Request object
         # - or raise IgnoreRequest
+        spider.logger.debug(f'Response Content-Type: {response.headers.get("Content-Type")}')
         return response
 
     def process_exception(self, request, exception, spider):
