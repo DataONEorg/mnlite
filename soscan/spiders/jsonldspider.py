@@ -179,5 +179,5 @@ class JsonldSpider(soscan.spiders.ldsitemapspider.LDSitemapSpider):
                 item["jsonld"] = jsonld
                 yield item
         except Exception as e:
-            self.logger.error("parse: url:  %s, error: %s", response.url, e)
+            self.logger.error("parse: url:  %s, %s: %s", response.url, repr(e), e)
         yield None
