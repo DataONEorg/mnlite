@@ -12,13 +12,12 @@ from json.decoder import JSONDecodeError
 
 def violation_extract(viol):
     """
-    A function that extracts the name of the violation from pyshacl.validate()[2] (res_text).
+    A function that extracts the name of the violation from
+    :py:func:`pyshacl.validate`.
 
-    Args:
-        viol (str): The result text, third item returned of a pyshacl.validate() run.
-
-    Returns:
-        vx (list of str): List of violation names found in the res_text
+    :param str viol: The result text, third item returned of a pyshacl.validate() run.
+    :returns: List of violation names found in the res_text
+    :rtype: list[str, str, ...]
     """
     lines = ['Source Shape: ']
     end = '\n'
@@ -39,14 +38,13 @@ def violation_extract(viol):
 
 def violation_cat(hash, viol):
     """
-    A function that returns a CSV linestring that contains the severity of a passed shacl violation and a comment.
+    A function that returns a CSV linestring that contains the severity of a
+    passed shacl violation and a comment.
 
-    Args:
-        hash (str): Path to the metadata file (based on file hash).
-        viol (str): The violation name.
-
-    Returns:
-        csvl (str): Comma-separated list of: hash, violation category, violation name, comment
+    :param str hash: Path to the metadata file (based on file hash).
+    :param str viol: The violation name.
+    :returns: Comma-separated list of: hash, violation category, violation name, comment
+    :rtype: str
     """
     csvl = '%s,%s,%s,%s\n'
     cat, comment = '', ''
@@ -61,7 +59,7 @@ def violation_cat(hash, viol):
         comment = SHACL_ERRORS['internal'][viol]
     else:
         cat = 'Not found'
-        comment = 'Violation name %s not found in SHACL_ERRORS dictionary! Consult NCEAS node manager for information.' % viol
+        comment = 'Violation name %s not found in SHACL_ERRORS dictionary! Consult DataONE node admin for information.' % viol
         L.warning(comment)
     hash = hash.split('/')[-1].split('.bin')[0] # split path and file extension from string
     csvl = csvl % (hash, cat, viol, comment)
@@ -70,11 +68,11 @@ def violation_cat(hash, viol):
 
 def violation_report(viol_dict, loc):
     """
-    A function that outputs a report containing information on the violations found while shacl testing.
+    A function that outputs a report containing information on the violations
+    found while shacl testing.
 
-    Args:
-        viol_dict (dict): Dictionary of violations compiled from this run of metadata checks.
-        loc (str): Directory of the opersist instance, where the report file will be written.
+    :param dict viol_dict: Dictionary of violations compiled from this run of metadata checks.
+    :param str loc: Directory of the opersist instance, where the report file will be written.
     """
     L.info('Creating report.')
     L.debug(viol_dict)
@@ -99,11 +97,10 @@ def test_mdata(loc, shp_graph=SHACL_URL, format='json-ld', num_tests=3):
     """
     Use pyshacl to test harvested metadata.
 
-    Args:
-        loc (str): The base MN folder path in which opersist keeps its data and databases
-        shp_graph (str): Shape graph to be used for testing (defaults to soso v1.2.3)
-        format (str): Format of the data graphs (default: json-ld)
-        num_tests (int): Number of metadata files to test (randomly selected; default=3)
+    :param str loc: The base MN folder path in which opersist keeps its data and databases
+    :param str shp_graph: Shape graph to be used for testing (defaults to soso v1.2.3)
+    :param str format: Format of the data graphs (default: json-ld)
+    :param int num_tests: Number of metadata files to test (randomly selected; default=3)
     """
     L.info('Starting metadata checks. Shape graph: %s' % (shp_graph))
     op = getOpersistInstance(loc)

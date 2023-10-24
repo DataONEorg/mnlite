@@ -107,9 +107,9 @@ def new_subj(loc: str, name: str, value: str):
     """
     Create new subject in the database using opersist.
 
-    :param str loc: Location of the opersist instance.
-    :param str name: Subject name (human readable).
-    :param str value: Subject value (unique subject id, such as orcid or member node id).
+    :param str loc: Location of the opersist instance
+    :param str name: Subject name (human readable)
+    :param str value: Subject value (unique subject id, such as orcid or member node id)
     """
     try:
         L.info('opersist creating new subject. Name: %s Value: %s Location: %s' % (name, value, loc))
@@ -125,15 +125,17 @@ def new_subj(loc: str, name: str, value: str):
 
 def get_or_create_subj(loc: str, value: str, cn_url: str, title: str='unspecified subject', name: str=None):
     """
-    Get an existing subject using their ORCiD or create a new one with the specified values.
+    Get an existing subject using their ORCiD or create a new one with the
+    specified values. 
     Search is conducted first at the given coordinating node URL, then locally.
-    If no subject is found, a new record is created in the local opersist instance.
+    If no subject is found, a new record is created in the local opersist
+    instance.
 
-    :param str loc: Location of the opersist instance.
-    :param str value: Subject value (unique subject id, such as orcid or member node id).
-    :param str cn_url: The base URL of the rest API with which to search for the given subject.
-    :param str title: The subject's role in relation to the database.
-    :param name: Subject name (human readable).
+    :param str loc: Location of the opersist instance
+    :param str value: Subject value (unique subject id, such as orcid or member node id)
+    :param str cn_url: The base URL of the rest API with which to search for the given subject
+    :param str title: The subject's role in relation to the database
+    :param name: Subject name (human readable)
     :type name: str or None
     """
     if name:
@@ -162,7 +164,7 @@ def set_schedule():
     Ask the user what schedule on which they would like to run scrapes.
     Options are: monthly, daily, and every 3 minutes.
 
-    :returns: Dictionary entry formatted based on the chosen schedule option.
+    :returns: Dictionary entry formatted based on the chosen schedule option
     :rtype: dict
     """
     s = enter_schedule()
@@ -202,10 +204,11 @@ def restart_mnlite():
 
 def harvest_data(loc: str, mn_name: str):
     """
-    Use scrapy to harvest data to the specified path, and output a log to the specified location.
+    Use scrapy to harvest data to the specified path, and output a log to the
+    specified location.
 
-    :param str loc: Location of the opersist instance.
-    :param str mn_name: Name of the member node (used to name the crawl log).
+    :param str loc: Location of the opersist instance
+    :param str mn_name: Name of the member node (used to name the crawl log)
     """
     log_loc = os.path.join(LOG_DIR, mn_name + HARVEST_LOG_NAME)
     L.info('Starting scrapy crawl, saving to %s' % (loc))
@@ -221,13 +224,15 @@ def harvest_data(loc: str, mn_name: str):
 
 def limit_tests(num_things: int):
     """
-    Ask the user to limit the number of tests to run on a given set of metadata.
-    This will execute if the user decides to try and test more than 500 metadata objects.
-    The prompt will ask them if they wish to limit the number, then return a
-    number based on their decision.
+    Ask the user to limit the number of tests to run on a given set of
+    metadata.
+    This will execute if the user decides to try and test more than 500
+    metadata objects.
+    The prompt will ask them if they wish to limit the number, then return
+    a number based on their decision.
 
-    :param int num_things: Initial number of things to test.
-    :returns: Modified number of things to test.
+    :param int num_things: Initial number of things to test
+    :returns: Modified number of things to test
     :rtype: int
     """
     while True:
@@ -253,9 +258,10 @@ Are you sure you want to test all %s metadata objects in this set? (y/N): ' % (r
 
 def ask_continue(msg: str):
     """
-    A user input loop in which the user is prompted whether they want to continue.
+    A user input loop in which the user is prompted whether they want to
+    continue.
 
-    :param str msg: The message to display at the prompt.
+    :param str msg: The message to display at the prompt
     """
     while True:
         i = input(msg + ' (Y/n) ')
@@ -275,11 +281,11 @@ def create_names_xml(loc: str, node_id: str, names: dict):
     """
     Format subject XML documents and return list of names.
 
-    :param str loc: Location (dir) to write file to.
-    :param str node_id: Node id of current MN.
-    :param dict names: Dict of subject names with ORCiD as index.
+    :param str loc: Location (dir) to write file to
+    :param str node_id: Node id of current MN
+    :param dict names: Dict of subject names with ORCiD as index
 
-    :returns: List of files written.
+    :returns: List of files written
     :rtype: list
     """
     # make dir
@@ -318,6 +324,12 @@ def write_cmd_to(fn, cmd, desc=None, mode='a'):
 
 def start_ssh(server: str, node_id, loc: str, ssh: bool=True):
     """
+    Starts ssh client connection to a given server.
+
+    :param str server: The remote CN server to connect to (e.g. ``"cn-stage-ucsb-1.test.dataone.org"``)
+    :param str node_id: The node identifier (e.g. ``"urn:node:OPENTOPO"``)
+    :param str loc: The local location of the member node directory (e.g. ``"instance/nodes/mnTestOPENTOPO"``)
+    :param bool ssh: ``True`` will attempt to establish a remote connection. ``False`` will return values to output command strings to file. Default: True
     """
     server = server.split('https://')[1].split('/')[0]
     node_id = node_id.split(':')[-1]
@@ -346,10 +358,13 @@ def start_ssh(server: str, node_id, loc: str, ssh: bool=True):
 def upload_xml(ssh: SSHClient, files: list, node_id: str, loc: str, server: str=None):
     """
     Format subject XML documents and return list of names.
-    cmd_fn = f"{loc}/commands.sh"
 
-    Args:
-        files (list): List of files to upload.
+    :param paramiko.SSHClient ssh: The SSH client (if one was created) or ``False``
+    :type ssh: paramiko.SSHClient or bool
+    :param list files: List of files to upload
+    :param str node_id: The node identifier (e.g. ``"urn:node:OPENTOPO"``)
+    :param str loc: The local location of the member node directory (e.g. ``"instance/nodes/mnTestOPENTOPO"``)
+    :param str server: The remote CN server to connect to (e.g. ``"cn-stage-ucsb-1.test.dataone.org"``)
     """
     op = ''
     target_dir = f'~/d1_xml/{node_id}/'
@@ -373,6 +388,14 @@ def upload_xml(ssh: SSHClient, files: list, node_id: str, loc: str, server: str=
 
 def create_subj_in_acct_svc(ssh: SSHClient, cert: str, files: list, cn: str, loc: str):
     """
+    Create a subject in the accounts service on the CN.
+
+    :param paramiko.SSHClient ssh: The SSH client (if one was created) or ``False``
+    :type ssh: paramiko.SSHClient or bool
+    :param str cert: The location of the CN certificate on the remote server
+    :param list files: List of XML subject files to upload
+    :param str cn: The base https address of the CN to use for API calls (e.g. ``"https://cn-stage.test.dataone.org/cn"``)
+    :param str loc: The local location of the member node directory (e.g. ``"instance/nodes/mnTestOPENTOPO"``)
     """
     cmd_fn = f"{loc}/commands.sh"
     for f in files:
@@ -390,6 +413,15 @@ def create_subj_in_acct_svc(ssh: SSHClient, cert: str, files: list, cn: str, loc
 
 def validate_subj_in_acct_svc(ssh: SSHClient, cert: str, names: dict, cn: str, loc: str):
     """
+    Validate the subjects created using
+    :py:func:`mnlite.mnonboard.utils.create_subj_in_acct_svc`.
+
+    :param paramiko.SSHClient ssh: The SSH client (if one was created) or ``False``
+    :type ssh: paramiko.SSHClient or bool
+    :param str cert: The location of the CN certificate on the remote server
+    :param dict names: Dictionary of names indexed by ORCiD (e.g. ``{"http://orcid.org/0000-0001-5828-6070": "Ian Nesbitt"}``)
+    :param str cn: The base https address of the CN to use for API calls (e.g. ``"https://cn-stage.test.dataone.org/cn"``)
+    :param str loc: The local location of the member node directory (e.g. ``"instance/nodes/mnTestOPENTOPO"``)
     """
     cmd_fn = f"{loc}/commands.sh"
     for n in names:
@@ -407,6 +439,16 @@ def validate_subj_in_acct_svc(ssh: SSHClient, cert: str, names: dict, cn: str, l
 
 def dl_node_capabilities(ssh: SSHClient, baseurl: str, node_id: str, loc: str):
     """
+    Download the node capabilities xml document from the SO server and save it
+    to file.
+
+    :param paramiko.SSHClient ssh: The SSH client (if one was created) or ``False``
+    :type ssh: paramiko.SSHClient or bool
+    :param str baseurl: The base URL of the schema.org server to download node config from (e.g. ``"so.test.dataone.org"``)
+    :param str node_id: The end triplet of the node identifier (e.g. ``"OPENTOPO"``)
+    :param str loc: The local location of the member node directory (e.g. ``"instance/nodes/mnTestOPENTOPO"``)
+    :returns: Location of the xml filepath where the node doc is saved
+    :rtype: str
     """
     cmd_fn = f"{loc}/commands.sh"
     target_dir = f'~/d1_xml/{node_id}'
@@ -423,6 +465,12 @@ def dl_node_capabilities(ssh: SSHClient, baseurl: str, node_id: str, loc: str):
 
 def register_node(ssh: SSHClient, cert: str, node_filename: str, cn: str, loc: str):
     """
+    Registers the node in the CN.
+
+    :param paramiko.SSHClient ssh: The SSH client (if one was created) or ``False``
+    :type ssh: paramiko.SSHClient or bool
+    :param str node_filename: The xml filepath returned by :py:func:`mnlite.mnonboard.utils.dl_node_capabilities`.
+    :param str loc: The local location of the member node directory (e.g. ``"instance/nodes/mnTestOPENTOPO"``)
     """
     cmd_fn = f"{loc}/commands.sh"
     node_filename = os.path.split(node_filename)[1]
@@ -440,6 +488,19 @@ def register_node(ssh: SSHClient, cert: str, node_filename: str, cn: str, loc: s
 
 def approve_node(ssh: SSHClient, script_loc: str, loc: str):
     """
+    Starting the node approval script.
+
+    .. warning:: This does not work over SSH!
+
+    .. note:: 
+
+        In the future, this will be deprecated in favor of a method that does
+        not use Hazelcast.
+
+    :param paramiko.SSHClient ssh: The SSH client (if one was created) or ``False``
+    :type ssh: paramiko.SSHClient or bool
+    :param str script_loc: The location of the node approval script (e.g. ``"/usr/local/bin/dataone-approve-node"``)
+    :param str loc: The local location of the member node directory (e.g. ``"instance/nodes/mnTestOPENTOPO"``)
     """
     cmd_fn = f"{loc}/commands.sh"
     command = 'sudo %s' % (script_loc)
