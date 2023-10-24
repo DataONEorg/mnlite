@@ -61,6 +61,7 @@ SPIDER_MIDDLEWARES = {
 # See https://docs.scrapy.org/en/latest/topics/downloader-middleware.html
 DOWNLOADER_MIDDLEWARES = {
     "soscan.middlewares.SoscanDownloaderMiddleware": 543,
+    "scrapy.downloadermiddlewares.redirect.RedirectMiddleware": 543,
 }
 
 # Enable or disable extensions
