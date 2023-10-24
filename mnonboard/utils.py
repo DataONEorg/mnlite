@@ -36,8 +36,8 @@ def save_json(loc: str, jf: dict):
     """
     Output json to file.
 
-    :param str loc: File location where the json file is to be written.
-    :param dict jf: Dictionary to be written as json.
+    :param str loc: File location where the json file is to be written
+    :param dict jf: Dictionary to be written as json
     """
     L.info('Writing member node json to %s' % loc)
     try:
@@ -56,9 +56,9 @@ def save_report(rep_str: str, loc: str, format: str='.csv'):
     """
     Output a validation report for a set of metadata.
 
-    :param str rep_str: Report string to be written.
-    :param str loc: File location where the report file is to be written.
-    :param str jf: File extension (default: .csv).
+    :param str rep_str: Report string to be written
+    :param str loc: File location where the report file is to be written
+    :param str jf: File extension (default: .csv)
     """
     fn = os.path.join(loc, 'report-%s%s' % (HM_DATE, format))
     L.info('Writing report to %s' % (fn))
@@ -70,7 +70,7 @@ def dumps_json(js):
     """
     Quick and dirty way to output formatted json.
 
-    :param dict js: Dictionary to be written as json.
+    :param dict js: Dictionary to be written as json
     """
     print(json.dumps(js, indent=2))
 
@@ -80,8 +80,8 @@ def node_path(nodepath: str=NODE_PATH_REL, curpath: str=CUR_PATH_ABS, nodedir: s
     Currently the nodes directory lives at `../instance/nodes/` (relative to
     the mnonboard dir that this file is in).
 
-    :param str nodepath: Location of the nodes directory relative to the project directory (default: 'instance/nodes/').
-    :param str curpath: Current absolute path of this function (default: os.path.dirname(os.path.abspath(__file__))).
+    :param str nodepath: Location of the nodes directory relative to the project directory (default: 'instance/nodes/')
+    :param str curpath: Current absolute path of this function (default: os.path.dirname(os.path.abspath(__file__)))
     :param str nodedir: Name of the node directory (example: 'HAKAI_IYS'; default: '')
     :returns: Absolute path of the node directory
     :rtype: str
@@ -92,7 +92,7 @@ def init_repo(loc: str):
     '''
     Initialize a new instance using opersist.
 
-    :param str loc: Location of the member node directory in which to initialize an opersist instance.
+    :param str loc: Location of the member node directory in which to initialize an opersist instance
     '''
     try:
         L.info('Using opersist to init new member node folder: %s' % loc)
@@ -469,7 +469,7 @@ def register_node(ssh: SSHClient, cert: str, node_filename: str, cn: str, loc: s
 
     :param paramiko.SSHClient ssh: The SSH client (if one was created) or ``False``
     :type ssh: paramiko.SSHClient or bool
-    :param str node_filename: The xml filepath returned by :py:func:`mnlite.mnonboard.utils.dl_node_capabilities`.
+    :param str node_filename: The xml filepath returned by :py:func:`mnlite.mnonboard.utils.dl_node_capabilities`
     :param str loc: The local location of the member node directory (e.g. ``"instance/nodes/mnTestOPENTOPO"``)
     """
     cmd_fn = f"{loc}/commands.sh"

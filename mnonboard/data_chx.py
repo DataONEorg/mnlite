@@ -15,7 +15,7 @@ def violation_extract(viol):
     A function that extracts the name of the violation from
     :py:func:`pyshacl.validate`.
 
-    :param str viol: The result text, third item returned of a pyshacl.validate() run.
+    :param str viol: The result text, third item returned of a pyshacl.validate() run
     :returns: List of violation names found in the res_text
     :rtype: list[str, str, ...]
     """
@@ -41,8 +41,8 @@ def violation_cat(hash, viol):
     A function that returns a CSV linestring that contains the severity of a
     passed shacl violation and a comment.
 
-    :param str hash: Path to the metadata file (based on file hash).
-    :param str viol: The violation name.
+    :param str hash: Path to the metadata file (based on file hash)
+    :param str viol: The violation name
     :returns: Comma-separated list of: hash, violation category, violation name, comment
     :rtype: str
     """
@@ -71,8 +71,8 @@ def violation_report(viol_dict, loc):
     A function that outputs a report containing information on the violations
     found while shacl testing.
 
-    :param dict viol_dict: Dictionary of violations compiled from this run of metadata checks.
-    :param str loc: Directory of the opersist instance, where the report file will be written.
+    :param dict viol_dict: Dictionary of violations compiled from this run of metadata checks
+    :param str loc: Directory of the opersist instance, where the report file will be written
     """
     L.info('Creating report.')
     L.debug(viol_dict)

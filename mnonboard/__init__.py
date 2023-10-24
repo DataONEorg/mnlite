@@ -24,8 +24,8 @@ def start_logging():
     """
     Initialize logger.
 
-    Returns:
-        (logging.Logger): The logger to use.
+    :returns: The logger to use
+    :rtype: logging.Logger
     """
     logger = logging.getLogger('mnonboard')
     logger.setLevel(logging.DEBUG)
@@ -56,8 +56,8 @@ def default_json(fx='Unspecified'):
     """
     A function that spits out a dict to be used in onboarding.
 
-    Returns:
-        (dict): A dict of values to be used in member node creation.
+    :returns: A dict of values to be used in member node creation
+    :rtype: dict
     """
     L.info('%s function loading default json template.' % (fx))
     return DEFAULT_JSON
