@@ -14,8 +14,7 @@ def run(cfg):
     Wrapper around opersist that simplifies the process of onboarding a new
     member node to DataONE.
 
-    Args:
-        cfg (dict): Dict containing config variables.
+    :param dict cfg: Dict containing config variables
     """
     # auth
     if not cfg['token']:
@@ -86,10 +85,11 @@ def run(cfg):
 
 def main():
     """
-    Uses getopt to set config values in order to call run().
+    Uses getopt to set config values in order to call
+    :py:func:`mnlite.mnonboard.cli.run`.
 
-    Returns:
-        (dict): Config variable dict to use in run().
+    :returns: Config variable dict to use in :py:func:`mnlite.mnonboard.cli.run`
+    :rtype: dict
     """
     # get arguments
     try:
