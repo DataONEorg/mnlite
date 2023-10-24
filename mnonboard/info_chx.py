@@ -8,17 +8,20 @@ from opersist.utils import JSON_TIME_FORMAT, dtnow
 from opersist.cli import getOpersistInstance
 
 D1_AUTH_TOKEN = environ.get('D1_AUTH_TOKEN')
+"""
+The authentication token for a DataONE CN. Taken from the environment if it
+exists there, then from user input.
+"""
+
 
 # user info checks
 def not_empty(f):
     """
     Test whether a string is empty.
 
-    Args:
-        f (str): The string to test.
-
-    Returns:
-        (bool): Whether or not the string is empty.
+    :param str f: The string to test
+    :returns: Whether or not the string is empty
+    :rtype: bool
     """
     return f != ''
 
@@ -26,11 +29,9 @@ def req_input(desc):
     """
     Require user input for a given prompt.
 
-    Args:
-        desc (str): The prompt to show the user at the input step.
-
-    Returns:
-        (str): User input.
+    :param str desc: The prompt to show the user at the input step
+    :returns: User input
+    :rtype: str
     """
     while True:
         i = input(desc)
@@ -55,11 +56,9 @@ def valid_orcid(orcid):
     This seems like overkill but is probably good to have a simple check
     since it will be used to store contacts for database upkeep/maintenance.
 
-    Args:
-        orcid (str): The orcid number.
-
-    Returns:
-        (bool): Whether or not the orcid number passed checks.
+    :param str orcid: The orcid number
+    :returns: Whether or not the orcid number passed checks
+    :rtype: bool
     """
     if (len(orcid) == 19):
         # it's 19 characters long. start test loop
@@ -98,11 +97,9 @@ def base_url(descrip):
     """
     Validate the base URL of the member node. Should include trailing slash.
 
-    Args:
-        descrip (str): The prompt to show the user at the base URL input step.
-
-    Returns:
-        (str): User input.
+    :param str descrip: The prompt to show the user at the base URL input step
+    :returns: User input
+    :rtype: str
     """
     while True:
         url = req_input(descrip)
@@ -116,13 +113,11 @@ def valid_url_prefix(url, prefix, f):
     """
     Validate a URL prefix (such as for an ORCiD number).
 
-    Args:
-        url (str): The URL to test.
-        prefix (str): The URL prefix.
-        f (str): The name of the field being tested.
-
-    Returns:
-        True (bool): Returns True if the URL passed checks.
+    :param str url: The URL to test
+    :param str prefix: The URL prefix
+    :param str f: The name of the field being tested
+    :returns: ``True`` if the URL passed checks
+    :rtype: bool 
     """
     # orcid number will be preceded by a url prefix but no trailing slash
     if prefix not in url:
@@ -140,11 +135,9 @@ def sitemap_urls(num_urls):
     Collect the sitemap URLs.
     Usually there will be just one of these but we will prepare for more.
 
-    Args:
-        num_urls (int): The number of URLs describing the sitemap.
-
-    Returns:
-        SITEMAP_URLS (list): The sitemap URLs for the given member node.
+    :param int num_urls: The number of URLs describing the sitemap
+    :returns: A list of sitemap URLs for the given member node
+    :rtype: list[str, str, ...]
     """
     i = 0
     while i < num_urls:
@@ -160,8 +153,8 @@ def enter_schedule():
     Give the user a choice between three basic scheduling options.
     Options are: monthly, daily, and every 3 minutes.
 
-    Returns:
-        (int): User-entered integer indicating schedule choice.
+    :returns: User-entered integer indicating schedule choice
+    :rtype: int
     """
     p = 'Select a starting frequency with which to scrape data from this member node.\n' \
         '0: Monthly\n' \
@@ -187,11 +180,9 @@ def enter_int(prompt):
     """
     Make sure the user enters a number of sitemap URLs of 1 or greater.
 
-    Args:
-        prompt (str): The prompt to show the user at the input step.
-
-    Returns:
-        (int): User-entered integer indicating number of sitemap URLs.
+    :param str prompt: The prompt to show the user at the input step
+    :returns: User-entered integer indicating number of sitemap URLs
+    :rtype: int
     """
     i = None
     while True:
@@ -214,15 +205,14 @@ def enter_int(prompt):
 
 def cn_subj_lookup(subj, cn_url='https://cn.dataone.org/cn', debug=False):
     """
-    Use the DataONE API to look up whether a given ORCiD number already exists in the system.
+    Use the DataONE API to look up whether a given ORCiD number already exists
+    in the system.
 
-    Args:
-        subj (str): The subject to look up.
-        cn_url (str): The URL for the DataONE api to send REST searches to (default: 'https://cn.dataone.org/cn').
-        debug (bool): Whether to include debug info in log messages (lots of text).
-
-    Returns:
-        (str or bool): Received response or False.
+    :param str subj: The subject to look up
+    :param str cn_url: The URL for the DataONE api to send REST searches to (default: 'https://cn.dataone.org/cn')
+    :param bool debug: Whether to include debug info in log messages (lots of text)
+    :returns: Received response or False
+    :rtype: str or bool
     """
     # this authentication method was adapted from:
     # https://github.com/DataONEorg/dataone_examples/blob/master/python_examples/update_object.ipynb
@@ -254,14 +244,12 @@ def local_subj_lookup(subj, name, loc, retn=False):
     """
     Use the local opersist instance to look up a subject.
  
-    Args:
-        subj (str): Subject id (unique).
-        loc (str): Location of the opersist instance.
-        name (str): Name of subject.
-        retn (bool): Whether to return the record.
-    
-    Returns:
-        (str or False): Returns subject name or False if not found.
+    :param str subj: Subject id (unique)
+    :param str loc: Location of the opersist instance
+    :param str name: Name of subject
+    :param bool retn: Whether to return the record    
+    :returns: Returns subject name or False if not found
+    :rtype: str or bool
     """
     L.info('Looking up %s in sqlite database at %s' % (subj, loc))
     op = getOpersistInstance(loc)
@@ -282,6 +270,7 @@ def set_role(loc, title, value):
 
     :param str loc: The location of the opersist database parent folder
     :param str title: ``default_submitter`` or ``default_owner``
+    :param str value: Subject ORCiD (e.g. ``"http://orcid.org/0000-0001-5828-6070"``)
     """
     L.info('Setting %s as "%s" in sqlite database at %s' % (value, title, loc))
     op = getOpersistInstance(loc)
@@ -298,12 +287,10 @@ def orcid_name(orcid, f):
     """
     Ask the user for the name of an orcid number.
 
-    Args:
-        orcid (str): Subject orcid number.
-        f (str): json field name of inquiry.
-    
-    Returns:
-        (str): Returns user-entered subject name.
+    :param str orcid: Subject orcid number
+    :param str f: json field name of inquiry
+    :returns: Returns user-entered subject name
+    :rtype: str
     """
     L.info('Asking for name of %s (ORCiD number %s)' % (f, orcid))
     name = req_input('Please enter the name of %s (ORCiD number %s): ' % (f, orcid))
@@ -314,11 +301,9 @@ def enter_orcid(prompt):
     """
     Make sure the user enters a valid orcid number.
 
-    Args:
-        prompt (str): Prompt to display at input step.
-    
-    Returns:
-        (str): Returns user-entered orcid number.
+    :param str prompt: Prompt to display at input step
+    :returns: Returns user-entered orcid number
+    :rtype: str
     """
     while True:
         # ask the user for an ORCiD number
@@ -335,8 +320,8 @@ def valid_format(test_value: str, prefix: str='', postfix: str=''):
     """
     Make sure the node_id contains the correct format.
 
-    :param str test_value: String to test against, for example ``node_id`` or ``subject``.
-    :returns: Whether or not the node_id is valid.
+    :param str test_value: String to test against, for example ``node_id`` or ``subject``
+    :returns: Whether or not the node_id is valid
     :rtype: bool
     """
     if prefix in test_value:
@@ -383,15 +368,15 @@ def valid_format(test_value: str, prefix: str='', postfix: str=''):
 
 def enter_nodeid(prompt='Unique node_id: ', id=False):
     """
-    Have the user enter a node_id and make sure it contains the correct id prefix.
+    Have the user enter a node_id and make sure it contains the correct id
+    prefix.
     Loops until a valid node id is entered.
 
-    Args:
-        prompt (str): Prompt to display at input step.
-        id (str or bool): The node id from the user's json file or False if none.
-    
-    Returns:
-        (str): Only returns if node id is valid.
+    :param str prompt: Prompt to display at input step
+    :param id: The node id from the user's json file or False if none
+    :type id: str or bool
+    :returns: Node identifier. Only returns if id is deemed valid
+    :rtype: str
     """
     while True:
         L.info('In loop, vars are prompt="%s", id="%s"' % (prompt, id))
@@ -411,8 +396,8 @@ def user_input():
     We need a few pieces of information to fill the json fields.
     Collects user input for necessary pieces of node.json information.
 
-    Returns:
-        (dict): Dictionary of fields to use for node creation. Will be written to node.json.
+    :returns: Dictionary of fields to use for node creation. Will be written to node.json
+    :rtype: dict
     """
     baseurl = ''
     L.info('Collecting user input.')
@@ -466,11 +451,8 @@ def transfer_info(ufields):
     """
     Take a user fields dict and translate it to the default json object.
 
-    Args:
-        ufields (dict): A dict of user-entered fields to be translated.
-
-    Returns:
-        (dict): A dict of user-entered fields in proper node.json format.
+    :param dict ufields: A dict of user-entered fields to be translated
+    :returns: A dict of user-entered fields in proper node.json format
     """
     fields = default_json(fx='mnonboard.info_chx.transfer_info()')
     L.info('Adding user fields to default fields.')
@@ -490,11 +472,9 @@ def input_test(fields):
     """
     Testing the manually filled json file.
 
-    Args:
-        fields (dict): A dict of loaded json fields to test.
-    
-    Returns:
-        (bool): Returns True if all tests pass.
+    :param dict fields: A dict of loaded json fields to test
+    :returns: Returns ``True`` if all tests pass, else ``False``
+    :rtype: bool
     """
     L.info('Running tests on imported json.')
     # first, test that there are the fields we need
