@@ -90,7 +90,7 @@ class JsonldSpider(soscan.spiders.ldsitemapspider.LDSitemapSpider):
                 _cs = json.loads(cs.read())
             for s in _cs:
                 spider.settings.set(s, _cs[s], priority='spider')
-                spider.logger.info(f'Setting override from {mn_settings}: set {s} to {s[_cs]}')
+                spider.logger.info(f'Setting override from {mn_settings}: set {s} to {_cs[s]}')
         return spider
 
     def sitemap_filter(self, entries):
