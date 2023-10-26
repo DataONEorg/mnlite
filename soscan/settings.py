@@ -65,6 +65,9 @@ DOWNLOADER_MIDDLEWARES = {
     "scrapy.downloadermiddlewares.robotstxt.RobotsTxtMiddleware": 543,
 }
 
+# Whether the Redirect middleware will be enabled
+REDIRECT_ENABLED = True
+
 # Enable or disable extensions
 # See https://docs.scrapy.org/en/latest/topics/extensions.html
 # EXTENSIONS = {
