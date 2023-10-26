@@ -1,4 +1,5 @@
 import os
+from scrapy.settings import BaseSettings
 import sonormal
 import pyld
 import email.utils
@@ -63,14 +64,6 @@ class JsonldSpider(soscan.spiders.ldsitemapspider.LDSitemapSpider):
     @classmethod
     def from_crawler(cls, crawler, *args, **kwargs):
         node_path = crawler.settings.get("STORE_PATH", None)
-        custom_settings = Path(f'{node_path}/settings.json')
-        if custom_settings.exists():
-            spider = super().from_crawler(crawler, *args, **kwargs)
-            with open(custom_settings) as cs:
-                _cs = json.loads(cs.read())
-            for s in _cs:
-                spider.settings.set(s, _cs[s], priority='spider')
-                spider.logger.info(f'Setting override from {custom_settings}: set {s} to {s[_cs]}')
         alt_rules = None
         if not node_path is None:
             node_settings = os.path.join(node_path, "node.json")
@@ -90,6 +83,14 @@ class JsonldSpider(soscan.spiders.ldsitemapspider.LDSitemapSpider):
             **kwargs
         )
         spider._set_crawler(crawler)
+        # incorporate MN-specific settings
+        mn_settings = Path(f'{node_path}/settings.json')
+        if mn_settings.exists():
+            with open(mn_settings) as cs:
+                _cs = json.loads(cs.read())
+            for s in _cs:
+                spider.settings.set(s, _cs[s], priority='spider')
+                spider.logger.info(f'Setting override from {mn_settings}: set {s} to {s[_cs]}')
         return spider
 
     def sitemap_filter(self, entries):
