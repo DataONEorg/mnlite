@@ -101,5 +101,5 @@ class OPersistPipeline:
             )
 
         except Exception as e:
-            self.logger.error(e)
+            self.logger.error(f"{repr(e)}: {e}")
         return item
