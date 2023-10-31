@@ -91,6 +91,11 @@ class JsonldSpider(soscan.spiders.ldsitemapspider.LDSitemapSpider):
             for s in _cs:
                 spider.settings.set(s, _cs[s], priority='spider')
                 spider.logger.info(f'Setting override from {mn_settings}: set {s} to {_cs[s]}')
+                if s in "lastmod_filter":
+                    spider.lastmod_filter = dateparser.parse(
+                        _cs[s],
+                        settings={"RETURN_AS_TIMEZONE_AWARE": True},
+                    )
         return spider
 
     def sitemap_filter(self, entries):
@@ -123,6 +128,8 @@ class JsonldSpider(soscan.spiders.ldsitemapspider.LDSitemapSpider):
             if self.lastmod_filter is not None and ts is not None:
                 if ts > self.lastmod_filter:
                     yield entry
+                else:
+                    self.logger.debug(f'lastmod_filter skipping {entry}')
             else:
                 yield entry
 
