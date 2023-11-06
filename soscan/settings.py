@@ -52,7 +52,6 @@ TELNETCONSOLE_ENABLED = False
 # Override the default request headers:
 DEFAULT_REQUEST_HEADERS = {
   'Accept': 'application/ld+json,text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-  'Accept-Language': 'en',
 }
 
 # Enable or disable spider middlewares
