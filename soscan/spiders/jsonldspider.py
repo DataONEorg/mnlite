@@ -54,6 +54,7 @@ class JsonldSpider(soscan.spiders.ldsitemapspider.LDSitemapSpider):
         if not urls is None:
             self.sitemap_urls = urls.split(" ")
         self.lastmod_filter = kwargs.get("lastmod", None)
+        self.start_point = kwargs.get("start_point", None)
         if len(self.sitemap_urls) < 1:
             raise ValueError("At least one sitemap URL is required.")
         if self.lastmod_filter is not None:
@@ -96,6 +97,8 @@ class JsonldSpider(soscan.spiders.ldsitemapspider.LDSitemapSpider):
                         _cs[s],
                         settings={"RETURN_AS_TIMEZONE_AWARE": True},
                     )
+                if s in "start_point":
+                    spider.start_point = _cs.get(s, None)
         return spider
 
     def sitemap_filter(self, entries):
@@ -114,24 +117,32 @@ class JsonldSpider(soscan.spiders.ldsitemapspider.LDSitemapSpider):
 
         Returns: None
         """
+        i = 0
         for entry in entries:
-            ts = entry.get("lastmod", None)
-            if not ts is None:
-                # convert TS to a datetime for comparison
-                ts = dateparser.parse(
-                    ts,
-                    settings={"RETURN_AS_TIMEZONE_AWARE": True},
-                )
-                # preserve the converted timestamp in the entry
-                entry["lastmod"] = ts
+            i += 1
+            if ((self.start_point is not None) and (self.start_point >= i)) or (self.start_point is None):
+                if self.start_point == i:
+                    self.logger.info(f'Starting scrape at record {i}')
+                ts = entry.get("lastmod", None)
+                if not ts is None:
+                    # convert TS to a datetime for comparison
+                    ts = dateparser.parse(
+                        ts,
+                        settings={"RETURN_AS_TIMEZONE_AWARE": True},
+                    )
+                    # preserve the converted timestamp in the entry
+                    entry["lastmod"] = ts
 
-            if self.lastmod_filter is not None and ts is not None:
-                if ts > self.lastmod_filter:
-                    yield entry
+                if self.lastmod_filter is not None and ts is not None:
+                    if ts > self.lastmod_filter:
+                        yield entry
+                    else:
+                        self.logger.debug(f'lastmod_filter skipping record {i}: {entry}')
                 else:
-                    self.logger.debug(f'lastmod_filter skipping {entry}')
-            else:
-                yield entry
+                    yield entry
+            if (self.start_point is not None) and (self.start_point < i):
+                if i == 1:
+                    self.logger.info(f'Skipping to start_point at record {self.start_point}')
 
     def parse(self, response, **kwargs):
         """
