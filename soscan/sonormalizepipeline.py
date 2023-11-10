@@ -82,7 +82,7 @@ class SoscanNormalizePipeline:
                     if len(group["identifier"]) > 0:
                         if item["series_id"] is None:
                             item["series_id"] = group["identifier"][0]
-                            self.logger.debug(f'Using identifier {g} for series_id: {item["series_id"]}')
+                            self.logger.info(f'Using identifier {g} for series_id: {item["series_id"]}')
                             if len(group["identifier"]) > 1:
                                 item["alt_identifiers"].append(group["identifier"][1:])
                         else:
