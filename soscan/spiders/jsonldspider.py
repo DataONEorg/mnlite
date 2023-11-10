@@ -135,6 +135,7 @@ class JsonldSpider(soscan.spiders.ldsitemapspider.LDSitemapSpider):
 
                 if self.lastmod_filter is not None and ts is not None:
                     if ts > self.lastmod_filter:
+                        self.logger.debug(f'Yielding record {i}: {entry}')
                         yield entry
                     else:
                         self.logger.debug(f'lastmod_filter skipping record {i}: {entry}')
@@ -143,6 +144,7 @@ class JsonldSpider(soscan.spiders.ldsitemapspider.LDSitemapSpider):
             if (self.start_point is not None) and (self.start_point < i):
                 if i == 1:
                     self.logger.info(f'Skipping to start_point at record {self.start_point}')
+                self.logger.debug(f'start_point skipping record {i}: {entry}')
 
     def parse(self, response, **kwargs):
         """
