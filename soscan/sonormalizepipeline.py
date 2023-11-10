@@ -62,16 +62,36 @@ class SoscanNormalizePipeline:
 
         # Use the first identifier value provided for series_id
         # PID will be computed from the object checksum
-        item["alt_identifiers"] = None
+        item["series_id"] = None
+        item["alt_identifiers"] = []
         if len(ids) > 0:
+            self.logger.debug(f"ids found: {ids}")
             if len(ids[0]["identifier"]) > 0:
                 item["series_id"] = ids[0]["identifier"][0]
+                self.logger.debug(f'Using first identifier for series_id: {item["series_id"]}')
                 if len(ids[0]["identifier"]) > 1:
                     item["alt_identifiers"] = ids[0]["identifier"][1:]
-            elif require_identifier:
-                raise scrapy.exceptions.DropItem(
-                    f"JSON-LD no identifier: {item['url']}"
-                )
+                    self.logger.debug(f'alt_identifiers: {item["alt_identifiers"]}')
+            else:
+                # if the first identifier is an empty list, we need to look for others
+                self.logger.debug(f'Empty identifier in first grouping')
+                g = 0
+                for group in ids:
+                    g += 1
+                    self.logger.debug(f'Grouping {g}: {group}')
+                    if len(group["identifier"]) > 0:
+                        if item["series_id"] is None:
+                            item["series_id"] = group["identifier"][0]
+                            self.logger.debug(f'Using identifier {g} for series_id: {item["series_id"]}')
+                            if len(group["identifier"]) > 1:
+                                item["alt_identifiers"].append(group["identifier"][1:])
+                        else:
+                            item["alt_identifiers"].append(group["identifier"][0:])
+                self.logger.debug(f'alt_identifiers: {item["alt_identifiers"]}')
+        if require_identifier and item["series_id"] is None:
+            raise scrapy.exceptions.DropItem(
+                f"JSON-LD no identifier: {item['url']}"
+            )
         item["identifier"] = None
         item["normalized"] = normalized
         item["format_id"] = opersist.rdfutils.DATASET_FORMATID
