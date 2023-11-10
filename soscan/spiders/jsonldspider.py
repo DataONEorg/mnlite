@@ -120,7 +120,7 @@ class JsonldSpider(soscan.spiders.ldsitemapspider.LDSitemapSpider):
         i = 0
         for entry in entries:
             i += 1
-            if ((self.start_point is not None) and (self.start_point >= i)) or (self.start_point is None):
+            if ((self.start_point is not None) and (self.start_point <= i)) or (self.start_point is None):
                 if self.start_point == i:
                     self.logger.info(f'Starting scrape at record {i}')
                 ts = entry.get("lastmod", None)
@@ -141,7 +141,7 @@ class JsonldSpider(soscan.spiders.ldsitemapspider.LDSitemapSpider):
                         self.logger.debug(f'lastmod_filter skipping record {i}: (ts {ts}) {entry}')
                 else:
                     yield entry
-            if (self.start_point is not None) and (self.start_point < i):
+            if (self.start_point is not None) and (self.start_point > i):
                 if i == 1:
                     self.logger.info(f'Skipping to start_point at record {self.start_point}')
                 self.logger.debug(f'start_point skipping record {i}: {entry}')
