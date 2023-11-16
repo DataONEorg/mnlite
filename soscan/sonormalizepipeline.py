@@ -92,6 +92,10 @@ class SoscanNormalizePipeline:
             raise scrapy.exceptions.DropItem(
                 f"JSON-LD no identifier: {item['url']}"
             )
+        if item["series_id"] == "doi:":
+            raise scrapy.exceptions.DropItem(
+                f"JSON-LD identifier empty: {item['url']}"
+            )
         item["identifier"] = None
         item["normalized"] = normalized
         item["format_id"] = opersist.rdfutils.DATASET_FORMATID
