@@ -123,8 +123,11 @@ class JsonldSpider(soscan.spiders.ldsitemapspider.LDSitemapSpider):
 
         Returns: None
         """
+        y = 0
         i = 0
+        self.logger.info(f'Total number of sitemap entries: {len(entries)}')
         if self.reversed:
+            self.logger.info(f'Reading the sitemap in reverse order')
             entries = reversed(entries)
         for entry in entries:
             i += 1
@@ -146,11 +149,13 @@ class JsonldSpider(soscan.spiders.ldsitemapspider.LDSitemapSpider):
                         if self.url_match:
                             if self.url_match in entry['loc']:
                                 self.logger.debug(f'Yielding record {i}: {entry}')
+                                y += 1
                                 yield entry
                             else:
                                 self.logger.debug(f'url_match skipping record {i}: {self.url_match} not in {entry}')
                         else:
                             self.logger.debug(f'Yielding record {i}: {entry}')
+                            y += 1
                             yield entry
                     else:
                         self.logger.debug(f'lastmod_filter skipping record {i}: (ts {ts}) {entry}')
@@ -158,16 +163,19 @@ class JsonldSpider(soscan.spiders.ldsitemapspider.LDSitemapSpider):
                     if self.url_match:
                         if self.url_match in entry['loc']:
                             self.logger.debug(f'Yielding record {i}: {entry}')
+                            y += 1
                             yield entry
                         else:
                             self.logger.debug(f'url_match skipping record {i}: {self.url_match} not in {entry}')
                     else:
                         self.logger.debug(f'Yielding record {i}: {entry["loc"]}')
+                        y += 1
                         yield entry
             if (self.start_point is not None) and (self.start_point > i):
                 if i == 1:
                     self.logger.info(f'Skipping to start_point at record {self.start_point}')
                 self.logger.debug(f'start_point skipping record {i}: {entry}')
+        self.logger.info(f'Yielded entries from sitemap: {y}')
 
     def parse(self, response, **kwargs):
         """
