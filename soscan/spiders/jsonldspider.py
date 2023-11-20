@@ -56,6 +56,7 @@ class JsonldSpider(soscan.spiders.ldsitemapspider.LDSitemapSpider):
         self.lastmod_filter = kwargs.get("lastmod", None)
         self.start_point = None
         self.url_match = None
+        self.reversed = None
         if len(self.sitemap_urls) < 1:
             raise ValueError("At least one sitemap URL is required.")
         if self.lastmod_filter is not None:
@@ -102,6 +103,8 @@ class JsonldSpider(soscan.spiders.ldsitemapspider.LDSitemapSpider):
                     spider.start_point = _cs.get(s, None)
                 if s in "url_match":
                     spider.url_match = _cs.get(s, None)
+                if s in "reversed":
+                    spider.reversed = _cs.get(s, None)
         return spider
 
     def sitemap_filter(self, entries):
@@ -121,6 +124,8 @@ class JsonldSpider(soscan.spiders.ldsitemapspider.LDSitemapSpider):
         Returns: None
         """
         i = 0
+        if self.reversed:
+            entries = reversed(entries)
         for entry in entries:
             i += 1
             if ((self.start_point is not None) and (self.start_point <= i)) or (self.start_point is None):
