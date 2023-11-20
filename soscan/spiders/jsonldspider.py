@@ -125,7 +125,6 @@ class JsonldSpider(soscan.spiders.ldsitemapspider.LDSitemapSpider):
         """
         y = 0
         i = 0
-        self.logger.info(f'Total number of sitemap entries: {len(entries)}')
         if self.reversed:
             self.logger.info(f'Reading the sitemap in reverse order')
             entries = reversed(entries)
@@ -175,6 +174,7 @@ class JsonldSpider(soscan.spiders.ldsitemapspider.LDSitemapSpider):
                 if i == 1:
                     self.logger.info(f'Skipping to start_point at record {self.start_point}')
                 self.logger.debug(f'start_point skipping record {i}: {entry}')
+        self.logger.info(f'Total number of sitemap entries: {i}')
         self.logger.info(f'Yielded entries from sitemap: {y}')
 
     def parse(self, response, **kwargs):
