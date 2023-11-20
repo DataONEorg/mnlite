@@ -54,7 +54,8 @@ class JsonldSpider(soscan.spiders.ldsitemapspider.LDSitemapSpider):
         if not urls is None:
             self.sitemap_urls = urls.split(" ")
         self.lastmod_filter = kwargs.get("lastmod", None)
-        self.start_point = kwargs.get("start_point", None)
+        self.start_point = None
+        self.url_match = None
         if len(self.sitemap_urls) < 1:
             raise ValueError("At least one sitemap URL is required.")
         if self.lastmod_filter is not None:
@@ -99,6 +100,8 @@ class JsonldSpider(soscan.spiders.ldsitemapspider.LDSitemapSpider):
                     )
                 if s in "start_point":
                     spider.start_point = _cs.get(s, None)
+                if s in "url_match":
+                    spider.url_match = _cs.get(s, None)
         return spider
 
     def sitemap_filter(self, entries):
@@ -135,13 +138,27 @@ class JsonldSpider(soscan.spiders.ldsitemapspider.LDSitemapSpider):
 
                 if self.lastmod_filter is not None and ts is not None:
                     if ts > self.lastmod_filter:
-                        self.logger.debug(f'Yielding record {i}: {entry}')
-                        yield entry
+                        if self.url_match:
+                            if self.url_match in entry['loc']:
+                                self.logger.debug(f'Yielding record {i}: {entry}')
+                                yield entry
+                            else:
+                                self.logger.debug(f'url_match skipping record {i}: {self.url_match} not in {entry}')
+                        else:
+                            self.logger.debug(f'Yielding record {i}: {entry}')
+                            yield entry
                     else:
                         self.logger.debug(f'lastmod_filter skipping record {i}: (ts {ts}) {entry}')
                 else:
-                    self.logger.debug(f'Yielding record {i}: {entry}')
-                    yield entry
+                    if self.url_match:
+                        if self.url_match in entry['loc']:
+                            self.logger.debug(f'Yielding record {i}: {entry}')
+                            yield entry
+                        else:
+                            self.logger.debug(f'url_match skipping record {i}: {self.url_match} not in {entry}')
+                    else:
+                        self.logger.debug(f'Yielding record {i}: {entry["loc"]}')
+                        yield entry
             if (self.start_point is not None) and (self.start_point > i):
                 if i == 1:
                     self.logger.info(f'Skipping to start_point at record {self.start_point}')
