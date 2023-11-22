@@ -59,17 +59,17 @@ class SoscanNormalizePipeline:
             raise scrapy.exceptions.DropItem(f"JSON-LD normalization failed: {e}")
 
         # consolidate any lists that might cause the indexer to misfire
-        if (isinstance(normalized["@graph"]["name"], list)) and (len(normalized["@graph"]["name"]) > 1):
-            l = normalized["@graph"]["name"]
-            self.logger.debug(f'Consolidating list of {len(l)} items at ["@graph"]["name"]: {l}')
-            normalized["@graph"]["name"] = consolidate_list(normalized["@graph"]["name"])
-            self.logger.debug(f'New list at ["@graph"]["name"]: {normalized["@graph"]["name"]}')
+        if (isinstance(normalized["@graph"][0]["name"], list)) and (len(normalized["@graph"][0]["name"]) > 1):
+            l = normalized["@graph"][0]["name"]
+            self.logger.debug(f'Consolidating list of {len(l)} items at ["@graph"][0]["name"]: {l}')
+            normalized["@graph"][0]["name"] = consolidate_list(normalized["@graph"][0]["name"])
+            self.logger.debug(f'New list at ["@graph"][0]["name"]: {normalized["@graph"][0]["name"]}')
 
-        if (isinstance(normalized["@graph"]["description"], list)) and (len(normalized["@graph"]["description"]) > 1):
-            l = normalized["@graph"]["description"]
-            self.logger.debug(f'Consolidating list of {len(l)} items at ["@graph"]["description"]: {l}')
-            normalized["@graph"]["description"] = consolidate_list(normalized["@graph"]["description"])
-            self.logger.debug(f'New list at ["@graph"]["description"]: {normalized["@graph"]["description"]}')
+        if (isinstance(normalized["@graph"][0]["description"], list)) and (len(normalized["@graph"][0]["description"]) > 1):
+            l = normalized["@graph"][0]["description"]
+            self.logger.debug(f'Consolidating list of {len(l)} items at ["@graph"][0]["description"]: {l}')
+            normalized["@graph"][0]["description"] = consolidate_list(normalized["@graph"][0]["description"])
+            self.logger.debug(f'New list at ["@graph"][0]["description"]: {normalized["@graph"][0]["description"]}')
 
         ids = []
         try:
