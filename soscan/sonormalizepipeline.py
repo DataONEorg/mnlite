@@ -4,6 +4,18 @@ import sonormal.normalize
 import json
 import opersist.rdfutils
 
+def consolidate_list(l: list, sep: str=', '):
+    """
+    Takes a list of strings and returns a list with one consolidated string,
+    separated by ``sep``. This can help when a repository has mistakenly
+    split their description/title strings.
+    """
+    consolidated = ''
+    for li in l:
+        consolidated += sep
+        consolidated += li
+    return [consolidated]
+
 
 class SoscanNormalizePipeline:
     """
@@ -45,6 +57,19 @@ class SoscanNormalizePipeline:
             normalized = sonormal.sosoNormalize(jsonld, options=options)
         except Exception as e:
             raise scrapy.exceptions.DropItem(f"JSON-LD normalization failed: {e}")
+
+        # consolidate any lists that might cause the indexer to misfire
+        if (isinstance(normalized["@graph"]["name"], list)) and (len(normalized["@graph"]["name"]) > 1):
+            l = normalized["@graph"]["name"]
+            self.logger.debug(f'Consolidating list of {len(l)} items at ["@graph"]["name"]: {l}')
+            normalized["@graph"]["name"] = consolidate_list(normalized["@graph"]["name"])
+            self.logger.debug(f'New list at ["@graph"]["name"]: {normalized["@graph"]["name"]}')
+
+        if (isinstance(normalized["@graph"]["description"], list)) and (len(normalized["@graph"]["description"]) > 1):
+            l = normalized["@graph"]["description"]
+            self.logger.debug(f'Consolidating list of {len(l)} items at ["@graph"]["description"]: {l}')
+            normalized["@graph"]["description"] = consolidate_list(normalized["@graph"]["description"])
+            self.logger.debug(f'New list at ["@graph"]["description"]: {normalized["@graph"]["description"]}')
 
         ids = []
         try:
