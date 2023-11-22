@@ -53,23 +53,25 @@ class SoscanNormalizePipeline:
         jldversion = f'json-ld-{version}'
         self.logger.debug(f"process_item: version {jldversion}")
         options = {"base": item["url"], "processingMode": jldversion}
+
+        # consolidate any lists that might cause the indexer to misfire
+        if (isinstance(jsonld["@graph"][0]["name"], list)) and (len(jsonld["@graph"][0]["name"]) > 1):
+            l = jsonld["@graph"][0]["name"]
+            self.logger.debug(f'Consolidating list of {len(l)} items at ["@graph"][0]["name"]: {l}')
+            jsonld["@graph"][0]["name"] = consolidate_list(jsonld["@graph"][0]["name"])
+            self.logger.debug(f'New list at ["@graph"][0]["name"]: {jsonld["@graph"][0]["name"]}')
+
+        if (isinstance(jsonld["@graph"][0]["description"], list)) and (len(jsonld["@graph"][0]["description"]) > 1):
+            l = jsonld["@graph"][0]["description"]
+            self.logger.debug(f'Consolidating list of {len(l)} items at ["@graph"][0]["description"]: {l}')
+            jsonld["@graph"][0]["description"] = consolidate_list(jsonld["@graph"][0]["description"])
+            self.logger.debug(f'New list at ["@graph"][0]["description"]: {jsonld["@graph"][0]["description"]}')
+
         try:
             normalized = sonormal.sosoNormalize(jsonld, options=options)
         except Exception as e:
             raise scrapy.exceptions.DropItem(f"JSON-LD normalization failed: {e}")
 
-        # consolidate any lists that might cause the indexer to misfire
-        if (isinstance(normalized["@graph"][0]["name"], list)) and (len(normalized["@graph"][0]["name"]) > 1):
-            l = normalized["@graph"][0]["name"]
-            self.logger.debug(f'Consolidating list of {len(l)} items at ["@graph"][0]["name"]: {l}')
-            normalized["@graph"][0]["name"] = consolidate_list(normalized["@graph"][0]["name"])
-            self.logger.debug(f'New list at ["@graph"][0]["name"]: {normalized["@graph"][0]["name"]}')
-
-        if (isinstance(normalized["@graph"][0]["description"], list)) and (len(normalized["@graph"][0]["description"]) > 1):
-            l = normalized["@graph"][0]["description"]
-            self.logger.debug(f'Consolidating list of {len(l)} items at ["@graph"][0]["description"]: {l}')
-            normalized["@graph"][0]["description"] = consolidate_list(normalized["@graph"][0]["description"])
-            self.logger.debug(f'New list at ["@graph"][0]["description"]: {normalized["@graph"][0]["description"]}')
 
         ids = []
         try:
