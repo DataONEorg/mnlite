@@ -12,7 +12,8 @@ def consolidate_list(l: list, sep: str=', '):
     """
     consolidated = ''
     for li in l:
-        consolidated += sep
+        if consolidated != '':
+            consolidated += sep
         consolidated += li
     return [consolidated]
 
