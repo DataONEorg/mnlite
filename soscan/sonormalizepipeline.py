@@ -56,17 +56,48 @@ class SoscanNormalizePipeline:
         options = {"base": item["url"], "processingMode": jldversion}
 
         # consolidate any lists that might cause the indexer to misfire
-        if (isinstance(jsonld["@graph"][0]["name"], list)) and (len(jsonld["@graph"][0]["name"]) > 1):
-            l = jsonld["@graph"][0]["name"]
-            self.logger.debug(f'Consolidating list of {len(l)} items at ["@graph"][0]["name"]: {l}')
-            jsonld["@graph"][0]["name"] = consolidate_list(jsonld["@graph"][0]["name"])
-            self.logger.debug(f'New list at ["@graph"][0]["name"]: {jsonld["@graph"][0]["name"]}')
+        name = jsonld.get('name', None)
+        desc = jsonld.get('description', None)
+        nstr, dstr = '[none]', '[none]'
+        if name == None:
+            graph = jsonld.get('@graph', None)
+            if graph and isinstance(graph, list):
+                name = graph[0].get('name', None)
+                desc = graph[0].get('description', None)
+                nstr = 'jsonld["@graph"][0]["name"]'
+                dstr = 'jsonld["@graph"][0]["description"]'
+            elif graph:
+                # this probably doesn't exist..? try to get vars anyway
+                self.logger.warn(f'Something weird has happened: the dataset graph at jsonld["@graph"] is not a list but instead {type(graph)}\nURL: {item["url"]}')
+                self.logger.debug(f'Content of jsonld["@graph"]: {graph}')
+                try:
+                    name = graph.get('name', None)
+                    desc = graph.get('description', None)
+                except Exception as e:
+                    raise scrapy.exceptions.DropItem(f"JSON-LD error ({repr(e)}): {e} - URL: {item['url']}")
+                nstr = 'jsonld["@graph"]["name"]'
+                dstr = 'jsonld["@graph"]["description"]'
+        else:
+            nstr = 'jsonld["name"]'
+            dstr = 'jsonld["description"]'
 
-        if (isinstance(jsonld["@graph"][0]["description"], list)) and (len(jsonld["@graph"][0]["description"]) > 1):
-            l = jsonld["@graph"][0]["description"]
-            self.logger.debug(f'Consolidating list of {len(l)} items at ["@graph"][0]["description"]: {l}')
-            jsonld["@graph"][0]["description"] = consolidate_list(jsonld["@graph"][0]["description"])
-            self.logger.debug(f'New list at ["@graph"][0]["description"]: {jsonld["@graph"][0]["description"]}')
+        if name:
+            if (isinstance(name, list)) and (len(name) > 1):
+                self.logger.debug(f'Consolidating list of {len(name)} items at {nstr}: {name}')
+                # can't think of a better way to do this
+                exec(f'{nstr} = consolidate_list(name)')
+                self.logger.debug(f'New list at {nstr}: {name}')
+        else:
+            raise scrapy.exceptions.DropItem(f"JSON-LD no dataset name found: {item['url']}")
+        
+        if desc:
+            if (isinstance(desc, list)) and (len(desc) > 1):
+                self.logger.debug(f'Consolidating list of {len(desc)} items at {dstr}: {desc}')
+                exec(f'{dstr} = consolidate_list(desc)')
+                self.logger.debug(f'New list at {dstr}: {desc}')
+        else:
+            self.logger.warning(f'JSON-LD no dataset description found: {item["url"]}')
+
 
         try:
             normalized = sonormal.sosoNormalize(jsonld, options=options)
