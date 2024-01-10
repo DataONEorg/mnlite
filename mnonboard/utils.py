@@ -7,7 +7,7 @@ import urllib.parse as urlparse
 import xmltodict
 from pathlib import Path
 
-from mnonboard.defs import SCHEDULES, NAMES_DICT, SUBJECT_PREFIX, SUBJECT_POSTFIX
+from mnonboard.defs import SCHEDULES, NAMES_DICT, SUBJECT_PREFIX, SUBJECT_POSTFIX, USER_NAME
 from mnonboard import NODE_PATH_REL, CUR_PATH_ABS, LOG_DIR, HARVEST_LOG_NAME, HM_DATE, L
 from mnonboard.info_chx import cn_subj_lookup, local_subj_lookup, enter_schedule, orcid_name, set_role
 
@@ -355,7 +355,7 @@ def start_ssh(server: str, node_id, loc: str, ssh: bool=True):
         L.error('%s running %s. Details: %s' % (repr(e), op, e))
         return None, local_xml_dir, node_id
 
-def upload_xml(ssh: SSHClient, files: list, node_id: str, loc: str, server: str=None):
+def upload_xml(ssh: SSHClient, files: list, node_id: str, loc: str, usern: str=USER_NAME, server: str=None):
     """
     Format subject XML documents and return list of names.
 
@@ -377,10 +377,11 @@ def upload_xml(ssh: SSHClient, files: list, node_id: str, loc: str, server: str=
                 scp.put(files=files, remote_path=target_dir)
         else:
             cmd_fn = f"{loc}/commands.sh"
+            write_cmd_to(fn=cmd_fn, cmd=f'## Commands to be run on the MN:')
             write_cmd_to(fn=cmd_fn, cmd=f'mkdir -p {target_dir}', desc='Copy xml files from so server to cn', mode='w')
-            write_cmd_to(fn=cmd_fn, cmd=f'cd {target_dir}')
+            write_cmd_to(fn=cmd_fn, cmd=f'cd {target_dir}', desc=" ")
             for f in files:
-                command = f"scp mnlite@{server}:{f} {target_dir}"
+                command = f"scp {f} {usern}@{server}:{target_dir}"
                 write_cmd_to(fn=cmd_fn, cmd=command)
     except Exception as e:
         L.error('%s running %s. Details: %s' % (repr(e), op, e))
@@ -409,6 +410,7 @@ def create_subj_in_acct_svc(ssh: SSHClient, cert: str, files: list, cn: str, loc
         else:
             L.debug(f'Command: {command}')
             L.info(f'Writing cmd to {cmd_fn}: subject creation')
+            write_cmd_to(fn=cmd_fn, cmd="## Commands to be run on the CN:")
             write_cmd_to(fn=cmd_fn, cmd=command, desc=f"Create subject: {f}")
 
 def validate_subj_in_acct_svc(ssh: SSHClient, cert: str, names: dict, cn: str, loc: str):

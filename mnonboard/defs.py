@@ -1,3 +1,4 @@
+import os, pwd
 from mnonboard import __version__
 
 ORCID_PREFIX = 'http://orcid.org/'
@@ -43,6 +44,8 @@ CN_SRVR = {
 """
 The location of the coordinating node.
 """
+
+USER_NAME = pwd.getpwuid(os.getuid())[0]
 
 CN_SRVR_BASEURL = 'https://%s/cn'
 """

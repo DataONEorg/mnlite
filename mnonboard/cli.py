@@ -72,7 +72,7 @@ def run(cfg):
                                              loc=loc,
                                              ssh=cfg['ssh'])
     time.sleep(0.5)
-    utils.upload_xml(ssh=ssh, server=SO_SRVR[cfg['mode']], files=files, node_id=node_id, loc=loc)
+    utils.upload_xml(ssh=ssh, server=CN_SRVR[cfg['mode']], files=files, node_id=node_id, loc=loc)
     # create and validate the subject in the accounts service (step 16)
     utils.create_subj_in_acct_svc(ssh=ssh, cert=cfg['cert_loc'], files=files, cn=cfg['cn_url'], loc=loc)
     utils.validate_subj_in_acct_svc(ssh=ssh, cert=cfg['cert_loc'], names=names, cn=cfg['cn_url'], loc=loc)
