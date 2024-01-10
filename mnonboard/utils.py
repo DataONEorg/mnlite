@@ -377,12 +377,15 @@ def upload_xml(ssh: SSHClient, files: list, node_id: str, loc: str, usern: str=U
                 scp.put(files=files, remote_path=target_dir)
         else:
             cmd_fn = f"{loc}/commands.sh"
-            write_cmd_to(fn=cmd_fn, cmd=f'## Commands to be run on the MN:')
-            write_cmd_to(fn=cmd_fn, cmd=f'mkdir -p {target_dir}', desc='Copy xml files from so server to cn', mode='w')
-            write_cmd_to(fn=cmd_fn, cmd=f'cd {target_dir}', desc=" ")
+            write_cmd_to(fn=cmd_fn, cmd=f'## Commands to be run on the CN:', mode='w')
+            write_cmd_to(fn=cmd_fn, cmd=f'mkdir -p {target_dir}', desc='Create and enter dir for xml files')
+            write_cmd_to(fn=cmd_fn, cmd=f'cd {target_dir}')
+            write_cmd_to(fn=cmd_fn, cmd=f'\n')
+            write_cmd_to(fn=cmd_fn, cmd=f'## Run on MN to transfer subject xml files to the CN (make sure username is correct):')
             for f in files:
                 command = f"scp {f} {usern}@{server}:{target_dir}"
                 write_cmd_to(fn=cmd_fn, cmd=command)
+            write_cmd_to(fn=cmd_fn, cmd=f'\n')
     except Exception as e:
         L.error('%s running %s. Details: %s' % (repr(e), op, e))
         exit(1)
@@ -410,7 +413,7 @@ def create_subj_in_acct_svc(ssh: SSHClient, cert: str, files: list, cn: str, loc
         else:
             L.debug(f'Command: {command}')
             L.info(f'Writing cmd to {cmd_fn}: subject creation')
-            write_cmd_to(fn=cmd_fn, cmd="## Commands to be run on the CN:")
+            write_cmd_to(fn=cmd_fn, cmd="## Commands to be run by an admin on the CN:")
             write_cmd_to(fn=cmd_fn, cmd=command, desc=f"Create subject: {f}")
 
 def validate_subj_in_acct_svc(ssh: SSHClient, cert: str, names: dict, cn: str, loc: str):
