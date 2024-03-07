@@ -113,7 +113,8 @@ class SoscanNormalizePipeline:
             raise scrapy.exceptions.DropItem(f"JSON-LD identifier extract failed: {e}")
         if len(ids) < 1:
             raise scrapy.exceptions.DropItem(
-                f"JSON-LD no ids, not a Dataset: {item['url']}"
+                f"JSON-LD no ids: {item['url']}\n"
+                f"Framed dataset:\n{_framed}"
             )
 
         # TODO: identifiers
@@ -149,11 +150,13 @@ class SoscanNormalizePipeline:
                 self.logger.debug(f'alt_identifiers: {item["alt_identifiers"]}')
         if require_identifier and item["series_id"] is None:
             raise scrapy.exceptions.DropItem(
-                f"JSON-LD no identifier: {item['url']}"
+                f"JSON-LD no identifier: {item['url']}\n"
+                f"Framed dataset:\n{json.dumps(_framed, indent=2)}\n"
+                f"Framing context:\n{json.dumps(sonormal.SO_DATASET_FRAME, indent=2)}\n"
             )
         if item["series_id"] == "doi:":
             raise scrapy.exceptions.DropItem(
-                f"JSON-LD identifier empty: {item['url']}"
+                f"JSON-LD DOI URI empty: {item['url']}"
             )
         item["identifier"] = None
         item["normalized"] = normalized
