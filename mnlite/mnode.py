@@ -45,6 +45,11 @@ DEFAULT_NODE_CONFIG = {
         ]
     }
 }
+"""
+Default node configuration dictionary. Defines the node document upon loading
+into mnlite system service (see eg: the
+`OpenTopography node document <https://sonode.dataone.org/OPENTOPO/v2/node>`_)
+"""
 
 
 def getMNodeNameFromRequest():

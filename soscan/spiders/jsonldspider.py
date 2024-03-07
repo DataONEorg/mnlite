@@ -1,7 +1,9 @@
 import os
+from scrapy.settings import BaseSettings
 import sonormal
 import pyld
 import email.utils
+from pathlib import Path
 
 try:
     import orjson as json
@@ -52,6 +54,10 @@ class JsonldSpider(soscan.spiders.ldsitemapspider.LDSitemapSpider):
         if not urls is None:
             self.sitemap_urls = urls.split(" ")
         self.lastmod_filter = kwargs.get("lastmod", None)
+        self.start_point = None
+        self.url_match = None
+        self.reversed = None
+        self.which_jsonld = 0
         if len(self.sitemap_urls) < 1:
             raise ValueError("At least one sitemap URL is required.")
         if self.lastmod_filter is not None:
@@ -81,6 +87,27 @@ class JsonldSpider(soscan.spiders.ldsitemapspider.LDSitemapSpider):
             **kwargs
         )
         spider._set_crawler(crawler)
+        # incorporate MN-specific settings
+        mn_settings = Path(f'{node_path}/settings.json')
+        if mn_settings.exists():
+            with open(mn_settings) as cs:
+                _cs = json.loads(cs.read())
+            for s in _cs:
+                spider.settings.set(s, _cs[s], priority='spider')
+                spider.logger.info(f'Setting override from {mn_settings}: set {s} to {_cs[s]}')
+                if s in "lastmod_filter":
+                    spider.lastmod_filter = dateparser.parse(
+                        _cs[s],
+                        settings={"RETURN_AS_TIMEZONE_AWARE": True},
+                    )
+                if s in "start_point":
+                    spider.start_point = _cs.get(s, None)
+                if s in "url_match":
+                    spider.url_match = _cs.get(s, None)
+                if s in "reversed":
+                    spider.reversed = _cs.get(s, None)
+                if s in "which_jsonld":
+                    spider.which_jsonld = _cs.get(s, None)
         return spider
 
     def sitemap_filter(self, entries):
@@ -99,22 +126,60 @@ class JsonldSpider(soscan.spiders.ldsitemapspider.LDSitemapSpider):
 
         Returns: None
         """
+        y = 0
+        i = 0
+        if self.reversed:
+            self.logger.info(f'Reading the sitemap in reverse order')
+            entries = reversed(list(entries.__iter__()))
+            self.logger.info(f'Entries in reversed sitemap list: {len(entries)}')
         for entry in entries:
-            ts = entry.get("lastmod", None)
-            if not ts is None:
-                # convert TS to a datetime for comparison
-                ts = dateparser.parse(
-                    ts,
-                    settings={"RETURN_AS_TIMEZONE_AWARE": True},
-                )
-                # preserve the converted timestamp in the entry
-                entry["lastmod"] = ts
+            i += 1
+            if ((self.start_point is not None) and (self.start_point <= i)) or (self.start_point is None):
+                if self.start_point == i:
+                    self.logger.info(f'Starting scrape at record {i}')
+                ts = entry.get("lastmod", None)
+                if not ts is None:
+                    # convert TS to a datetime for comparison
+                    ts = dateparser.parse(
+                        ts,
+                        settings={"RETURN_AS_TIMEZONE_AWARE": True},
+                    )
+                    # preserve the converted timestamp in the entry
+                    entry["lastmod"] = ts
 
-            if self.lastmod_filter is not None and ts is not None:
-                if ts > self.lastmod_filter:
-                    yield entry
-            else:
-                yield entry
+                if self.lastmod_filter is not None and ts is not None:
+                    if ts > self.lastmod_filter:
+                        if self.url_match:
+                            if self.url_match in entry['loc']:
+                                self.logger.debug(f'Yielding record {i}: {entry}')
+                                y += 1
+                                yield entry
+                            else:
+                                self.logger.debug(f'url_match skipping record {i}: {self.url_match} not in {entry}')
+                        else:
+                            self.logger.debug(f'Yielding record {i}: {entry}')
+                            y += 1
+                            yield entry
+                    else:
+                        self.logger.debug(f'lastmod_filter skipping record {i}: (ts {ts}) {entry}')
+                else:
+                    if self.url_match:
+                        if self.url_match in entry['loc']:
+                            self.logger.debug(f'Yielding record {i}: {entry}')
+                            y += 1
+                            yield entry
+                        else:
+                            self.logger.debug(f'url_match skipping record {i}: {self.url_match} not in {entry}')
+                    else:
+                        self.logger.debug(f'Yielding record {i}: {entry["loc"]}')
+                        y += 1
+                        yield entry
+            if (self.start_point is not None) and (self.start_point > i):
+                if i == 1:
+                    self.logger.info(f'Skipping to start_point at record {self.start_point}')
+                self.logger.debug(f'start_point skipping record {i}: {entry}')
+        self.logger.info(f'Total number of sitemap entries: {i}')
+        self.logger.info(f'Yielded entries from sitemap: {y}')
 
     def parse(self, response, **kwargs):
         """
@@ -138,7 +203,13 @@ class JsonldSpider(soscan.spiders.ldsitemapspider.LDSitemapSpider):
                 "extractAllScripts": True,
                 "json_parse_strict": json_parse_strict,
             }
-            jsonld = pyld.jsonld.load_html(response.body, response.url, None, options)
+            contenttype = response.headers.get("Content-Type").decode()
+            #self.logger.debug(f'Response Content-Type: {contenttype} from {response.url}')
+            if contenttype in ["application/ld+json", "application/octet-stream"]:
+                self.logger.debug(f'Content-Type is "{contenttype}"; assuming json object and loading directly')
+                jsonld = json.loads(response.text, strict=options.get("json_parse_strict", False))
+            else:
+                jsonld = pyld.jsonld.load_html(response.body, response.url, None, options)
             # for j_item in jsonld:
             #    item = soscan.items.SoscanItem()
             #    item["source"] = response.url
@@ -155,6 +226,8 @@ class JsonldSpider(soscan.spiders.ldsitemapspider.LDSitemapSpider):
                 # format_id
                 if len(jsonld) == 1:
                     jsonld=jsonld[0]
+                else:
+                    jsonld=jsonld[self.which_jsonld]
 
                 item = soscan.items.SoscanItem()
                 item["url"] = response.url
@@ -176,5 +249,5 @@ class JsonldSpider(soscan.spiders.ldsitemapspider.LDSitemapSpider):
                 item["jsonld"] = jsonld
                 yield item
         except Exception as e:
-            self.logger.error("parse: url:  %s, error: %s", response.url, e)
+            self.logger.error("parse: url:  %s, %s: %s", response.url, repr(e), e)
         yield None

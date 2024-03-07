@@ -2,6 +2,7 @@
 instance/
 dbs/
 .vscode
+nohup.out
 
 docs/diagrams/C4-PlantUML
 
