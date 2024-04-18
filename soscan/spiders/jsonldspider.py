@@ -1,5 +1,6 @@
 import os
 from scrapy.settings import BaseSettings
+from scrapy.exceptions import NotSupported
 import sonormal
 import pyld
 import email.utils
@@ -207,15 +208,17 @@ class JsonldSpider(soscan.spiders.ldsitemapspider.LDSitemapSpider):
             #self.logger.debug(f'Response Content-Type: {contenttype} from {response.url}')
             if contenttype in ["application/ld+json", "application/octet-stream"]:
                 self.logger.debug(f'Content-Type is "{contenttype}"; assuming json object and loading directly')
-                jsonld = json.loads(response.text, strict=options.get("json_parse_strict", False))
+                jsonlds = json.loads(response.text, strict=options.get("json_parse_strict", False))
             else:
-                jsonld = pyld.jsonld.load_html(response.body, response.url, None, options)
+                jsonlds = pyld.jsonld.load_html(response.body, response.url, None, options)
             # for j_item in jsonld:
             #    item = soscan.items.SoscanItem()
             #    item["source"] = response.url
             #    item["checksum"] = opersist.rdfutils.computeJSONLDChecksum(j_item, response.url)
 
-            if len(jsonld) > 0:
+            startjson = 0
+            numjsons = len(jsonlds)
+            if numjsons > 0:
                 # These values are set in the opersistpiteline and sonormalizepipeline
                 # checksum
                 # identifier
@@ -224,30 +227,50 @@ class JsonldSpider(soscan.spiders.ldsitemapspider.LDSitemapSpider):
                 # source
                 # alt_identifiers
                 # format_id
-                if len(jsonld) == 1:
-                    jsonld=jsonld[0]
+                if numjsons == 1:
+                    # this is normal
+                    pass
+                elif ((numjsons > 1) and (self.which_jsonld)):
+                    if self.which_jsonld != 'all':
+                        startjson = self.which_jsonld
+                        numjsons = startjson + 1
                 else:
-                    jsonld=jsonld[self.which_jsonld]
+                    self.logger.warn(f'The page contains more than one JSON-LD object ({numjsons}) but the spider has not been told which to process.')
+                    self.logger.warn('The spider will process the first one by default. To get a specific one, set `"which_jsonld": n`.')
+                    self.logger.warn('To process all records on all scraped pages, set `"which_jsonld": "all"` in the settings file.')
+                    numjsons = 1
 
-                item = soscan.items.SoscanItem()
-                item["url"] = response.url
-                item["status"] = response.status
-                item["time_loc"] = response.meta["loc_timestamp"]
-                item["time_modified"] = None
-                response_date = response.headers.get("Last-Modified", None)
-                if response_date is not None:
-                    try:
-                        item["time_modified"] = email.utils.parsedate_to_datetime(
-                            response_date.decode()
-                        )
-                    except Exception as e:
-                        self.logger.error(
-                            "Could not parse time: %s. %s", response_date, e
-                        )
-                item["time_retrieved"] = opersist.utils.dtnow()
-                self.logger.debug("ITEM without jsonld: %s", item)
-                item["jsonld"] = jsonld
-                yield item
+                for i in range(startjson, numjsons):
+                    self.logger.info(f'Processing JSON-LD {i+1} of {numjsons-startjson}')
+                    jsonld = jsonlds[i]
+                    self.logger.debug("Creating item")
+                    item = soscan.items.SoscanItem()
+                    self.logger.debug("Filling item response values")
+                    item["url"] = response.url
+                    item["status"] = response.status
+                    item["time_loc"] = response.meta["loc_timestamp"]
+                    item["time_modified"] = None
+                    self.logger.debug("Setting Last-Modified")
+                    response_date = response.headers.get("Last-Modified", None)
+                    if response_date is not None:
+                        try:
+                            item["time_modified"] = email.utils.parsedate_to_datetime(
+                                response_date.decode()
+                            )
+                        except Exception as e:
+                            self.logger.error(
+                                "Could not parse time: %s. %s", response_date, e
+                            )
+                    self.logger.debug("Setting time_retrieved")
+                    item["time_retrieved"] = opersist.utils.dtnow()
+                    self.logger.debug("ITEM without jsonld: %s", item)
+                    self.logger.debug("Setting item jsonld")
+                    item["jsonld"] = jsonld
+                    yield item
+            else:
+                self.logger.error(f'No JSON-LD in page content {response.url}')
+                self.logger.debug(f'{response.status} code, response body: {response.body}')
+                raise NotSupported(f'No JSON-LD at {response.url}\nBody:\n{response.body}\n')
         except Exception as e:
             self.logger.error("parse: url:  %s, %s: %s", response.url, repr(e), e)
         yield None
