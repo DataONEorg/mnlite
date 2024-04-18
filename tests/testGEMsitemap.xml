@@ -1,11 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
-    <loc>https://raw.githubusercontent.com/DataONEorg/mnlite/testing-gem-metadata/tests/testGEMjsonld01.html</loc>
-    <lastmod>2024-03-06</lastmod>
-  </url>
-  <url>
-    <loc>https://raw.githubusercontent.com/DataONEorg/mnlite/testing-gem-metadata/tests/testGEMjsonld02.html</loc>
-    <lastmod>2024-03-06</lastmod>
+    <loc>https://api.g-e-m.dk/api/dataset/harvest</loc>
   </url>
 </urlset>
