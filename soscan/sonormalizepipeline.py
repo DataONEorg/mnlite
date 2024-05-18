@@ -152,14 +152,12 @@ class SoscanNormalizePipeline:
             try:
                 raise scrapy.exceptions.DropItem(f"JSON-LD no identifier: {item['url']}")
             finally:
-                if False:
-                    # god is cruel sometimes
-                    fds = json.dumps(_framed, indent=2)
-                    fc = json.dumps(sonormal.SO_DATASET_FRAME, indent=2)
-                    self.logger.debug(
-                        f"Framed dataset:\n{fds}\n"
-                        f"Framing context:\n{fc}\n"
-                    )
+                fds = json.dumps(_framed, indent=2)
+                fc = json.dumps(sonormal.SO_DATASET_FRAME, indent=2)
+                self.logger.debug(
+                    f"Framed dataset:\n{fds}\n"
+                    f"Framing context:\n{fc}\n"
+                )
         if item["series_id"] == "doi:":
             raise scrapy.exceptions.DropItem(
                 f"JSON-LD DOI URI empty: {item['url']}"
