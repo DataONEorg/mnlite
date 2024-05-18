@@ -134,7 +134,7 @@ class SoscanNormalizePipeline:
                     self.logger.debug(f'alt_identifiers: {item["alt_identifiers"]}')
             else:
                 # if the first identifier is an empty list, we need to look for others
-                self.logger.info(f'Empty identifier in first Dataset grouping: {item['url']}')
+                self.logger.info(f"Empty identifier in first Dataset grouping: {item['url']}")
                 g = 0
                 for group in ids:
                     g += 1
