@@ -132,7 +132,6 @@ class JsonldSpider(soscan.spiders.ldsitemapspider.LDSitemapSpider):
         if self.reversed:
             self.logger.info(f'Reading the sitemap in reverse order')
             entries = reversed(list(entries.__iter__()))
-            self.logger.info(f'Entries in reversed sitemap list: {len(entries)}')
         for entry in entries:
             i += 1
             if ((self.start_point is not None) and (self.start_point <= i)) or (self.start_point is None):
