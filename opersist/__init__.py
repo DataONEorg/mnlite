@@ -119,6 +119,7 @@ class OPersist(object):
             self._session.remove()
             # self._session.close()
             self._session = None
+            self._engine = None
         if not self._ostore is None:
             self._ostore.close()
             self._ostore = None
@@ -485,6 +486,8 @@ class OPersist(object):
             self._L.error(e)
             status = self._ostore.remove(sha256)
             self._L.debug("Remove status = %s", status)
+            if ("database is locked" in e):
+                return False
         return None
 
     def addThingBytes(
@@ -533,7 +536,7 @@ class OPersist(object):
         ftmp.write(obj)
         ftmp.close()
         try:
-            return self.addThing(
+            thingAdd = self.addThing(
                 ftmp_path,
                 identifier=identifier,
                 hashes=hashes,
@@ -549,6 +552,29 @@ class OPersist(object):
                 obsoletes=obsoletes,
                 date_uploaded=date_uploaded,
             )
+            if thingAdd == False:
+                self._L.info("Closing old database connection session")
+                self.close()
+                self._L.info("Opening new database connection session")
+                self.open(allow_create=False)
+                self._L.info("Retrying persist with new session")
+                thingAdd = self.addThing(
+                    ftmp_path,
+                    identifier=identifier,
+                    hashes=hashes,
+                    format_id=format_id,
+                    submitter=submitter,
+                    owner=owner,
+                    access_rules=access_rules,
+                    series_id=series_id,
+                    alt_identifiers=alt_identifiers,
+                    media_type=media_type,
+                    source=source,
+                    metadata=metadata,
+                    obsoletes=obsoletes,
+                    date_uploaded=date_uploaded,
+                )
+            return thingAdd
         finally:
             os.unlink(ftmp_path)
 
