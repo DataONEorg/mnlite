@@ -482,7 +482,11 @@ class OPersist(object):
             self.commit()
             return the_thing
         except sqlalchemy.exc.OperationalError as e:
-                return False
+            # this situation denotes a database read/write issue
+            # such as 
+            # Return false to restart the session and try again
+            self._L.error("Caught sqlalchemy.exc.OperationalError; attempting session restart...")
+            return False
         except Exception as e:
             self._L.error("Failed to store entry in database.")
             self._L.error(e)
@@ -557,7 +561,7 @@ class OPersist(object):
                 self.close()
                 self._L.info("Opening new database connection session")
                 self.open(allow_create=False)
-                self._L.info("Retrying persist with new session")
+                self._L.info("Retrying persist with new session...")
                 thingAdd = self.addThing(
                     ftmp_path,
                     identifier=identifier,
@@ -574,6 +578,12 @@ class OPersist(object):
                     obsoletes=obsoletes,
                     date_uploaded=date_uploaded,
                 )
+                if thingAdd:
+                    self._L.info("Successfully stored under new session.")
+                elif thingAdd == None:
+                    self._L.error("Could not store item under new session.")
+                else:
+                    self._L.error("Could not recover database session.")
             return thingAdd
         finally:
             os.unlink(ftmp_path)
