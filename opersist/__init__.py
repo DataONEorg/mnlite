@@ -481,13 +481,13 @@ class OPersist(object):
             self._session.add(the_thing)
             self.commit()
             return the_thing
+        except sqlalchemy.exc.OperationalError as e:
+                return False
         except Exception as e:
             self._L.error("Failed to store entry in database.")
             self._L.error(e)
             status = self._ostore.remove(sha256)
             self._L.debug("Remove status = %s", status)
-            if ("database is locked" in e):
-                return False
         return None
 
     def addThingBytes(
