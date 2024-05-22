@@ -483,9 +483,12 @@ class OPersist(object):
             return the_thing
         except sqlalchemy.exc.OperationalError as e:
             # this situation denotes a database read/write issue
-            # such as 
+            # such as "database is locked"
             # Return false to restart the session and try again
+            self._L.error(e)
             self._L.error("Caught sqlalchemy.exc.OperationalError; attempting session restart...")
+            status = self._ostore.remove(sha256)
+            self._L.debug("Remove status = %s", status)
             return False
         except Exception as e:
             self._L.error("Failed to store entry in database.")
