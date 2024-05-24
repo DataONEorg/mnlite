@@ -15,6 +15,7 @@ from . import models
 from .models import subject
 from .models import accessrule
 from .models import thing
+from time import sleep
 
 
 DEFAULT_DATABASE = "sqlite:///content.db"
@@ -560,33 +561,44 @@ class OPersist(object):
                 date_uploaded=date_uploaded,
             )
             if thingAdd == False:
-                self._L.info("Closing old database connection session")
-                self.close()
-                self._L.info("Opening new database connection session")
-                self.open(allow_create=False)
-                self._L.info("Retrying persist with new session...")
-                thingAdd = self.addThing(
-                    ftmp_path,
-                    identifier=identifier,
-                    hashes=hashes,
-                    format_id=format_id,
-                    submitter=submitter,
-                    owner=owner,
-                    access_rules=access_rules,
-                    series_id=series_id,
-                    alt_identifiers=alt_identifiers,
-                    media_type=media_type,
-                    source=source,
-                    metadata=metadata,
-                    obsoletes=obsoletes,
-                    date_uploaded=date_uploaded,
-                )
-                if thingAdd:
-                    self._L.info("Successfully stored under new session.")
-                elif thingAdd == None:
-                    self._L.error("Could not store item under new session.")
-                else:
-                    self._L.error("Could not recover database session.")
+                self._L.info("Entering session recovery loop")
+                while True:
+                    if self._session:
+                        self._L.info("Closing old database connection session")
+                        self.close()
+                    self._L.info("Opening new database connection session")
+                    self.open(allow_create=False)
+                    self._L.info("Retrying persist with new session...")
+                    thingAdd = self.addThing(
+                        ftmp_path,
+                        identifier=identifier,
+                        hashes=hashes,
+                        format_id=format_id,
+                        submitter=submitter,
+                        owner=owner,
+                        access_rules=access_rules,
+                        series_id=series_id,
+                        alt_identifiers=alt_identifiers,
+                        media_type=media_type,
+                        source=source,
+                        metadata=metadata,
+                        obsoletes=obsoletes,
+                        date_uploaded=date_uploaded,
+                    )
+                    if thingAdd:
+                        self._L.info("Successfully stored under new session.")
+                        break
+                    elif thingAdd == None:
+                        self._L.error(f"Could not store item under new session: {identifier}")
+                        break
+                    else:
+                        self._L.error("Could not recover database session.")
+                    if self._session:
+                        self._L.info("Closing open database connection session.")
+                        self.close()
+                    self._L.info('Sleeping for 10 seconds.')
+                    sleep(10)
+                    self._L.info('Trying again...')
             return thingAdd
         finally:
             os.unlink(ftmp_path)
