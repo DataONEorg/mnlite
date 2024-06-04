@@ -351,8 +351,8 @@ class OPersist(object):
         assert self._session is not None
         assert os.path.exists(fname)
         # Add to blob
-        self._L.info("Persisting %s", identifier)
-        self._L.info("Path = %s", fname)
+        self._L.debug("Persisting %s", identifier)
+        self._L.debug("Path = %s", fname)
         blob_metadata = metadata
         blob_metadata["file_name"] = os.path.basename(fname)
         blob_metadata["media_type"] = media_type
