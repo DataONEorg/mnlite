@@ -439,7 +439,7 @@ class OPersist(object):
                 match.obsoleted_by = identifier
                 match.date_modified = utils.dtnow()
                 self._L.warning(f"OBSOLETED = {obsoletes} in series {series_id}")
-                self._L.debug(f"Obsolted item: {match}")
+                self._L.debug(f"Obsoleted item sysmeta: {match}")
 
             blob_fname = os.path.join(self._path_root, self._blob_path, fn_dest)
             the_thing = models.thing.Thing(checksum_sha256=sha256, content=fn_dest)

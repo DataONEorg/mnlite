@@ -52,8 +52,11 @@ class OPersistPipeline:
                 raise scrapy.exceptions.DropItem(f"No checksum for item: {item['url']}")
             existing = self._op.getThingSha256(checksum_sha256)
             if existing is not None:
+                self.logger.debug(
+                    f"Found existing entry:\n{item['url']}\n{checksum_sha256}\n{existing.series_id}\n{existing.file_name}\n==="
+                )
                 raise scrapy.exceptions.DropItem(
-                    f"Item already in store:\n{item['url']}\n{checksum_sha256}\n{existing.series_id}\n{existing.file_name}\n==="
+                    f"Item already in store:\n{item['url']} sha256:{checksum_sha256}"
                 )
 
             identifier = item["identifier"]
