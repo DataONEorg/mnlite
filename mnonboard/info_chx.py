@@ -4,6 +4,7 @@ from os import environ
 
 from mnonboard.defs import FIELDS, SITEMAP_URLS, ORCID_PREFIX, SCHEDULES, NODE_ID_PREFIX, SUBJECT_PREFIX, SUBJECT_POSTFIX
 from mnonboard import default_json, L
+from mnonboard.cn import init_client
 from opersist.utils import JSON_TIME_FORMAT, dtnow
 from opersist.cli import getOpersistInstance
 
@@ -203,7 +204,7 @@ def enter_int(prompt):
             L.warning("Number of database sitemap URLs can't be less than 1. (%s entered)" % i)
             print('Please enter 1 or greater.')
 
-def cn_subj_lookup(subj, cn_url='https://cn.dataone.org/cn', debug=False):
+def cn_subj_lookup(subj, cn_url='https://cn.dataone.org/cn', debug=False, client: CoordinatingNodeClient=None):
     """
     Use the DataONE API to look up whether a given ORCiD number already exists
     in the system.
@@ -214,11 +215,9 @@ def cn_subj_lookup(subj, cn_url='https://cn.dataone.org/cn', debug=False):
     :returns: Received response or False
     :rtype: str or bool
     """
-    # this authentication method was adapted from:
-    # https://github.com/DataONEorg/dataone_examples/blob/master/python_examples/update_object.ipynb
-    options = {"headers": {"Authorization": "Bearer %s" % (D1_AUTH_TOKEN)}}
-    # Create the Member Node Client
-    client = CoordinatingNodeClient(cn_url, **options)
+    if not client:
+        # Create the Member Node Client
+        client = init_client(cn_url=cn_url, auth_token=D1_AUTH_TOKEN)
     try:
         # Get records
         L.info('Starting record lookup for %s from %s' % (subj, cn_url))
@@ -227,6 +226,7 @@ def cn_subj_lookup(subj, cn_url='https://cn.dataone.org/cn', debug=False):
         name = '%s %s' % (r[1], r[2])
         L.info('Name associated with record %s found in %s: %s.' % (subj, cn_url, name))
         rt = name if not debug else r
+        client._session.close()
         return rt
     except exceptions.NotFound as e:
         estrip = str(e).split('<description>')[1].split('</description>')[0]
@@ -283,7 +283,7 @@ def set_role(loc, title, value):
     op.close()
     L.info('OPersist record set.')
 
-def orcid_name(orcid, f):
+def orcid_info(orcid, f):
     """
     Ask the user for the name of an orcid number.
 
@@ -295,7 +295,10 @@ def orcid_name(orcid, f):
     L.info('Asking for name of %s (ORCiD number %s)' % (f, orcid))
     name = req_input('Please enter the name of %s (ORCiD number %s): ' % (f, orcid))
     L.info('User has entered "%s"' % name)
-    return name
+    email = input('If the subject has an email address, enter it here (leave blank to skip): ')
+    L.info('User has entered "%s"' % email)
+    email = email if (email and ('@' in email)) else None
+    return name, email
 
 def enter_orcid(prompt):
     """

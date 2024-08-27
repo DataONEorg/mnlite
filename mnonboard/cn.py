@@ -1,9 +1,9 @@
-from os import environ
+import logging
 from d1_client.cnclient import CoordinatingNodeClient
 from d1_common.types.dataoneTypes import Subject, person
 #import d1_admin_tools as d1np
 
-from . import defs
+from . import defs, utils
 
 def init_client(cn_url: str, auth_token: str):
     """
@@ -64,6 +64,25 @@ def register_user(client: CoordinatingNodeClient, orcid: str, name: str, email: 
     :param str name: The name of the subject
     :param str email: The subject's email address
     """
+    L = logging.getLogger(__name__)
+    s = Subject(orcid)
+    p = person()
+    p.subject = s
+    given, family = utils.parse_name(name)
+    p.givenName = given
+    p.familyName = family
+    if email:
+        p.mail = email
+    try:
+        client.registerAccount(p)
+    except Exception as e:
+        try:
+            err_n = str(e).split('\n')[0]
+            err_c = str(e).split('\n')[1]
+            err_d = str(e).split('\n')[3]
+            print('Error processing %s (%s)\n%s\n%s\n%s' % (name, orcid, err_n, err_c, err_d))
+        except:
+            print(e)
     
 def set_nodes_properties(nodes_properties: dict, con=None):
     """

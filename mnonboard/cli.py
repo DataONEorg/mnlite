@@ -24,7 +24,7 @@ def run(cfg):
         cfg['token'] = info_chx.req_input('Please enter your DataONE authentication token: ')
         os.environ['D1_AUTH_TOKEN'] = cfg['token']
     cfg['cert_loc'] = CN_CERT_LOC[cfg['mode']]
-    DC = cn.init_client(cn_url=cfg['cn_url'], auth_token=cfg['token'])
+    client = cn.init_client(cn_url=cfg['cn_url'], auth_token=cfg['token'])
     if cfg['info'] == 'user':
         # do the full user-driven info gathering process
         ufields = info_chx.user_input()
@@ -45,7 +45,7 @@ def run(cfg):
         # add a subject for owner and submitter (may not be necessary if they exist already)
         # add subject for technical contact (step 6)
         val = fields[f] if f not in 'contact_subject' else fields['node'][f]
-        name = utils.get_or_create_subj(loc=loc, value=val, cn_url=cfg['cn_url'], title=f)
+        name = utils.get_or_create_subj(loc=loc, value=val, client=client, title=f)
         # store this for a few steps later
         names[val] = name
     # set the update schedule and set the state to up
