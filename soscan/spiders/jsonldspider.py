@@ -271,5 +271,5 @@ class JsonldSpider(soscan.spiders.ldsitemapspider.LDSitemapSpider):
                 self.logger.debug(f'{response.status} code, response body: {response.body}')
                 raise NotSupported(f'No JSON-LD at {response.url}\nBody:\n{response.body}\n')
         except Exception as e:
-            self.logger.error("parse: url:  %s", response.url)
+            self.logger.error("parse: url:  %s — %s", response.url, repr(e))
         yield None
