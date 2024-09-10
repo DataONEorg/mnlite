@@ -134,6 +134,9 @@ def main():
                     L.error('Option -c (--check) requires an integer number of files to check.')
                     print(HELP_TEXT)
                     exit(1)
+        if o in ('-S', '--sync-content'):
+            CFG['local'] = False
+            L.info('Syncing content (-S) will scrape the remote site for new metadata (-L overrides this option).')
         if o in ('-L', '--local'):
             CFG['local'] = True
             L.info('Local mode (-L) will not scrape the remote site and will only test local files.')
