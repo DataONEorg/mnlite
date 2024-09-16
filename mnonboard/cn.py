@@ -1,11 +1,14 @@
 import logging
 from d1_client.cnclient import CoordinatingNodeClient
 from d1_common.types.dataoneTypes import Subject, person
+from d1_common.types import exceptions
 from opersist import OPersist
 from opersist.cli import getOpersistInstance
 #import d1_admin_tools as d1np
 
-from . import defs, utils
+from mnonboard.info_chx import local_subj_lookup, orcid_info, set_role
+from mnonboard.defs import SUBJECT_PREFIX, SUBJECT_POSTFIX
+from . import utils
 
 def init_client(cn_url: str, auth_token: str):
     """
@@ -56,6 +59,81 @@ def node_list(client: CoordinatingNodeClient):
     for node in nodes.content():
         print(node.name)
     return nodes
+
+def get_or_create_subj(loc: str, value: str, client: CoordinatingNodeClient, title: str='unspecified subject', name: str=None):
+    """
+    Get an existing subject using their ORCiD or create a new one with the
+    specified values. 
+    Search is conducted first at the given coordinating node URL, then locally.
+    If no subject is found, a new record is created in the local opersist
+    instance.
+
+    :param str loc: Location of the opersist instance
+    :param str value: Subject value (unique subject id, such as orcid or member node id)
+    :param str cn_url: The base URL of the rest API with which to search for the given subject
+    :param str title: The subject's role in relation to the database
+    :param name: Subject name (human readable)
+    :type name: str or None
+    """
+    L = logging.getLogger(__name__)
+    if name:
+        # we are probably creating a node record
+        L.info(f'Creating a node subject. Given node_id: {value}')
+        if (not SUBJECT_PREFIX in value) and (not SUBJECT_POSTFIX in value):
+            value = f"{SUBJECT_PREFIX}{value}{SUBJECT_POSTFIX}"
+        L.info(f'Node subject value: "{value}"')
+    else:
+        # name was not given. look up the orcid record in the database
+        name = cn_subj_lookup(subj=value, client=client)
+        if not name:
+            # if the name is not in either database, we will create it; else it's already there and we ignore it
+            L.info('%s does not exist at %s. Need a name for local record creation...' % (value, client.base_url))
+            # ask the user for a name with the associated position and ORCiD record
+            name, email = orcid_info(value, title)
+            register_user(client=client, orcid=value, name=name, email=email)
+    # finally, use opersist to create the subject
+    local_subj_lookup(loc=loc, subj=value, name=name)
+    # then use opersist to set the subject's role
+    if title in ('default_owner', 'default_submitter'):
+        set_role(loc=loc, title=title, value=value)
+    return name
+
+def cn_subj_lookup(subj, cn_url='https://cn.dataone.org/cn', debug=False, client: CoordinatingNodeClient=None):
+    """
+    Use the DataONE API to look up whether a given ORCiD number already exists
+    in the system.
+
+    :param str subj: The subject to look up
+    :param str cn_url: The URL for the DataONE api to send REST searches to (default: 'https://cn.dataone.org/cn')
+    :param bool debug: Whether to include debug info in log messages (lots of text)
+    :returns: Received response or False
+    :rtype: str or bool
+    """
+    L = logging.getLogger(__name__)
+    if not client:
+        # Create the Member Node Client
+        client = init_client(cn_url=cn_url, auth_token=D1_AUTH_TOKEN)
+    try:
+        # Get records
+        L.info('Starting record lookup for %s from %s' % (subj, cn_url))
+        subject = client.getSubjectInfo(subj)
+        r = subject.content()[0].content()
+        name = '%s %s' % (r[1], r[2])
+        L.info('Name associated with record %s found in %s: %s.' % (subj, cn_url, name))
+        rt = name if not debug else r
+        client._session.close()
+        return rt
+    except exceptions.NotFound as e:
+        estrip = str(e).split('<description>')[1].split('</description>')[0]
+        e = e if debug else estrip
+        L.info('Caught NotFound error from %s during lookup. Details: %s' % (cn_url, e))
+        return False
+    except exceptions.NotAuthorized as e:
+        L.error('Caught NotAuthorized error from %s. Is your auth token up to date?' % (cn_url))
+        exit(1)
+    except exceptions.DataONEException as e:
+        L.error('Unspecified error from %s:\n%s' % (cn_url, e))
+        exit(1)
 
 def register_user(client: CoordinatingNodeClient, orcid: str, name: str, email: str=None):
     """

@@ -8,10 +8,9 @@ import xmltodict
 from pathlib import Path
 from logging import getLogger
 
-from mnonboard.defs import SCHEDULES, NAMES_DICT, SUBJECT_PREFIX, SUBJECT_POSTFIX, USER_NAME
+from mnonboard.defs import SCHEDULES, NAMES_DICT, USER_NAME
 from mnonboard import NODE_PATH_REL, CUR_PATH_ABS, LOG_DIR, HARVEST_LOG_NAME, HM_DATE, L
-from mnonboard.info_chx import cn_subj_lookup, local_subj_lookup, enter_schedule, orcid_info, set_role
-from mnonboard.cn import register_user, init_client, CoordinatingNodeClient
+from mnonboard.info_chx import enter_schedule
 
 def load_json(loc: str):
     """
@@ -170,43 +169,6 @@ def new_subj(loc: str, name: str, value: str):
     except Exception as e:
         L.error('opersist subject creation command failed for %s (%s): %s' % (name, value, e))
         exit(1)
-
-def get_or_create_subj(loc: str, value: str, client: CoordinatingNodeClient, title: str='unspecified subject', name: str=None):
-    """
-    Get an existing subject using their ORCiD or create a new one with the
-    specified values. 
-    Search is conducted first at the given coordinating node URL, then locally.
-    If no subject is found, a new record is created in the local opersist
-    instance.
-
-    :param str loc: Location of the opersist instance
-    :param str value: Subject value (unique subject id, such as orcid or member node id)
-    :param str cn_url: The base URL of the rest API with which to search for the given subject
-    :param str title: The subject's role in relation to the database
-    :param name: Subject name (human readable)
-    :type name: str or None
-    """
-    if name:
-        # we are probably creating a node record
-        L.info(f'Creating a node subject. Given node_id: {value}')
-        if (not SUBJECT_PREFIX in value) and (not SUBJECT_POSTFIX in value):
-            value = f"{SUBJECT_PREFIX}{value}{SUBJECT_POSTFIX}"
-        L.info(f'Node subject value: "{value}"')
-    else:
-        # name was not given. look up the orcid record in the database
-        name = cn_subj_lookup(subj=value, client=client)
-        if not name:
-            # if the name is not in either database, we will create it; else it's already there and we ignore it
-            L.info('%s does not exist at %s. Need a name for local record creation...' % (value, client.base_url))
-            # ask the user for a name with the associated position and ORCiD record
-            name, email = orcid_info(value, title)
-            register_user(client=client, orcid=value, name=name, email=email)
-    # finally, use opersist to create the subject
-    local_subj_lookup(loc=loc, subj=value, name=name)
-    # then use opersist to set the subject's role
-    if title in ('default_owner', 'default_submitter'):
-        set_role(loc=loc, title=title, value=value)
-    return name
 
 def set_schedule():
     """

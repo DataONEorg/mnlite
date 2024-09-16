@@ -45,7 +45,7 @@ def run(cfg):
         # add a subject for owner and submitter (may not be necessary if they exist already)
         # add subject for technical contact (step 6)
         val = fields[f] if f not in 'contact_subject' else fields['node'][f]
-        name = utils.get_or_create_subj(loc=loc, value=val, client=client, title=f)
+        name = cn.get_or_create_subj(loc=loc, value=val, client=client, title=f)
         # store this for a few steps later
         names[val] = name
     # set the update schedule and set the state to up
@@ -54,7 +54,7 @@ def run(cfg):
     # okay, now overwrite the default node.json with our new one (step 8)
     utils.save_json(loc=os.path.join(loc, 'node.json'), jf=fields)
     # add node as a subject (step 7) 
-    utils.get_or_create_subj(loc=loc, value=fields['node']['node_id'],
+    cn.get_or_create_subj(loc=loc, value=fields['node']['node_id'],
                              cn_url=cfg['cn_url'],
                              name=end_node_subj)
     # restart the mnlite process to pick up the new node.json (step 9)

@@ -1,10 +1,8 @@
-from d1_client.cnclient import CoordinatingNodeClient
-from d1_common.types import exceptions
 from os import environ
+import logging
 
 from mnonboard.defs import FIELDS, SITEMAP_URLS, ORCID_PREFIX, SCHEDULES, NODE_ID_PREFIX, SUBJECT_PREFIX, SUBJECT_POSTFIX
-from mnonboard import default_json, L
-from mnonboard.cn import init_client
+from mnonboard import default_json
 from opersist.utils import JSON_TIME_FORMAT, dtnow
 from opersist.cli import getOpersistInstance
 
@@ -14,6 +12,7 @@ The authentication token for a DataONE CN. Taken from the environment if it
 exists there, then from user input.
 """
 
+L = logging.getLogger(__name__)
 
 # user info checks
 def not_empty(f):
@@ -203,42 +202,6 @@ def enter_int(prompt):
         except AssertionError as e:
             L.warning("Number of database sitemap URLs can't be less than 1. (%s entered)" % i)
             print('Please enter 1 or greater.')
-
-def cn_subj_lookup(subj, cn_url='https://cn.dataone.org/cn', debug=False, client: CoordinatingNodeClient=None):
-    """
-    Use the DataONE API to look up whether a given ORCiD number already exists
-    in the system.
-
-    :param str subj: The subject to look up
-    :param str cn_url: The URL for the DataONE api to send REST searches to (default: 'https://cn.dataone.org/cn')
-    :param bool debug: Whether to include debug info in log messages (lots of text)
-    :returns: Received response or False
-    :rtype: str or bool
-    """
-    if not client:
-        # Create the Member Node Client
-        client = init_client(cn_url=cn_url, auth_token=D1_AUTH_TOKEN)
-    try:
-        # Get records
-        L.info('Starting record lookup for %s from %s' % (subj, cn_url))
-        subject = client.getSubjectInfo(subj)
-        r = subject.content()[0].content()
-        name = '%s %s' % (r[1], r[2])
-        L.info('Name associated with record %s found in %s: %s.' % (subj, cn_url, name))
-        rt = name if not debug else r
-        client._session.close()
-        return rt
-    except exceptions.NotFound as e:
-        estrip = str(e).split('<description>')[1].split('</description>')[0]
-        e = e if debug else estrip
-        L.info('Caught NotFound error from %s during lookup. Details: %s' % (cn_url, e))
-        return False
-    except exceptions.NotAuthorized as e:
-        L.error('Caught NotAuthorized error from %s. Is your auth token up to date?' % (cn_url))
-        exit(1)
-    except exceptions.DataONEException as e:
-        L.error('Unspecified error from %s:\n%s' % (cn_url, e))
-        exit(1)
 
 def local_subj_lookup(subj, name, loc, retn=False):
     """
