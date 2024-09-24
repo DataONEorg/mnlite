@@ -205,18 +205,22 @@ class JsonldSpider(soscan.spiders.ldsitemapspider.LDSitemapSpider):
             }
             contenttype = response.headers.get("Content-Type").decode()
             #self.logger.debug(f'Response Content-Type: {contenttype} from {response.url}')
+            ct_is_jsonld = False
             if contenttype in ["application/ld+json", "application/octet-stream"]:
                 self.logger.debug(f'Content-Type is "{contenttype}"; assuming json object and loading directly')
                 jsonlds = json.loads(response.text, strict=options.get("json_parse_strict", False))
+                ct_is_jsonld = True
             else:
                 jsonlds = pyld.jsonld.load_html(response.body, response.url, None, options)
             # for j_item in jsonld:
             #    item = soscan.items.SoscanItem()
             #    item["source"] = response.url
             #    item["checksum"] = opersist.rdfutils.computeJSONLDChecksum(j_item, response.url)
-
             startjson = 0
-            numjsons = len(jsonlds)
+            if ct_is_jsonld:
+                numjsons = 1
+            else:
+                numjsons = len(jsonlds)
             if numjsons > 0:
                 # These values are set in the opersistpiteline and sonormalizepipeline
                 # checksum
