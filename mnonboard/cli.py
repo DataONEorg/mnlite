@@ -2,6 +2,9 @@ import os, sys
 import getopt
 import time
 
+from opersist import OPersist
+from opersist.cli import getOpersistInstance
+
 from mnonboard import utils
 from mnonboard import info_chx
 from mnonboard import data_chx
@@ -54,8 +57,8 @@ def run(cfg):
     # okay, now overwrite the default node.json with our new one (step 8)
     utils.save_json(loc=os.path.join(loc, 'node.json'), jf=fields)
     # add node as a subject (step 7) 
-    utils.get_or_create_subj(loc=loc, value=fields['node']['node_id'],
-                             cn_url=cfg['cn_url'],
+    cn.get_or_create_subj(loc=loc, value=fields['node']['node_id'],
+                             client=client, title='node',
                              name=end_node_subj)
     # restart the mnlite process to pick up the new node.json (step 9)
     utils.restart_mnlite()
@@ -83,6 +86,54 @@ def run(cfg):
     # close connection
     ssh.close() if ssh else None
 
+
+def check_chains(cfg, sids):
+    """
+    Check the version chains of the metadata records on the CN indicated in the config.
+    If a file is provided, check the version chains of the SIDs in the file.
+
+    :param dict cfg: Dict containing config variables
+    :param list sids: List of SIDs to check the version chains of
+    """
+    # auth
+    if not cfg['token']:
+        cfg['token'] = os.environ.get('D1_AUTH_TOKEN')
+    if not cfg['token']:
+        print('Your DataONE auth token is missing. Please enter it here and/or store it in the env variable "D1_AUTH_TOKEN".')
+        cfg['token'] = info_chx.req_input('Please enter your DataONE authentication token: ')
+        os.environ['D1_AUTH_TOKEN'] = cfg['token']
+    fields = utils.load_json(cfg['json_file'])
+    L.info('Initializing client...')
+    client = cn.init_client(cn_url=cfg['cn_url'], auth_token=cfg['token'])
+    end_node_subj = fields['node']['node_id'].split(':')[-1]
+    L.info(f'Using node {end_node_subj}')
+    if f'urn:node:{end_node_subj}' in cn.node_list(client):
+        L.info(f'Node {end_node_subj} was found on the CN.')
+    else:
+        L.error(f'Node {end_node_subj} was not found on the CN. Please register the node before attempting to suture version chains.')
+        exit(1)
+    loc = utils.node_path(nodedir=end_node_subj)
+    L.info(f'Loading OPersist database: {loc}')
+    op: OPersist = getOpersistInstance(loc)
+    L.info('OPersist database loaded.')
+    sids = [sid.strip() for sid in sids]
+    numsids = len(sids)
+    L.info(f'Checking version chains for {numsids} SIDs.')
+    repairs = 0
+    num = 1
+    for sid in sids:
+        numstr = f'{num}/{numsids}'
+        if cn.chain_check(sid, op, client, numstr):
+            repairs += 1
+        else:
+            L.info(f'No repairs for {sid}.')
+        num += 1
+    L.info(f'Repairs completed: {repairs}. Closing connections...')
+    op.close()
+    client._session.close()
+    L.info('Done.')
+
+
 def main():
     """
     Uses getopt to set config values in order to call
@@ -92,9 +143,10 @@ def main():
     :rtype: dict
     """
     # get arguments
+    chain_check = False
     try:
-        opts = getopt.getopt(sys.argv[1:], 'hiPvLd:l:c:',
-            ['help', 'init', 'production', 'verbose', 'local' 'dump=', 'load=', 'check=']
+        opts = getopt.getopt(sys.argv[1:], 'hiPvLd:l:c:C:',
+            ['help', 'init', 'production', 'verbose', 'local' 'dump=', 'load=', 'check=', 'chain-check=']
             )[0]
     except Exception as e:
         L.error('Error: %s' % e)
@@ -137,6 +189,19 @@ def main():
         if o in ('-L', '--local'):
             CFG['local'] = True
             L.info('Local mode (-L) will not scrape the remote site and will only test local files.')
+        if o in ('-C', '--chain-check'):
+            # Chain check (-C) will attempt to repair the version chains of the metadata records on the CN indicated in the config
+            # Providing "all" as the argument will attempt to repair the version chains of all SIDs on the specified node in the CN
+            # Providing a file with SID strings separated by newlines will attempt to repair those version chains
+            chain_check = True
+            sids = []
+            try:
+                with open(a, 'r') as f:
+                    sids = f.readlines()
+                L.info(f'SID list length: {len(sids)}.')
+            except FileNotFoundError:
+                L.error('File %s not found.' % a)
+                exit(1)
     L.info('running mnonboard in %s mode.\n\
 data gathering from: %s\n\
 cn_url: %s\n\
@@ -145,7 +210,10 @@ metadata files to check: %s' % (CFG['mode'],
                                 CFG['cn_url'],
                                 CFG['check_files']))
     try:
-        run(CFG)
+        if chain_check:
+            check_chains(CFG, sids)
+        else:
+            run(CFG)
     except KeyboardInterrupt:
         print()
         L.error('Caught KeyboardInterrupt, quitting...')
