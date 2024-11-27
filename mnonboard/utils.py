@@ -6,10 +6,11 @@ from scp import SCPClient
 import urllib.parse as urlparse
 import xmltodict
 from pathlib import Path
+from logging import getLogger
 
-from mnonboard.defs import SCHEDULES, NAMES_DICT, SUBJECT_PREFIX, SUBJECT_POSTFIX, USER_NAME
+from mnonboard.defs import SCHEDULES, NAMES_DICT, USER_NAME
 from mnonboard import NODE_PATH_REL, CUR_PATH_ABS, LOG_DIR, HARVEST_LOG_NAME, HM_DATE, L
-from mnonboard.info_chx import cn_subj_lookup, local_subj_lookup, enter_schedule, orcid_name, set_role
+from mnonboard.info_chx import enter_schedule
 
 def load_json(loc: str):
     """
@@ -103,6 +104,52 @@ def init_repo(loc: str):
         L.error('opersist init command failed (node folder: %s): %s' % (loc, e))
         exit(1)
 
+def parse_name(fullname: str):
+    """
+    Parse full names into given and family designations.
+
+    This function parses full names into given and family names. It supports
+    various formats of names, including those with multiple given names and
+    family names.
+
+    Supported formats:
+    Multiple given names: ``John Jacob Jingleheimer Schmidt``
+    Given name and family name: ``John Schmidt``
+    Family name and given name: ``Schmidt, John``
+    Given name and family name with prefix: ``John von Schmidt``
+
+    :param fullname: The full name to be parsed.
+    :type fullname: str
+    :return: A tuple containing the given name and family name.
+    :rtype: tuple[str, str]
+    """
+    given, family = None, None
+    if ', ' in fullname:
+        # split the fullname by comma and space, assign the family name and given name
+        [family, given] = fullname.title().split(', ')[:2]
+    if (given == None) and (family == None):
+        for q in [' del ', ' van ', ' de ', ' von ', ' der ', ' di ', ' la ', ' le ', ' da ', ' el ', ' al ', ' bin ']:
+            if q in fullname.lower():
+                # split the fullname by the query string, assign the given name and family name
+                [given, family] = fullname.lower().split(q)
+                # capitalize the and concat the query string to the family name
+                given = given.title()
+                family = f'{q.strip()}{family.title()}'
+    if (given == None) and (family == None):
+        # split the fullname by space and capitalize each part
+        nlist = fullname.title().split()
+        # assign the last part as the family name and the first part as the given name
+        family = nlist[-1]
+        if len(nlist) >= 2:
+            given = nlist[0]
+            for i in range(1, len(nlist)-1):
+                # concatenate the remaining parts as the given name
+                given = f'{given} {nlist[i]}'
+    if (not given) or (not family):
+        L = getLogger(__name__)
+        L.warning(f'Could not parse name "{fullname}". Result of given name: "{given}" Family name: "{family}"')
+    return given, family
+
 def new_subj(loc: str, name: str, value: str):
     """
     Create new subject in the database using opersist.
@@ -122,42 +169,6 @@ def new_subj(loc: str, name: str, value: str):
     except Exception as e:
         L.error('opersist subject creation command failed for %s (%s): %s' % (name, value, e))
         exit(1)
-
-def get_or_create_subj(loc: str, value: str, cn_url: str, title: str='unspecified subject', name: str=None):
-    """
-    Get an existing subject using their ORCiD or create a new one with the
-    specified values. 
-    Search is conducted first at the given coordinating node URL, then locally.
-    If no subject is found, a new record is created in the local opersist
-    instance.
-
-    :param str loc: Location of the opersist instance
-    :param str value: Subject value (unique subject id, such as orcid or member node id)
-    :param str cn_url: The base URL of the rest API with which to search for the given subject
-    :param str title: The subject's role in relation to the database
-    :param name: Subject name (human readable)
-    :type name: str or None
-    """
-    if name:
-        # we are probably creating a node record
-        L.info(f'Creating a node subject. Given node_id: {value}')
-        if (not SUBJECT_PREFIX in value) and (not SUBJECT_POSTFIX in value):
-            value = f"{SUBJECT_PREFIX}{value}{SUBJECT_POSTFIX}"
-        L.info(f'Node subject value: "{value}"')
-    else:
-        # name was not given. look up the orcid record in the database
-        name = cn_subj_lookup(subj=value, cn_url=cn_url)
-        if not name:
-            # if the name is not in either database, we will create it; else it's already there and we ignore it
-            L.info('%s does not exist at %s. Need a name for local record creation...' % (value, cn_url))
-            # ask the user for a name with the associated position and ORCiD record
-            name = orcid_name(value, title)
-    # finally, use opersist to create the subject
-    local_subj_lookup(loc=loc, subj=value, name=name)
-    # then use opersist to set the subject's role
-    if title in ('default_owner', 'default_submitter'):
-        set_role(loc=loc, title=title, value=value)
-    return name
 
 def set_schedule():
     """

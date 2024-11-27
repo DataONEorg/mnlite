@@ -1,9 +1,8 @@
-from d1_client.cnclient import CoordinatingNodeClient
-from d1_common.types import exceptions
 from os import environ
+import logging
 
 from mnonboard.defs import FIELDS, SITEMAP_URLS, ORCID_PREFIX, SCHEDULES, NODE_ID_PREFIX, SUBJECT_PREFIX, SUBJECT_POSTFIX
-from mnonboard import default_json, L
+from mnonboard import default_json
 from opersist.utils import JSON_TIME_FORMAT, dtnow
 from opersist.cli import getOpersistInstance
 
@@ -13,6 +12,7 @@ The authentication token for a DataONE CN. Taken from the environment if it
 exists there, then from user input.
 """
 
+L = logging.getLogger(__name__)
 
 # user info checks
 def not_empty(f):
@@ -203,43 +203,6 @@ def enter_int(prompt):
             L.warning("Number of database sitemap URLs can't be less than 1. (%s entered)" % i)
             print('Please enter 1 or greater.')
 
-def cn_subj_lookup(subj, cn_url='https://cn.dataone.org/cn', debug=False):
-    """
-    Use the DataONE API to look up whether a given ORCiD number already exists
-    in the system.
-
-    :param str subj: The subject to look up
-    :param str cn_url: The URL for the DataONE api to send REST searches to (default: 'https://cn.dataone.org/cn')
-    :param bool debug: Whether to include debug info in log messages (lots of text)
-    :returns: Received response or False
-    :rtype: str or bool
-    """
-    # this authentication method was adapted from:
-    # https://github.com/DataONEorg/dataone_examples/blob/master/python_examples/update_object.ipynb
-    options = {"headers": {"Authorization": "Bearer %s" % (D1_AUTH_TOKEN)}}
-    # Create the Member Node Client
-    client = CoordinatingNodeClient(cn_url, **options)
-    try:
-        # Get records
-        L.info('Starting record lookup for %s from %s' % (subj, cn_url))
-        subject = client.getSubjectInfo(subj)
-        r = subject.content()[0].content()
-        name = '%s %s' % (r[1], r[2])
-        L.info('Name associated with record %s found in %s: %s.' % (subj, cn_url, name))
-        rt = name if not debug else r
-        return rt
-    except exceptions.NotFound as e:
-        estrip = str(e).split('<description>')[1].split('</description>')[0]
-        e = e if debug else estrip
-        L.info('Caught NotFound error from %s during lookup. Details: %s' % (cn_url, e))
-        return False
-    except exceptions.NotAuthorized as e:
-        L.error('Caught NotAuthorized error from %s. Is your auth token up to date?' % (cn_url))
-        exit(1)
-    except exceptions.DataONEException as e:
-        L.error('Unspecified error from %s:\n%s' % (cn_url, e))
-        exit(1)
-
 def local_subj_lookup(subj, name, loc, retn=False):
     """
     Use the local opersist instance to look up a subject.
@@ -283,7 +246,7 @@ def set_role(loc, title, value):
     op.close()
     L.info('OPersist record set.')
 
-def orcid_name(orcid, f):
+def orcid_info(orcid, f):
     """
     Ask the user for the name of an orcid number.
 
@@ -295,7 +258,10 @@ def orcid_name(orcid, f):
     L.info('Asking for name of %s (ORCiD number %s)' % (f, orcid))
     name = req_input('Please enter the name of %s (ORCiD number %s): ' % (f, orcid))
     L.info('User has entered "%s"' % name)
-    return name
+    email = input('If the subject has an email address, enter it here (leave blank to skip): ')
+    L.info('User has entered "%s"' % email)
+    email = email if (email and ('@' in email)) else None
+    return name, email
 
 def enter_orcid(prompt):
     """

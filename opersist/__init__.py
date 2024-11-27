@@ -660,6 +660,30 @@ class OPersist(object):
             nadded += 1
         return nadded
 
+    def setObsoletes(self, sid, pid):
+        """
+        Given a schema.org series ID, set the obsoletes field of the first
+        matching object in the SO series to the provided PID (presumably an
+        object on the CN).
+
+        Should be run in conjunction with an operation to set the obsoleted_by
+        field of the object on the CN to the PID of the first object in the
+        series as returned here.
+
+        Args:
+            sid: Series ID or PID of the object in the SO database
+            pid: PID of the object on the CN (the object being obsoleted)
+
+        Returns:
+            str, the PID of the object in the SO database that is obsoleting the CN object
+        """
+        assert self._session is not None
+        thing = self.getThingPIDorFirstSeriesObj(sid)
+        thing.obsoletes = pid
+        thing.date_modified = utils.dtnow()
+        self.commit()
+        return thing.identifier
+
     def contentAbsPath(self, content_path):
         return os.path.abspath(os.path.join(self._blob_path, content_path))
 
@@ -681,6 +705,18 @@ class OPersist(object):
                 self._session.query(models.thing.Thing)
                 .filter_by(series_id=identifier)
                 .order_by(models.thing.Thing.date_modified.desc())
+            )
+            o = Q.first()
+        return o
+
+    def getThingPIDorFirstSeriesObj(self, identifier):
+        # get by pid or first object in series
+        o = self.getThingPID(identifier)
+        if o is None:
+            Q = (
+                self._session.query(models.thing.Thing)
+                .filter_by(series_id=identifier)
+                .order_by(models.thing.Thing.date_modified.asc())
             )
             o = Q.first()
         return o

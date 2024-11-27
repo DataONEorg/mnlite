@@ -1,10 +1,15 @@
 import logging
-from d1_client.cnclient_2_0 import CoordinatingNodeClient_2_0
+from d1_client.cnclient import CoordinatingNodeClient
 from d1_common.types.dataoneTypes import Subject, person
+from d1_common.types import exceptions
+from opersist import OPersist
+from opersist.cli import getOpersistInstance
 #import d1_admin_tools as d1np
 from urllib.parse import quote_plus
 
-from . import defs
+from mnonboard.info_chx import local_subj_lookup, orcid_info, set_role
+from mnonboard.defs import SUBJECT_PREFIX, SUBJECT_POSTFIX
+from . import utils
 
 def init_client(auth_token: str, cn_url: str='https://cn-stage.test.dataone.org/cn'):
     """
@@ -133,6 +138,86 @@ def cn_subj_lookup(subj, cn_url='https://cn.dataone.org/cn', debug=False, client
         exit(1)
 
 def register_user(client: CoordinatingNodeClient_2_0, orcid: str, name: str, email: str=None):
+    for node in nodes.content():
+        print(node.name)
+    return nodes
+
+def get_or_create_subj(loc: str, value: str, client: CoordinatingNodeClient, title: str='unspecified subject', name: str=None):
+    """
+    Get an existing subject using their ORCiD or create a new one with the
+    specified values. 
+    Search is conducted first at the given coordinating node URL, then locally.
+    If no subject is found, a new record is created in the local opersist
+    instance.
+
+    :param str loc: Location of the opersist instance
+    :param str value: Subject value (unique subject id, such as orcid or member node id)
+    :param str cn_url: The base URL of the rest API with which to search for the given subject
+    :param str title: The subject's role in relation to the database
+    :param name: Subject name (human readable)
+    :type name: str or None
+    """
+    L = logging.getLogger(__name__)
+    if name:
+        # we are probably creating a node record
+        L.info(f'Creating a node subject. Given node_id: {value}')
+        if (not SUBJECT_PREFIX in value) and (not SUBJECT_POSTFIX in value):
+            value = f"{SUBJECT_PREFIX}{value}{SUBJECT_POSTFIX}"
+        L.info(f'Node subject value: "{value}"')
+    else:
+        # name was not given. look up the orcid record in the database
+        name = cn_subj_lookup(subj=value, client=client)
+        if not name:
+            # if the name is not in either database, we will create it; else it's already there and we ignore it
+            L.info('%s does not exist at %s. Need a name for local record creation...' % (value, client.base_url))
+            # ask the user for a name with the associated position and ORCiD record
+            name, email = orcid_info(value, title)
+            register_user(client=client, orcid=value, name=name, email=email)
+    # finally, use opersist to create the subject
+    local_subj_lookup(loc=loc, subj=value, name=name)
+    # then use opersist to set the subject's role
+    if title in ('default_owner', 'default_submitter'):
+        set_role(loc=loc, title=title, value=value)
+    return name
+
+def cn_subj_lookup(subj, cn_url='https://cn.dataone.org/cn', debug=False, client: CoordinatingNodeClient=None):
+    """
+    Use the DataONE API to look up whether a given ORCiD number already exists
+    in the system.
+
+    :param str subj: The subject to look up
+    :param str cn_url: The URL for the DataONE api to send REST searches to (default: 'https://cn.dataone.org/cn')
+    :param bool debug: Whether to include debug info in log messages (lots of text)
+    :returns: Received response or False
+    :rtype: str or bool
+    """
+    L = logging.getLogger(__name__)
+    if not client:
+        # Create the Member Node Client
+        client = init_client(cn_url=cn_url, auth_token=D1_AUTH_TOKEN)
+    try:
+        # Get records
+        L.info('Starting record lookup for %s from %s' % (subj, cn_url))
+        subject = client.getSubjectInfo(subj)
+        r = subject.content()[0].content()
+        name = '%s %s' % (r[1], r[2])
+        L.info('Name associated with record %s found in %s: %s.' % (subj, cn_url, name))
+        rt = name if not debug else r
+        client._session.close()
+        return rt
+    except exceptions.NotFound as e:
+        estrip = str(e).split('<description>')[1].split('</description>')[0]
+        e = e if debug else estrip
+        L.info('Caught NotFound error from %s during lookup. Details: %s' % (cn_url, e))
+        return False
+    except exceptions.NotAuthorized as e:
+        L.error('Caught NotAuthorized error from %s. Is your auth token up to date?' % (cn_url))
+        exit(1)
+    except exceptions.DataONEException as e:
+        L.error('Unspecified error from %s:\n%s' % (cn_url, e))
+        exit(1)
+
+def register_user(client: CoordinatingNodeClient, orcid: str, name: str, email: str=None):
     """
     Register a user using the CN client.
 
@@ -141,6 +226,25 @@ def register_user(client: CoordinatingNodeClient_2_0, orcid: str, name: str, ema
     :param str name: The name of the subject
     :param str email: The subject's email address
     """
+    L = logging.getLogger(__name__)
+    s = Subject(orcid)
+    p = person()
+    p.subject = s
+    given, family = utils.parse_name(name)
+    p.givenName = given
+    p.familyName = family
+    if email:
+        p.mail = email
+    try:
+        client.registerAccount(p)
+    except Exception as e:
+        try:
+            err_n = str(e).split('\n')[0]
+            err_c = str(e).split('\n')[1]
+            err_d = str(e).split('\n')[3]
+            print('Error processing %s (%s)\n%s\n%s\n%s' % (name, orcid, err_n, err_c, err_d))
+        except:
+            print(e)
     
 def set_nodes_properties(nodes_properties: dict, con=None):
     """
@@ -148,11 +252,11 @@ def set_nodes_properties(nodes_properties: dict, con=None):
     :param con: 
     """
 
-def set_obsoleted_by(client: CoordinatingNodeClient_2_0, pid: str, obsoleted_by: str):
+def set_obsoleted_by(client: CoordinatingNodeClient, pid: str, obsoleted_by: str):
     """
     Set the obsoletedBy property of a PID on the CN.
 
-    :param d1_client.cnclient.CoordinatingNodeClient_2_0 client: The client to use for the query
+    :param d1_client.cnclient.CoordinatingNodeClient client: The client to use for the query
     :param str pid: The PID to set the obsoletedBy property for
     :param str obsoleted_by: The PID to set as the obsoletedBy property
     """
@@ -162,12 +266,11 @@ def set_obsoleted_by(client: CoordinatingNodeClient_2_0, pid: str, obsoleted_by:
     except Exception as e:
         L.error(repr(e))
 
-
-def get_objects_by_node(client: CoordinatingNodeClient_2_0, node_id: str):
+def get_objects_by_node(client: CoordinatingNodeClient, node_id: str):
     """
     Get a list of objects by node from the CN.
 
-    :param d1_client.cnclient.CoordinatingNodeClient_2_0 client: The client to use for the query
+    :param d1_client.cnclient.CoordinatingNodeClient client: The client to use for the query
     :param str node_id: The node ID to get the objects for
     :returns: A list of objects
     :rtype: list
@@ -186,8 +289,53 @@ def get_objects_by_node(client: CoordinatingNodeClient_2_0, node_id: str):
     if len(objects) > 0:
         return objects
 
+def get_cn_version_chain(cn_client, sid):
+    """
+    Get the objects in the version chain on the CN with the given Series ID.
+    
+    Parameters:
+    cn_client (CoordinatingNodeClient): The CN client to use for querying.
+    sid (str): The Series ID to search for.
+    
+    Returns:
+    list: A list of objects in the version chain with the given Series ID.
+    """
+    version_chain = []
+    try:
+        # Query the CN for objects with the given Series ID
+        object_list = cn_client.listObjects(seriesId=sid, start=0, count=1000)
+        for obj_info in object_list.objectInfo:
+            version_chain.append(obj_info)
+        if len(object_list.objectInfo) == 1000:
+            # If there are more objects to query, continue until all objects are retrieved
+            while True:
+                object_list = cn_client.listObjects(seriesId=sid, start=len(version_chain), count=1000)
+                for obj_info in object_list.objectInfo:
+                    version_chain.append(obj_info)
+                if len(object_list.objectInfo) < 1000:
+                    break
+    except Exception as e:
+        print(f"Error querying CN: {e}")
+    return version_chain
 
-def chain_check(sid, op: OPersist, client: CoordinatingNodeClient_2_0, numstr: str):
+def get_last_object_in_series(objects: list, series_id: str):
+    """
+    Get the last object in a series from the CN.
+
+    Assumes the version chain is intact.
+
+    :param list objects: The list of objects to search
+    :param str series_id: The series ID
+    """
+    if objects:
+        for obj in objects:
+            if obj.seriesId == series_id:
+                if obj.obsoletedBy:
+                    continue
+                else:
+                    return obj.identifier
+
+def chain_check(sid, loc, client: CoordinatingNodeClient):
     """
     Check the version chain of a SID on the CN.
 
@@ -213,53 +361,58 @@ def chain_check(sid, op: OPersist, client: CoordinatingNodeClient_2_0, numstr: s
     ``obsoletes`` property of the first object in the OPersist database to the
     CN object.
 
-    :param str sid: The series ID
-    :param OPersist op: The OPersist database instance
-    :param d1_client.cnclient.CoordinatingNodeClient_2_0 client: The client to use for the CN query
+    :param list objects: The list of objects to search
+    :param str pid: The PID to check the version chain for
+    :param opersist.OPersist op: The OPersist instance to check for the obsoletedBy PID
     """
     L = logging.getLogger(__name__)
-    L.info(f"({numstr}) {sid} Starting OPersist and getting version chain...")
+    if not cn_chain:
+        return
+    L.info(f"{sid} Starting OPersist and getting version chain...")
+    op: OPersist = getOpersistInstance(loc)
     first_opersist = op.getThingPIDorFirstSeriesObj(sid)
-    if not first_opersist:
-        L.error(f"({numstr}) {sid} No OPersist object found with SID {sid}.")
-        return
-    L.info(f"({numstr}) {sid} Found first OPersist object in the series: {first_opersist.identifier}")
     op_chain = op.getThingsSID(sid)
-    L.info(f'({numstr}) {sid} Found {op_chain.count()} series objects in the OPersist database.')
-    # get the CN objects
-    L.info(f"({numstr}) {sid} Getting CN head object...")
-    cn_head_obj = client.getSystemMetadata(sid)
-    if not cn_head_obj:
-        L.error(f"({numstr}) {sid} No systemMetadata object found.")
-        return
+    L.debug(f'{sid} Found {len(op_chain)} version chain objects in the OPersist database.')
+    # get the CN objects in the version chain
+    L.debug(f"{sid} Getting CN version chain and filtering out OPersist objects...")
+    cn_chain = get_cn_version_chain(client, sid)
+    tot_cn = len(cn_chain)
+    cn_chain = [obj for obj in cn_chain if obj.identifier.value() not in [o.identifier for o in op_chain]]
+    L.debug(f'{sid} Found {len(cn_chain)} CN objects. ' +
+           f'Removed {tot_cn - len(cn_chain)} objects that originate from OPersist.')
+    latest_cn = max(cn_chain, key=lambda x: x.modification_date)
+    L.debug(f'Latest object in the CN chain: {latest_cn.identifier}')
+    # check if the first OPersist object has an obsoletes property set to a CN object
+    if hasattr(first_opersist, 'obsoletes') and first_opersist.obsoletes in cn_chain:
+        if hasattr(latest_cn, 'obsoletedBy') and latest_cn.obsoletedBy.value() == first_opersist.identifier:
+            # chain is intact, no action needed
+            L.info(f'{sid} Chain is intact.')
+            return True
+        else:
+            L.error(f'{sid} Link only goes one way! {latest_cn.identifier.value()} is not obsoletedBy {first_opersist.identifier}.')
     else:
-        L.info(f'({numstr}) {sid} Found systemMetadata object: {cn_head_obj.identifier.value()}')
-    for obj in op_chain:
-        if obj.identifier in cn_head_obj.identifier.value():
-            L.info(f'({numstr}) {sid} Found in OPersist database: {obj.identifier}')
-            return
-    # check if the cn object is in opersist
-    if cn_head_obj.obsoletedBy:
-        if first_opersist.obsoletes in cn_head_obj.identifier.value():
-            if cn_head_obj.obsoletedBy.__str__() == first_opersist.identifier:
-                # chain is intact, no action needed
-                L.info(f'({numstr}) {sid} Chain is intact.')
-                return
-            else:
-                L.error(f'({numstr}) {sid} Version chain link only goes one way! {cn_head_obj.identifier.value()} is not obsoletedBy {first_opersist.identifier}.')
-    else:
-        L.info(f'({numstr}) {sid} No link exists between {first_opersist.identifier} and {cn_head_obj.identifier.value()}.')
-    # Set the obsoletedBy property of the CN object
-    L.info(f'({numstr}) {sid} Attempting repairs...')
+        L.info(f'{sid} No link exists between {first_opersist.identifier} and {latest_cn.identifier.value()}.')
+    # check for chain breaks and modification dates
+    chain_breaks = 0
+    for obj in cn_chain:
+        if not hasattr(obj, 'obsoletedBy') or obj.obsoletedBy not in cn_chain:
+            chain_breaks += 1
+    L.info(f'Found {chain_breaks} chain breaks in the CN chain.')
+    if chain_breaks > 1:
+        # Ensure obsoletedBy is not set on the latest CN object
+        if hasattr(latest_cn, 'obsoletedBy') and obj.obsoletedBy != first_opersist.identifier:
+            # Invalid chain, handle accordingly
+            return False            
+    # Set the obsoletedBy property of the last CN object in the chain
     try:
-        L.info(f'({numstr}) {sid} Setting obsoletedBy property of {cn_head_obj.identifier.value()} to {first_opersist.identifier}.')
-        client.setObsoletedBy(pid=cn_head_obj.identifier.value(),
-                              obsoletedByPid=first_opersist.identifier)
+        client.setObsoletedBy(latest_cn.identifier.value(), first_opersist.identifier)
+        cn_chain[-1].obsoletedBy = first_opersist.identifier
     except Exception as e:
         L.error(repr(e))
         return
     # Set the obsoletes property of the first OPersist object in the chain
-    L.info(f'({numstr}) {sid} Setting obsoletes property of {first_opersist.identifier} to {cn_head_obj.identifier.value()}.')
-    op.setObsoletes(sid, cn_head_obj.identifier.value())
-    L.info(f'({numstr}) {sid} Done.')
+    first_opersist = op.getThingPIDorFirstSeriesObj(first_opersist)
+    first_opersist.obsoletes = latest_cn
+    op.commit()
+    op.close()
     return True

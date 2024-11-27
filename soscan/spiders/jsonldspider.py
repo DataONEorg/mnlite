@@ -207,14 +207,13 @@ class JsonldSpider(soscan.spiders.ldsitemapspider.LDSitemapSpider):
             #self.logger.debug(f'Response Content-Type: {contenttype} from {response.url}')
             if contenttype in ["application/ld+json", "application/octet-stream"]:
                 self.logger.debug(f'Content-Type is "{contenttype}"; assuming json object and loading directly')
-                jsonlds = json.loads(response.text, strict=options.get("json_parse_strict", False))
+                jsonlds = [json.loads(response.text, strict=options.get("json_parse_strict", False))]
             else:
                 jsonlds = pyld.jsonld.load_html(response.body, response.url, None, options)
             # for j_item in jsonld:
             #    item = soscan.items.SoscanItem()
             #    item["source"] = response.url
             #    item["checksum"] = opersist.rdfutils.computeJSONLDChecksum(j_item, response.url)
-
             startjson = 0
             numjsons = len(jsonlds)
             if numjsons > 0:
@@ -271,5 +270,5 @@ class JsonldSpider(soscan.spiders.ldsitemapspider.LDSitemapSpider):
                 self.logger.debug(f'{response.status} code, response body: {response.body}')
                 raise NotSupported(f'No JSON-LD at {response.url}\nBody:\n{response.body}\n')
         except Exception as e:
-            self.logger.error("parse: url:  %s, %s: %s", response.url, repr(e), e)
+            self.logger.error("parse: url:  %s — %s", response.url, repr(e))
         yield None

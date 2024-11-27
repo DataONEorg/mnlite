@@ -14,7 +14,7 @@ CFG = {
     'mode': 'testing',
     'token': None,
     'check_files': 5,
-    'local': False,
+    'local': True,
     'ssh': False,
 }
 """
