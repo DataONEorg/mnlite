@@ -92,7 +92,7 @@ class JsonldSpider(soscan.spiders.ldsitemapspider.LDSitemapSpider):
         mn_settings = Path(f'{node_path}/settings.json')
         if mn_settings.exists():
             with open(mn_settings) as cs:
-                _cs = json.loads(cs.read())
+                _cs: dict = json.loads(cs.read())
             for s in _cs:
                 spider.settings.set(s, _cs[s], priority='spider')
                 spider.logger.info(f'Setting override from {mn_settings}: set {s} to {_cs[s]}')
@@ -109,6 +109,8 @@ class JsonldSpider(soscan.spiders.ldsitemapspider.LDSitemapSpider):
                     spider.reversed = _cs.get(s, None)
                 if s in "which_jsonld":
                     spider.which_jsonld = _cs.get(s, None)
+                if s in "use_at_id":
+                    spider.use_at_id = _cs.get(s, None)
         return spider
 
     def sitemap_filter(self, entries):

@@ -3,6 +3,7 @@ import scrapy.exceptions
 import sonormal.normalize
 import json
 import opersist.rdfutils
+from pathlib import Path
 
 def consolidate_list(l: list, sep: str=', '):
     """
@@ -37,8 +38,25 @@ class SoscanNormalizePipeline:
     4. Get the identifier from the framed JSONLD
     """
 
-    def __init__(self):
+    def __init__(self, **kwargs):
         self.logger = logging.getLogger("SoscanNormalize")
+        self.use_at_id = False
+        if 'use_at_id' in kwargs:
+            self.use_at_id = kwargs['use_at_id']
+
+    
+    @classmethod
+    def from_crawler(cls, crawler, *args, **kwargs):
+        node_path = crawler.settings.get("STORE_PATH", None)
+        mn_settings = Path(f'{node_path}/settings.json')
+        if mn_settings.exists():
+            with open(mn_settings) as cs:
+                _cs: dict = json.loads(cs.read())
+            for s in _cs:
+                if s == 'use_at_id':
+                    kwargs['use_at_id'] = _cs[s]
+        return cls(**kwargs)
+
 
     def process_item(self, item, spider):
         self.logger.debug("process_item: %s", item["url"])
@@ -139,6 +157,19 @@ class SoscanNormalizePipeline:
                 for group in ids:
                     g += 1
                     self.logger.debug(f'Dataset grouping {g}: {group}')
+                    if self.use_at_id:
+                        # if there is no identifier and use_at_id is True, use the @id value as the Dataset identifier
+                        # append other @id values to alt_identifiers
+                        # This is a last resort measure and should be avoided if possible!
+                        # it is needed for repositories that use GeoNetwork software which does not provide identifiers (as of Jan 2025)
+                        if item["series_id"] is None:
+                            item["series_id"] = group["@id"]
+                            self.logger.info(f'Using @id {g} for series_id: {item["series_id"]}')
+                            if len(group["@id"]) > 1:
+                                item["alt_identifiers"].append(group["@id"][1:])
+                        else:
+                            self.logger.info(f'series_id already set: {item["series_id"]}. Appending @id value to alt_identifiers: {group["@id"]}')
+                            item["alt_identifiers"].append(group["@id"])
                     if len(group["identifier"]) > 0:
                         if item["series_id"] is None:
                             item["series_id"] = group["identifier"][0]
