@@ -43,6 +43,7 @@ class SoscanNormalizePipeline:
         self.use_at_id = False
         if 'use_at_id' in kwargs:
             self.use_at_id = kwargs['use_at_id']
+            self.logger.debug(f'Using @id as identifier: {self.use_at_id}')
 
     
     @classmethod

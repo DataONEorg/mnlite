@@ -110,6 +110,7 @@ class JsonldSpider(soscan.spiders.ldsitemapspider.LDSitemapSpider):
                 if s in "which_jsonld":
                     spider.which_jsonld = _cs.get(s, None)
                 if s in "use_at_id":
+                    spider.logger.warning(f'Use of "use_at_id" is not recommended for most repositories! Please set this to "false" unless you are certain you need it!')
                     spider.use_at_id = _cs.get(s, None)
         return spider
 
