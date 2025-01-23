@@ -221,13 +221,12 @@ def harvest_data(loc: str, mn_name: str):
     :param str loc: Location of the opersist instance
     :param str mn_name: Name of the member node (used to name the crawl log)
     """
-    log_loc = os.path.join(LOG_DIR, mn_name + HARVEST_LOG_NAME)
+    log_loc = Path(str(LOG_DIR), mn_name + HARVEST_LOG_NAME)
+    script_loc = Path(str(loc), 'sync_content.sh')
     L.info('Starting scrapy crawl, saving to %s' % (loc))
     L.info('scrapy log location is %s' % (log_loc))
     try:
-        subprocess.run(['scrapy', 'crawl', 'JsonldSpider',
-                        '--set=STORE_PATH=%s' % loc,
-                        '--logfile=%s' % log_loc],
+        subprocess.run(['nohup', 'bash', str(script_loc)],
                         check=True)
         L.info('scrapy crawl complete.')
     except Exception as e:
