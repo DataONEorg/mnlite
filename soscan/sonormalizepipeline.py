@@ -66,13 +66,18 @@ class SoscanNormalizePipeline:
         force_lists = True
         require_identifier = True
 
-        jsonld = item["jsonld"]
+        jsonld: dict = item["jsonld"]
         version = jsonld.get('version', None)
         version = jsonld.get('@version', '1.1') if not version else version
         version = '1.0' if version == '1' else version
         jldversion = f'json-ld-{version}'
         self.logger.debug(f"process_item: version {jldversion}")
         options = {"base": item["url"], "processingMode": jldversion}
+
+        if self.use_at_id:
+            at_id = jsonld.get('@id', None)
+            jsonld.update({'identifier': at_id})
+            self.logger.debug(f'Using @id as identifier: {at_id}')
 
         # consolidate any lists that might cause the indexer to misfire
         name = jsonld.get('name', None)
@@ -163,14 +168,12 @@ class SoscanNormalizePipeline:
                         # append other @id values to alt_identifiers
                         # This is a last resort measure and should be avoided if possible!
                         # it is needed for repositories that use GeoNetwork software which does not provide identifiers (as of Jan 2025)
-                        if item["series_id"] is None:
-                            item["series_id"] = group["@id"]
-                            self.logger.info(f'Using @id {g} for series_id: {item["series_id"]}')
+                        if g > 1:
                             if len(group["@id"]) > 1:
-                                item["alt_identifiers"].append(group["@id"][1:])
+                                item["alt_identifiers"].append(group["@id"][:])
                         else:
-                            self.logger.info(f'series_id already set: {item["series_id"]}. Appending @id value to alt_identifiers: {group["@id"]}')
-                            item["alt_identifiers"].append(group["@id"])
+                            if len(group["@id"]) > 0:
+                                item["alt_identifiers"].append(group["@id"][1:])
                     if len(group["identifier"]) > 0:
                         if item["series_id"] is None:
                             item["series_id"] = group["identifier"][0]
