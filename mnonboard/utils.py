@@ -8,7 +8,7 @@ import xmltodict
 from pathlib import Path
 from logging import getLogger
 
-from mnonboard.defs import SCHEDULES, NAMES_DICT, USER_NAME
+from mnonboard.defs import SCHEDULES, NAMES_DICT, USER_NAME, SYNC_CONTENT_SCRIPT
 from mnonboard import NODE_PATH_REL, CUR_PATH_ABS, LOG_DIR, HARVEST_LOG_NAME, HM_DATE, L
 from mnonboard.info_chx import enter_schedule
 
@@ -325,6 +325,22 @@ def create_names_xml(loc: str, node_id: str, names: dict):
         L.debug('XML path: %s' % fn)
         files.append(fn)
     return files
+
+def write_sync_script(loc: str, node_id: str):
+    """
+    Write a script to sync the member node to the CN.
+
+    :param str loc: Location of the member node directory
+    :param str node_id: Node identifier (e.g. ``"urn:node:OPENTOPO"``)
+    """
+    sf = Path(loc / 'sync_content.sh')
+    with open(str(sf), 'w') as f:
+        f.write(SYNC_CONTENT_SCRIPT % node_id)
+    try:
+        os.chmod(str(sf), 0o755)
+    except Exception as e:
+        L.error('Error changing permissions on sync script: %s' % e)
+        exit(1)
 
 def write_cmd_to(fn, cmd, desc=None, mode='a'):
     """
