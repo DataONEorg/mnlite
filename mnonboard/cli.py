@@ -64,6 +64,8 @@ def run(cfg):
                              name=end_node_subj)
     # restart the mnlite process to pick up the new node.json (step 9)
     utils.restart_mnlite()
+    # write the sync script (for step 10)
+    utils.write_sync_script(loc, end_node_subj)
     # run scrapy to harvest metadata (step 10)
     if not cfg['local']:
         utils.harvest_data(loc, end_node_subj)
@@ -147,8 +149,8 @@ def main():
     # get arguments
     chain_check = False
     try:
-        opts = getopt.getopt(sys.argv[1:], 'hiPvLd:l:c:C:',
-            ['help', 'init', 'production', 'verbose', 'local' 'dump=', 'load=', 'check=', 'chain-check=']
+        opts = getopt.getopt(sys.argv[1:], 'hiPvLSd:l:c:C:',
+            ['help', 'init', 'production', 'verbose', 'local', 'sync-content', 'dump=', 'load=', 'check=', 'chain-check=']
             )[0]
     except Exception as e:
         L.error('Error: %s' % e)
