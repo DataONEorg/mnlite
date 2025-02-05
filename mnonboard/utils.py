@@ -221,8 +221,8 @@ def harvest_data(loc: str, mn_name: str):
     :param str loc: Location of the opersist instance
     :param str mn_name: Name of the member node (used to name the crawl log)
     """
-    log_loc = Path(str(LOG_DIR), mn_name + HARVEST_LOG_NAME)
-    script_loc = Path(str(loc), 'sync_content.sh')
+    log_loc = Path(f'{str(LOG_DIR)}/{mn_name + HARVEST_LOG_NAME}')
+    script_loc = Path(f'{str(loc)}/sync_content.sh')
     L.info('Starting scrapy crawl, saving to %s' % (loc))
     L.info('scrapy log location is %s' % (log_loc))
     try:
@@ -332,7 +332,7 @@ def write_sync_script(loc: str, node_id: str):
     :param str loc: Location of the member node directory
     :param str node_id: Node identifier (e.g. ``"urn:node:OPENTOPO"``)
     """
-    sf = Path(loc / 'sync_content.sh')
+    sf = Path(f'{loc}/sync_content.sh')
     with open(str(sf), 'w') as f:
         f.write(SYNC_CONTENT_SCRIPT % node_id)
     try:
