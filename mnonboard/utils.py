@@ -112,7 +112,7 @@ def write_settings(loc: str, settings: dict=DEFAULT_SETTINGS):
     :param dict settings: Dictionary of settings to be written (default: DEFAULT_SETTINGS)
     """
     L.info('Writing settings to %s' % loc)
-    sf = Path(loc/'settings.json')
+    sf = Path(f'{loc}/settings.json')
     try:
         with open(str(sf), 'x') as f:
             json.dump(settings, f, indent=4)
@@ -120,7 +120,7 @@ def write_settings(loc: str, settings: dict=DEFAULT_SETTINGS):
     except FileExistsError as e:
         L.warning('File exists - %s' % e)
         try:
-            sf = Path(loc/'settings-default.json')
+            sf = Path(f'{loc}/settings-default.json')
             with open(str(sf), 'w') as f:
                 json.dump(settings, f, indent=4)
             L.info('Default settings written to %s' % sf)
