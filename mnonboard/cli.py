@@ -209,6 +209,14 @@ def main():
             except FileNotFoundError:
                 L.error('File %s not found.' % a)
                 exit(1)
+        if o in ('-K', '--chain-link'):
+            chain_link = True
+            with open(a, 'r') as f:
+                links_csv = f.readlines()
+            links = []
+            for l in links_csv:
+                links.append(l.split(','))
+            L.info(f'Links list length: {len(links)}.')
     L.info('running mnonboard in %s mode.\n\
 data gathering from: %s\n\
 cn_url: %s\n\
@@ -219,6 +227,8 @@ metadata files to check: %s' % (CFG['mode'],
     try:
         if chain_check:
             check_chains(CFG, sids)
+        elif chain_link:
+            link_chains(CFG, links)
         else:
             run(CFG)
     except KeyboardInterrupt:
