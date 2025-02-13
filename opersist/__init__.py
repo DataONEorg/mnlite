@@ -660,7 +660,7 @@ class OPersist(object):
             nadded += 1
         return nadded
 
-    def setObsoletes(self, sid, pid):
+    def setFirstObjectObsoletes(self, sid, pid):
         """
         Given a schema.org series ID, set the obsoletes field of the first
         matching object in the SO series to the provided PID (presumably an
@@ -683,6 +683,66 @@ class OPersist(object):
         thing.date_modified = utils.dtnow()
         self.commit()
         return thing.identifier
+
+    def setObsoletes(self, new, old):
+        """
+        Given two PIDs, set the obsoletes field of the object with the new PID
+        to the old PID.
+
+        Args:
+            new: PID of the object that is obsoleting
+            old: PID of the object being obsoleted
+
+        Returns:
+            str, the PID of the object being obsoleted
+        """
+        assert self._session is not None
+        thing = self.getThingPID(new)
+        thing.obsoletes = old
+        thing.date_modified = utils.dtnow()
+        self.commit()
+        return thing.identifier
+
+    def setObsoletedBy(self, old, new):
+        """
+        Given two PIDs, set the obsoleted_by field of the object with the old PID
+        to the new PID.
+
+        Args:
+            old: PID of the object being obsoleted
+            new: PID of the object that is obsoleting
+
+        Returns:
+            str, the PID of the object being obsoleted
+        """
+        assert self._session is not None
+        thing = self.getThingPID(old)
+        thing.obsoleted_by = new
+        thing.date_modified = utils.dtnow()
+        self.commit()
+        return thing.identifier
+
+    def setObsolescenceRelationship(self, old, new):
+        """
+        Given two PIDs, set the obsoletes and obsoleted_by fields of the objects
+        to each other.
+
+        Args:
+            old: PID of the object being obsoleted
+            new: PID of the object that is obsoleting
+
+        Returns:
+            tuple, (str, str), the PIDs of the objects being obsoleted and obsoleting
+        """
+        assert self._session is not None
+        thing_old = self.getThingPID(old)
+        thing_new = self.getThingPID(new)
+        thing_old.obsoleted_by = new
+        thing_new.obsoletes = old
+        thing_old.date_modified = utils.dtnow()
+        thing_new.date_modified = utils.dtnow()
+        self.commit()
+        return thing_old.identifier, thing_new.identifier
 
     def contentAbsPath(self, content_path):
         return os.path.abspath(os.path.join(self._blob_path, content_path))

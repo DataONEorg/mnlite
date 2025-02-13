@@ -173,8 +173,8 @@ def link_chains(cfg, links):
     num = 1
     for link in links:
         numstr = f'{num}/{numsids}'
-        old_id, new_id = link[0], link[1]
-        L.info(f'Linking {new_id} to {old_id}.')
+        old_id, new_id = link[0], link[1].strip("\n")
+        L.info(f'Attempting to link {new_id} to {old_id}.')
         if cn.chain_link(new_id, old_id, op, client, numstr):
             repairs += 1
         else:
