@@ -237,6 +237,13 @@ def chain_check(sid, op: OPersist, client: CoordinatingNodeClient_2_0, numstr: s
     ``obsoletes`` property of the first object in the OPersist database to the
     CN object.
 
+    .. note::
+
+        This function is meant to be used in cases where a definitive link between
+        old and new version chain objects is not known. In cases where a repository
+        provides a version map (CSV or similar) that dictates relationships,
+        please use :py:func:`chain_link`.
+
     :param str sid: The series ID
     :param OPersist op: The OPersist database instance
     :param d1_client.cnclient.CoordinatingNodeClient_2_0 client: The client to use for the CN query
