@@ -320,11 +320,12 @@ def chain_link(sid: str, old_id: str, op: OPersist, client: CoordinatingNodeClie
     L.info(f'({numstr}) {sid} Found {op_chain.count()} series objects in the OPersist database.')
     # get the CN objects
     L.info(f"({numstr}) {sid} Getting CN head object...")
-    cn_head_obj = client.getSystemMetadata(old_id)
-    if not cn_head_obj:
+    try:
+        cn_head_obj = client.getSystemMetadata(old_id)
+    except exceptions.NotFound as e:
         L.error(f"({numstr}) {old_id} No systemMetadata found for this PID on the CN.")
         return False
-    else:
+    if cn_head_obj:
         L.info(f'({numstr}) {sid} Found systemMetadata object: {cn_head_obj.identifier.value()}')
     # check if the cn object is in opersist
     for obj in op_chain:
