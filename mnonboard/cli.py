@@ -209,6 +209,8 @@ def main():
             # help
             print(HELP_TEXT)
             exit(0)
+        if o in ('-v', '--verbose'):
+            L.setLevel('DEBUG')
         if o in ('-i', '--init'):
             # do data gathering
             CFG['info'] = 'user'
