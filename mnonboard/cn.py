@@ -286,8 +286,8 @@ def chain_check(sid, op: OPersist, client: CoordinatingNodeClient_2_0, numstr: s
         L.info(f'({numstr}) {sid} Setting obsoletedBy property of {cn_head_obj.identifier.value()} to {first_opersist.identifier}.')
         client.setObsoletedBy(pid=cn_head_obj.identifier.value(),
                               obsoletedByPid=first_opersist.identifier)
-    except Exception as e:
-        L.error(repr(e))
+    except exceptions.NotAuthorized as e:
+        L.error("Received NotAuthorized: %s" % e)
         return
     # Set the obsoletes property of the first OPersist object in the chain
     L.info(f'({numstr}) {sid} Setting obsoletes property of {first_opersist.identifier} to {cn_head_obj.identifier.value()}.')
@@ -338,13 +338,23 @@ def chain_link(sid: str, old_id: str, op: OPersist, client: CoordinatingNodeClie
                 L.error(f'({numstr}) {sid} Version chain link only goes one way! {cn_head_obj.identifier.value()} is not obsoletedBy {first_opersist.identifier}.')
     else:
         L.info(f'({numstr}) {sid} No link exists between {first_opersist.identifier} and {cn_head_obj.identifier.value()}.')
+    # Set the obsoletedBy property of the CN object
+    L.info(f'({numstr}) {sid} Attempting repairs...')
+    try:
+        L.info(f'({numstr}) {sid} Setting obsoletedBy property of {cn_head_obj.identifier.value()} to {first_opersist.identifier}.')
+        client.setObsoletedBy(pid=cn_head_obj.identifier.value(),
+                              obsoletedByPid=first_opersist.identifier,
+                              serialVersion=cn_head_obj.serialVersion)
+    except exceptions.NotAuthorized as e:
+        L.error("Received %s" % e)
+        return
     # Set the obsoletes property of the first OPersist object in the chain
     L.info(f'({numstr}) {sid} Setting obsoletes property of {first_opersist.identifier} to {cn_head_obj.identifier.value()}.')
     op.setObsoletes(sid, cn_head_obj.identifier.value())
     op_old = op.getThingPIDorFirstSeriesObj(old_id)
     if op_old:
         L.info(f'({numstr}) {sid} Found old OPersist object: {op_old.identifier}')
-        L.info(f'({numstr}) {sid} Setting obsoletes property of {op_old.identifier} to {sid}.')
+        L.info(f'({numstr}) {sid} Setting obsoletedBy property of {op_old.identifier} to {sid}.')
         op.setObsoletedBy(old_id, sid)
         L.info(f'({numstr}) {sid} Done.')
     else:
