@@ -128,7 +128,7 @@ class Thing(opersist.models.Base):
     )
     # number_replicas
     number_replicas = sqlalchemy.Column(
-        sqlalchemy.Integer, default=3, doc="Desired number of replicas"
+        sqlalchemy.Integer, default=0, doc="Desired number of replicas"
     )
     # replication_preferred
     replication_preferred = sqlalchemy.Column(
