@@ -44,6 +44,10 @@ class SoscanNormalizePipeline:
         if 'use_at_id' in kwargs:
             self.use_at_id = kwargs['use_at_id']
             self.logger.debug(f'Using @id as identifier: {self.use_at_id}')
+        self.ignore_id_prefixes = None
+        if 'ignore_id_prefixes' in kwargs:
+            self.ignore_id_prefixes = kwargs['ignore_id_prefixes']
+            self.logger.debug(f'Ignoring identifiers with prefixes: {self.ignore_id_prefixes}')
 
     
     @classmethod
@@ -56,6 +60,8 @@ class SoscanNormalizePipeline:
             for s in _cs:
                 if s == 'use_at_id':
                     kwargs['use_at_id'] = _cs[s]
+                if s == 'ignore_id_prefixes':
+                    kwargs['ignore_id_prefixes'] = _cs[s]
         return cls(**kwargs)
 
 
@@ -151,11 +157,35 @@ class SoscanNormalizePipeline:
         if len(ids) > 0:
             self.logger.debug(f"ids found: {ids}")
             if len(ids[0]["identifier"]) > 0:
-                item["series_id"] = ids[0]["identifier"][0]
-                self.logger.debug(f'Using first identifier for series_id: {item["series_id"]}')
-                if len(ids[0]["identifier"]) > 1:
-                    item["alt_identifiers"] = ids[0]["identifier"][1:]
-                    self.logger.debug(f'alt_identifiers: {item["alt_identifiers"]}')
+                for iid in ids[0]["identifier"]:
+                    if isinstance(iid, int):
+                        self.logger.debug(f"Ignoring identifier of type int: {iid}")
+                        item["alt_identifiers"].append(iid)
+                        continue
+                    ignored = False
+                    for prefix in self.ignore_id_prefixes:
+                        if iid.startswith(prefix):
+                            self.logger.debug(f"Ignoring identifier with prefix {prefix}: {iid}")
+                            item["alt_identifiers"].append(iid)
+                            ignored = True
+                            break
+                    if ignored:
+                        continue
+                    if len(iid) < 5:
+                        self.logger.debug(f"Identifier too short: {iid}. Must be unique from all other identifiers.")
+                        item["alt_identifiers"].append(iid)
+                        continue
+                    if iid.startswith("doi:") or iid.startswith("https://doi.org/"):
+                        if item["series_id"] is not None:
+                            item["alt_identifiers"].append(item["series_id"])
+                        item["series_id"] = iid
+                        continue
+                    if item["series_id"] is None:
+                        item["series_id"] = iid
+                    else:
+                        item["alt_identifiers"].append(iid)
+                self.logger.debug(f'Using series_id: {item["series_id"]}')
+                self.logger.debug(f'alt_identifiers: {item["alt_identifiers"]}')
             else:
                 # if the first identifier is an empty list, we need to look for others
                 self.logger.info(f"Empty identifier in first Dataset grouping: {item['url']}")
