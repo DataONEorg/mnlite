@@ -119,11 +119,11 @@ def cn_subj_lookup(subj, cn_url='https://cn.dataone.org/cn', debug=False, client
         # Get records
         L.info('Starting record lookup for %s from %s' % (subj, cn_url))
         subject = client.getSubjectInfo(subj)
-        r = subject.content()[0].content()
-        name = '%s %s' % (r[1], r[2])
+        client._session.close()
+        r = subject.content()
+        name = f'{r[0].content()} {r[1].content()}' # first last
         L.info('Name associated with record %s found in %s: %s.' % (subj, cn_url, name))
         rt = name if not debug else r
-        client._session.close()
         return rt
     except exceptions.NotFound as e:
         estrip = str(e).split('<description>')[1].split('</description>')[0]
