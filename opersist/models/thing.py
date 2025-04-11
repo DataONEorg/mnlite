@@ -124,7 +124,7 @@ class Thing(opersist.models.Base):
     )
     # replication_allowed
     replication_allowed = sqlalchemy.Column(
-        sqlalchemy.Boolean, default=True, doc="Replication allowed for this thing"
+        sqlalchemy.Boolean, default=False, doc="Replication allowed for this thing"
     )
     # number_replicas
     number_replicas = sqlalchemy.Column(
