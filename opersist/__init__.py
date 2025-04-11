@@ -660,6 +660,23 @@ class OPersist(object):
             nadded += 1
         return nadded
 
+    def resetModDate(self, sha256):
+        """
+        Given a PID, reset the modification date.
+        This useful for getting the CN to re-harvest and/or re-index the object.
+
+        Args:
+            sha256: PID of the object that is being updated
+
+        Returns:
+            str, the PID of the object being updated
+        """
+        assert self._session is not None
+        thing = self.getThingPID(sha256)
+        thing.date_modified = utils.dtnow()
+        self.commit()
+        return thing.identifier
+
     def setFirstObjectObsoletes(self, sid, pid):
         """
         Given a schema.org series ID, set the obsoletes field of the first
