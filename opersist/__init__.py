@@ -474,7 +474,10 @@ class OPersist(object):
             if date_uploaded is None:
                 the_thing.date_uploaded = utils.dtnow()
             if alt_identifiers is not None:
-                self.identifiers = alt_identifiers
+                # remove duplicates
+                alt_identifiers = list(set(alt_identifiers))
+                current_identifiers = list(the_thing.identifiers)
+                the_thing.identifiers = list(set(alt_identifiers + current_identifiers))
             if access_rules is None:
                 the_thing.access_policy.append(self.getPublicReadAccessRule())
             else:
