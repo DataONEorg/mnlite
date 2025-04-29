@@ -192,7 +192,7 @@ class Thing(opersist.models.Base):
     @sqlalchemy.orm.validates("identifier", "series_id", "format_id")
     def validate_identifier(self, key, value):
         if value is not None:
-            value = value.strip()
+            value = str(value).strip()
             if opersist.utils.stringHasSpace(value):
                 raise ValueError(f"An identifier must not contain spaces: '{value}'")
             if key == "series_id":

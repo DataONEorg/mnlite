@@ -155,6 +155,11 @@ class SoscanNormalizePipeline:
                 self.logger.debug(f'Using first identifier for series_id: {item["series_id"]}')
                 if len(ids[0]["identifier"]) > 1:
                     item["alt_identifiers"] = ids[0]["identifier"][1:]
+                if len(ids[0]['url']) > 0:
+                    for i in ids[0]['url']:
+                        item["alt_identifiers"].append(i)
+                if len(item["alt_identifiers"]) > 0:
+                    item["alt_identifiers"] = list(set(item["alt_identifiers"]))
                     self.logger.debug(f'alt_identifiers: {item["alt_identifiers"]}')
             else:
                 # if the first identifier is an empty list, we need to look for others
