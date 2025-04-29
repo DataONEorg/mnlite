@@ -56,7 +56,7 @@ class OPersistPipeline:
                     f"Found existing entry:\n{item['url']}\n{checksum_sha256}\n{existing.series_id}\n{existing.file_name}\n==="
                 )
                 raise scrapy.exceptions.DropItem(
-                    f"Item already in store:\n{item['url']} sha256:{checksum_sha256}"
+                    f"Item already in store: {item['url']} sha256:{checksum_sha256}"
                 )
 
             identifier = item["identifier"]
