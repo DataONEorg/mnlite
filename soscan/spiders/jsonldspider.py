@@ -242,7 +242,7 @@ class JsonldSpider(soscan.spiders.ldsitemapspider.LDSitemapSpider):
                     numjsons = 1
 
                 for i in range(startjson, numjsons):
-                    self.logger.info(f'Processing JSON-LD {i+1} of {numjsons-startjson}')
+                    self.logger.info(f'Processing JSON-LD {i+1} of {numjsons-startjson} ({response.url})')
                     jsonld = jsonlds[i]
                     self.logger.debug("Creating item")
                     item = soscan.items.SoscanItem()
