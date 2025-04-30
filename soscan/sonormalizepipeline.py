@@ -59,7 +59,7 @@ class SoscanNormalizePipeline:
         return cls(**kwargs)
 
 
-    def extract_identifier(self, ids, use_at_id):
+    def extract_identifier(self, ids:list, use_at_id:bool):
         """
         Extract the series identifier from a list of identifiers structured like the following.
 
@@ -91,7 +91,7 @@ class SoscanNormalizePipeline:
         return None
     
 
-    def extract_alt_identifiers(self, ids):
+    def extract_alt_identifiers(self, ids:list, use_at_id:bool):
         """
         Extract the alternative identifiers from a list of identifiers structured like the following.
 
@@ -109,7 +109,10 @@ class SoscanNormalizePipeline:
             if len(ids[0]["identifier"]) > 0:
                 alt_ids += ids[0]["identifier"][1:]
             alt_ids += ids[0]['url']
-            alt_ids += ids[0]['@id']
+            if use_at_id:
+                alt_ids += ids[0]['@id'][1:]
+            else:
+                alt_ids += ids[0]['@id']
             for group in ids[1:]:
                 alt_ids += group["identifier"]
                 alt_ids += group['url']
@@ -206,7 +209,7 @@ class SoscanNormalizePipeline:
         # Use the first identifier value provided for series_id
         # PID will be computed from the object checksum
         item["series_id"] = self.extract_identifier(ids, self.use_at_id)
-        item["alt_identifiers"] = self.extract_alt_identifiers(ids)
+        item["alt_identifiers"] = self.extract_alt_identifiers(ids, self.use_at_id)
         # if there are no identifiers, we need to drop the item
         if item["series_id"] is None:
             raise scrapy.exceptions.DropItem(
