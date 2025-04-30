@@ -59,6 +59,65 @@ class SoscanNormalizePipeline:
         return cls(**kwargs)
 
 
+    def extract_identifier(self, ids, use_at_id):
+        """
+        Extract the series identifier from a list of identifiers structured like the following.
+
+        [{'@id': ['https://doi.org/10.1234/5678'],
+          'identifier': ['doi:10.1234/5678'],
+          'url': ['https://doi.org/10.1234/5678']},
+          ...]
+
+        The first identifier is the one we should use as the series_id.
+        """
+        if len(ids) > 0:
+            if len(ids[0]["identifier"]) > 0:
+                return ids[0]["identifier"][0]
+            else:
+                # if the first identifier is an empty list, we need to look for others
+                if use_at_id:
+                    # if there is no identifier and use_at_id is True, use the @id value as the Dataset identifier
+                    # This is a last resort measure and should be avoided if possible!
+                    # it is needed for repositories that use GeoNetwork software which does not provide identifiers (as of Jan 2025)
+                    for group in ids:
+                        if len(group["@id"]) > 0:
+                            self.logger.debug(f'Using @id {group["@id"][0]} for series_id')
+                            return group["@id"][0]
+                # if there is no identifier and use_at_id is False, use the first identifier value provided for series_id
+                for group in ids:
+                    if len(group["identifier"]) > 0:
+                        self.logger.debug(f'Using identifier {group["identifier"][0]} for series_id')
+                        return group["identifier"][0]              
+        return None
+    
+
+    def extract_alt_identifiers(self, ids):
+        """
+        Extract the alternative identifiers from a list of identifiers structured like the following.
+
+        [{'@id': ['https://doi.org/10.1234/5678'],
+          'identifier': ['doi:10.1234/5678'],
+          'url': ['https://doi.org/10.1234/5678']},
+          ...]
+
+        The first identifier is the one we should use as the series_id.
+        Other identifiers are stored in a list of ``alt_identifiers``.
+        """
+        alt_ids = []
+        # compile a list of alt_identifiers from all of the identifiers defined in the Dataset
+        if len(ids) > 0:
+            if len(ids[0]["identifier"]) > 0:
+                alt_ids += ids[0]["identifier"][1:]
+            alt_ids += ids[0]['url']
+            alt_ids += ids[0]['@id']
+            for group in ids[1:]:
+                alt_ids += group["identifier"]
+                alt_ids += group['url']
+                alt_ids += group['@id']
+        self.logger.debug(f'Extracted alt_identifiers: {alt_ids}')
+        return list(set(alt_ids))
+
+
     def process_item(self, item, spider):
         self.logger.debug("process_item: %s", item["url"])
 
@@ -146,53 +205,13 @@ class SoscanNormalizePipeline:
 
         # Use the first identifier value provided for series_id
         # PID will be computed from the object checksum
-        item["series_id"] = None
-        item["alt_identifiers"] = []
-        if len(ids) > 0:
-            self.logger.debug(f"ids found: {ids}")
-            if len(ids[0]["identifier"]) > 0:
-                item["series_id"] = ids[0]["identifier"][0]
-                self.logger.debug(f'Using first identifier for series_id: {item["series_id"]}')
-                if len(ids[0]["identifier"]) > 1:
-                    item["alt_identifiers"] = ids[0]["identifier"][1:]
-                if len(ids[0]['url']) > 0:
-                    for i in ids[0]['url']:
-                        item["alt_identifiers"].append(i)
-                if len(item["alt_identifiers"]) > 0:
-                    item["alt_identifiers"] = list(set(item["alt_identifiers"]))
-                    self.logger.debug(f'alt_identifiers: {item["alt_identifiers"]}')
-            else:
-                # if the first identifier is an empty list, we need to look for others
-                self.logger.info(f"Empty identifier in first Dataset grouping: {item['url']}")
-                g = 0
-                for group in ids:
-                    g += 1
-                    self.logger.debug(f'Dataset grouping {g}: {group}')
-                    if self.use_at_id:
-                        # if there is no identifier and use_at_id is True, use the @id value as the Dataset identifier
-                        # append other @id values to alt_identifiers
-                        # This is a last resort measure and should be avoided if possible!
-                        # it is needed for repositories that use GeoNetwork software which does not provide identifiers (as of Jan 2025)
-                        if g > 1:
-                            if len(group["@id"]) > 1:
-                                item["alt_identifiers"].append(group["@id"][:])
-                        else:
-                            if len(group["@id"]) > 0:
-                                item["alt_identifiers"].append(group["@id"][1:])
-                    if len(group["identifier"]) > 0:
-                        if item["series_id"] is None:
-                            item["series_id"] = group["identifier"][0]
-                            self.logger.info(f'Using identifier {g} for series_id: {item["series_id"]}')
-                            if len(group["identifier"]) > 1:
-                                item["alt_identifiers"].append(group["identifier"][1:])
-                        else:
-                            item["alt_identifiers"].append(group["identifier"][0:])
-                self.logger.debug(f'alt_identifiers: {item["alt_identifiers"]}')
-        if require_identifier and (item["series_id"] is None):
-            fds = json.dumps(_framed, indent=2)
-            fc = json.dumps(sonormal.SO_DATASET_FRAME, indent=2)
-            self.logger.debug(f"Detail for JSON-LD no identifier drop: {item['url']}\nFramed dataset:\n{fds}\nFraming context:\n{fc}\n")
-            raise scrapy.exceptions.DropItem(f"JSON-LD no identifier: {item['url']}")
+        item["series_id"] = self.extract_identifier(ids, self.use_at_id)
+        item["alt_identifiers"] = self.extract_alt_identifiers(ids)
+        # if there are no identifiers, we need to drop the item
+        if item["series_id"] is None:
+            raise scrapy.exceptions.DropItem(
+                f"JSON-LD no identifiers: {item['url']}"
+            )
         if item["series_id"] == "doi:":
             raise scrapy.exceptions.DropItem(
                 f"JSON-LD DOI URI empty: {item['url']}"
