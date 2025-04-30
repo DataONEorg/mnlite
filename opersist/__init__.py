@@ -833,6 +833,10 @@ class OPersist(object):
         stats["count"] = Q.count()
         newest = Q.order_by(models.thing.Thing.date_uploaded.desc()).limit(1).first()
         oldest = Q.order_by(models.thing.Thing.date_uploaded.asc()).limit(1).first()
-        stats["newest"] = utils.datetimeToJsonStr(newest.date_uploaded)
-        stats["oldest"] = utils.datetimeToJsonStr(oldest.date_uploaded)
+        if newest:
+            stats["newest"] = utils.datetimeToJsonStr(newest.date_uploaded)
+            stats["oldest"] = utils.datetimeToJsonStr(oldest.date_uploaded)
+        else:
+            stats["newest"] = ''
+            stats["oldest"] = ''
         return stats
