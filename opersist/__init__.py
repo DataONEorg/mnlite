@@ -831,6 +831,22 @@ class OPersist(object):
         )
         return Q.order_by(models.thing.Thing.date_modified.desc())
 
+    def getThingsSIDOrAltIdentifier(self, identifier):
+        # match SID or identifiers, minus obsoleted datasets, order by date_modified
+        assert self._session is not None
+        Q = self._session.query(models.thing.Thing).filter_by(
+            sqlalchemy.and_(
+                # exclude obsoleted datasets
+                models.thing.Thing.obsoleted_by == None,
+                # and match SID or alt identifiers
+                sqlalchemy.or_(
+                    models.thing.Thing.identifiers.contains(identifier),
+                    models.thing.Thing.series_id == identifier,
+                ),
+            )
+        )
+        return Q.order_by(models.thing.Thing.date_modified.desc()).first()
+
     def countThings(self):
         Q = self._session.query(models.thing.Thing)
         return Q.count()
