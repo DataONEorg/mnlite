@@ -12,6 +12,8 @@ source: str = None
 """
 
 import os
+import json
+from pathlib import Path
 import logging
 import opersist
 import opersist.utils
@@ -20,12 +22,21 @@ import scrapy.exceptions
 
 
 class OPersistPipeline:
-    def __init__(self, fs_path):
+    def __init__(self, fs_path, **kwargs):
         self._op = opersist.OPersist(fs_path)
         self.logger = logging.getLogger("OPersistPipeline")
+        self.dedup_nodes = []
+        if kwargs.get("dedup_nodes", False):
+            self.logger.debug(f"Deduplication nodes: {kwargs['dedup_nodes']}")
+            dedup_nodes = 0
+            for n in kwargs["dedup_nodes"]:
+                self.dedup_nodes.append(opersist.OPersist(n))
+                dedup_nodes += 1
+            self.logger.info(f"Added {dedup_nodes} deduplication nodes")
+            self.logger.info(f"Deduplication nodes: {self.dedup_nodes}")
 
     @classmethod
-    def from_crawler(cls, crawler):
+    def from_crawler(cls, crawler, **kwargs):
         # db_url = crawler.settings.get("DATABASE_URL", None)
         # return cls(db_url)
         fs_path = crawler.settings.get("STORE_PATH", None)
@@ -33,15 +44,42 @@ class OPersistPipeline:
             raise Exception("STORE_PATH configuration is required!")
         if not os.path.exists(fs_path):
             raise ValueError(f"STORE_PATH {fs_path} not found.")
-        return cls(fs_path)
+        mn_settings = Path(f'{fs_path}/settings.json')
+        # add deduplication nodes
+        kwargs["dedup_nodes"] = []
+        if mn_settings.exists():
+            with open(mn_settings) as cs:
+                _cs: dict = json.loads(cs.read())
+            for s in _cs:
+                if s == "dedup_nodes":
+                    if isinstance(_cs[s], list):
+                        for n in _cs[s]:
+                            if Path(n).exists():
+                                kwargs["dedup_nodes"].append(n)
+                            else:
+                                raise ValueError(f"Deduplication node directory {n} not found.")
+                    else:
+                        if Path(_cs[s]).exists():
+                            kwargs["dedup_nodes"].append(_cs[s])
+                        else:
+                            raise ValueError(f"Deduplication node directory {_cs[s]} not found.")
+        return cls(fs_path, **kwargs)
 
     def open_spider(self, spider):
         self.logger.debug("open_spider")
         self._op.open(allow_create=True)
+        self.logger.debug(f"OPersist {self._op} opened")
+        for dedup_node in self.dedup_nodes:
+            dedup_node.open(allow_create=False)
+            self.logger.debug(f"Deduplication node {dedup_node} opened")
 
     def close_spider(self, spider):
         self.logger.debug("close_spider")
         self._op.close()
+        self.logger.debug("OPersist connection closed")
+        for node in self.dedup_nodes:
+            node.close()
+            self.logger.debug(f"Deduplication node {node} closed")
 
     def process_item(self, item, spider):
         try:
