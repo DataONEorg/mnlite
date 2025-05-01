@@ -820,8 +820,16 @@ class OPersist(object):
         return Q.order_by(models.thing.Thing.date_modified.desc())
 
     def getThingsIdentifier(self, identifier):
-        # TODO: match PID or SID or related identifiers, order by date_modified
-        pass
+        # match PID or SID or related identifiers, order by date_modified
+        assert self._session is not None
+        Q = self._session.query(models.thing.Thing).filter_by(
+            sqlalchemy.or_(
+                models.thing.Thing.identifiers.contains(identifier),
+                models.thing.Thing.series_id == identifier,
+                models.thing.Thing.identifier == identifier,
+            )
+        )
+        return Q.order_by(models.thing.Thing.date_modified.desc())
 
     def countThings(self):
         Q = self._session.query(models.thing.Thing)
