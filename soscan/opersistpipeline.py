@@ -117,6 +117,18 @@ class OPersistPipeline:
             }
             obsoletes = None
 
+            # Check for duplicates in deduplication nodes
+            for dedup_node in self.dedup_nodes:
+                existing = dedup_node.getThingsSIDOrAltIdentifier(identifier)
+                if existing is not None:
+                    dedup_node_name = Path(dedup_node.fs_path).name
+                    self.logger.debug(
+                        f"Found existing entry in dedup node {dedup_node_name}:\n{item['url']}\n{checksum_sha256}\n{existing.series_id}\n{existing.file_name}\n==="
+                    )
+                    raise scrapy.exceptions.DropItem(
+                        f"Item already in dedup node {dedup_node_name}: {item['url']} sha256:{checksum_sha256}"
+                    )
+
             # TODO: Set these values from configuration for the data source
             submitter = None
             owner = None
