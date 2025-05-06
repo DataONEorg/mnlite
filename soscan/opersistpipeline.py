@@ -120,7 +120,8 @@ class OPersistPipeline:
 
             # Check for duplicates in deduplication nodes
             for dedup_node in self.dedup_nodes:
-                existing = dedup_node.getThingsSIDOrAltIdentifier(identifier)
+                dedup_node: opersist.OPersist
+                existing = dedup_node.getThingsSIDOrAltIdentifier(series_id=series_id, alt_ids=alt_identifiers)
                 if existing is not None:
                     dedup_node_name = Path(dedup_node.fs_path).name
                     self.logger.debug(

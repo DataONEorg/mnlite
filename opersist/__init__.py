@@ -832,7 +832,17 @@ class OPersist(object):
         )
         return Q.order_by(models.thing.Thing.date_modified.desc())
 
-    def getThingsSIDOrAltIdentifier(self, identifier):
+    def getThingsSIDOrAltIdentifier(self, series_id, alt_ids:list[str]=[]):
+        """
+        Get the most recent object in the series or with an alt identifier.
+        
+        Args:
+            series_id: Series ID or PID of the object in the SO database
+            alt_ids: List of alternative identifiers to match (limit 1000)
+
+        Returns:
+            A singular Thing, the most recent object in the series or with a matching alt identifier
+        """
         # match SID or identifiers, minus obsoleted datasets, order by date_modified
         assert self._session is not None
         Q = self._session.query(models.thing.Thing).filter_by(
@@ -841,8 +851,11 @@ class OPersist(object):
                 models.thing.Thing.obsoleted_by == None,
                 # and match SID or alt identifiers
                 sqlalchemy.or_(
-                    models.thing.Thing.identifiers.contains(identifier),
-                    models.thing.Thing.series_id == identifier,
+                    models.thing.Thing.identifiers.contains(series_id),
+                    models.thing.Thing.series_id == series_id,
+                    sqlalchemy.or_(
+                        *[models.thing.Thing.identifiers.contains(alt_id) for alt_id in (alt_ids[:1000] if isinstance(alt_ids, list) else [])]
+                    ),
                 ),
             )
         )
