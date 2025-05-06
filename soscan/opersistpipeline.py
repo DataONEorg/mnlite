@@ -33,7 +33,6 @@ class OPersistPipeline:
                 self.dedup_nodes.append(opersist.OPersist(n))
                 dedup_nodes += 1
             self.logger.info(f"Added {dedup_nodes} deduplication node(s)")
-            self.logger.info(f"Deduplication nodes: {self.dedup_nodes}")
 
     @classmethod
     def from_crawler(cls, crawler, **kwargs):
