@@ -134,7 +134,7 @@ class OPersistPipeline:
             owner = None
             access_rules = None
 
-            self.logger.info("Persisting %s", identifier)
+            self.logger.debug("Persisting %s", identifier)
 
             res = self._op.addThingBytes(
                 _canonical,

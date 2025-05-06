@@ -369,7 +369,7 @@ class OPersist(object):
         fldr_dest, sha256, fn_dest = self._ostore.addFilePath(
             fname, hash=hashes["sha256"], metadata=blob_metadata
         )
-        self._L.info("Adding database entry...")
+        self._L.debug("Adding database entry...")
         if source is None:
             source = os.path.abspath(fname)
         # Add to database
@@ -485,6 +485,7 @@ class OPersist(object):
             self._L.debug(the_thing)
             self._session.add(the_thing)
             self.commit()
+            self._L.debug(f"Persisted {identifier}")
             return the_thing
         except sqlalchemy.exc.OperationalError as e:
             # this situation denotes a database read/write issue
