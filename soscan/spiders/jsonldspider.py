@@ -264,7 +264,7 @@ class JsonldSpider(soscan.spiders.ldsitemapspider.LDSitemapSpider):
                             )
                     self.logger.debug("Setting time_retrieved")
                     item["time_retrieved"] = opersist.utils.dtnow()
-                    self.logger.debug("ITEM without jsonld: %s", item)
+                    self.logger.log(level=5, msg=f"ITEM without jsonld: {item}")
                     self.logger.debug("Setting item jsonld")
                     item["jsonld"] = jsonld
                     yield item
