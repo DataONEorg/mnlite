@@ -32,7 +32,7 @@ class OPersistPipeline:
             for n in kwargs["dedup_nodes"]:
                 self.dedup_nodes.append(opersist.OPersist(n))
                 dedup_nodes += 1
-            self.logger.info(f"Added {dedup_nodes} deduplication nodes")
+            self.logger.info(f"Added {dedup_nodes} deduplication node(s)")
             self.logger.info(f"Deduplication nodes: {self.dedup_nodes}")
 
     @classmethod
@@ -71,15 +71,17 @@ class OPersistPipeline:
         self.logger.debug(f"OPersist {self._op} opened")
         for dedup_node in self.dedup_nodes:
             dedup_node.open(allow_create=False)
-            self.logger.debug(f"Deduplication node {dedup_node} opened")
+            dedup_node_name = Path(dedup_node.fs_path).name
+            self.logger.debug(f"Deduplication node {dedup_node_name} opened")
 
     def close_spider(self, spider):
         self.logger.debug("close_spider")
         self._op.close()
         self.logger.debug("OPersist connection closed")
-        for node in self.dedup_nodes:
-            node.close()
-            self.logger.debug(f"Deduplication node {node} closed")
+        for dedup_node in self.dedup_nodes:
+            dedup_node.close()
+            dedup_node_name = Path(dedup_node.fs_path).name
+            self.logger.debug(f"Deduplication node {dedup_node_name} closed")
 
     def process_item(self, item, spider):
         try:
