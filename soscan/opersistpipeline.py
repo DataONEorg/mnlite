@@ -134,7 +134,7 @@ class OPersistPipeline:
                         f"Item already in dedup node {dedup_node_name}: {item['url']} sha256:{checksum_sha256}"
                     )
                 self.logger.debug(
-                    f"No existing entry matching the above identifiers in dedup node {dedup_node_name}: "
+                    f"No existing entry matching the above identifiers in dedup node {dedup_node_name}"
                 )
 
             # TODO: Set these values from configuration for the data source
