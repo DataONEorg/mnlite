@@ -823,7 +823,7 @@ class OPersist(object):
     def getThingsIdentifier(self, identifier):
         # match PID or SID or related identifiers, order by date_modified
         assert self._session is not None
-        Q = self._session.query(models.thing.Thing).filter_by(
+        Q = self._session.query(models.thing.Thing).filter(
             sqlalchemy.or_(
                 models.thing.Thing.identifiers.contains(identifier),
                 models.thing.Thing.series_id == identifier,
@@ -845,7 +845,7 @@ class OPersist(object):
         """
         # match SID or identifiers, minus obsoleted datasets, order by date_modified
         assert self._session is not None
-        Q = self._session.query(models.thing.Thing).filter_by(
+        Q = self._session.query(models.thing.Thing).filter(
             sqlalchemy.and_(
                 # exclude obsoleted datasets
                 models.thing.Thing.obsoleted_by == None,
