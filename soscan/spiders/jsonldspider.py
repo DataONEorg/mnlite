@@ -92,7 +92,7 @@ class JsonldSpider(soscan.spiders.ldsitemapspider.LDSitemapSpider):
         mn_settings = Path(f'{node_path}/settings.json')
         if mn_settings.exists():
             with open(mn_settings) as cs:
-                _cs = json.loads(cs.read())
+                _cs: dict = json.loads(cs.read())
             for s in _cs:
                 spider.settings.set(s, _cs[s], priority='spider')
                 spider.logger.info(f'Setting override from {mn_settings}: set {s} to {_cs[s]}')
@@ -109,6 +109,9 @@ class JsonldSpider(soscan.spiders.ldsitemapspider.LDSitemapSpider):
                     spider.reversed = _cs.get(s, None)
                 if s in "which_jsonld":
                     spider.which_jsonld = _cs.get(s, None)
+                if s in "use_at_id":
+                    spider.logger.warning(f'Use of "use_at_id" is not recommended for most repositories! Please set this to "false" unless you are certain you need it!')
+                    spider.use_at_id = _cs.get(s, None)
         return spider
 
     def sitemap_filter(self, entries):
@@ -239,7 +242,7 @@ class JsonldSpider(soscan.spiders.ldsitemapspider.LDSitemapSpider):
                     numjsons = 1
 
                 for i in range(startjson, numjsons):
-                    self.logger.info(f'Processing JSON-LD {i+1} of {numjsons-startjson}')
+                    self.logger.info(f'Processing JSON-LD {i+1} of {numjsons-startjson} ({response.url})')
                     jsonld = jsonlds[i]
                     self.logger.debug("Creating item")
                     item = soscan.items.SoscanItem()
@@ -261,14 +264,14 @@ class JsonldSpider(soscan.spiders.ldsitemapspider.LDSitemapSpider):
                             )
                     self.logger.debug("Setting time_retrieved")
                     item["time_retrieved"] = opersist.utils.dtnow()
-                    self.logger.debug("ITEM without jsonld: %s", item)
+                    self.logger.log(level=5, msg=f"ITEM without jsonld: {item}")
                     self.logger.debug("Setting item jsonld")
                     item["jsonld"] = jsonld
                     yield item
             else:
                 self.logger.error(f'No JSON-LD in page content {response.url}')
                 self.logger.debug(f'{response.status} code, response body: {response.body}')
-                raise NotSupported(f'No JSON-LD at {response.url}\nBody:\n{response.body}\n')
+                raise NotSupported(f'No JSON-LD at {response.url}')
         except Exception as e:
             self.logger.error("parse: url:  %s — %s", response.url, repr(e))
         yield None

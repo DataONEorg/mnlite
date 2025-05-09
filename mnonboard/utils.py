@@ -8,7 +8,7 @@ import xmltodict
 from pathlib import Path
 from logging import getLogger
 
-from mnonboard.defs import SCHEDULES, NAMES_DICT, USER_NAME
+from mnonboard.defs import SCHEDULES, NAMES_DICT, USER_NAME, DEFAULT_SETTINGS, SYNC_CONTENT_SCRIPT
 from mnonboard import NODE_PATH_REL, CUR_PATH_ABS, LOG_DIR, HARVEST_LOG_NAME, HM_DATE, L
 from mnonboard.info_chx import enter_schedule
 
@@ -102,6 +102,33 @@ def init_repo(loc: str):
                         'init'], check=True)
     except Exception as e:
         L.error('opersist init command failed (node folder: %s): %s' % (loc, e))
+        exit(1)
+
+def write_settings(loc: str, settings: dict=DEFAULT_SETTINGS):
+    """
+    Write settings to a file.
+
+    :param str loc: Location of the settings file to be written
+    :param dict settings: Dictionary of settings to be written (default: DEFAULT_SETTINGS)
+    """
+    L.info('Writing settings to %s' % loc)
+    sf = Path(f'{loc}/settings.json')
+    try:
+        with open(str(sf), 'x') as f:
+            json.dump(settings, f, indent=4)
+        L.info('Settings written to %s' % sf)
+    except FileExistsError as e:
+        L.warning('File exists - %s' % e)
+        try:
+            sf = Path(f'{loc}/settings-default.json')
+            with open(str(sf), 'w') as f:
+                json.dump(settings, f, indent=4)
+            L.info('Default settings written to %s' % sf)
+        except Exception as e:
+            L.error('Error writing default settings to %s: %s' % (sf, e))
+            exit(1)
+    except Exception as e:
+        L.error('Error writing settings to %s: %s' % (sf, e))
         exit(1)
 
 def parse_name(fullname: str):
@@ -221,13 +248,12 @@ def harvest_data(loc: str, mn_name: str):
     :param str loc: Location of the opersist instance
     :param str mn_name: Name of the member node (used to name the crawl log)
     """
-    log_loc = os.path.join(LOG_DIR, mn_name + HARVEST_LOG_NAME)
+    log_loc = Path(f'{str(LOG_DIR)}/{mn_name + HARVEST_LOG_NAME}')
+    script_loc = Path(f'{str(loc)}/sync_content.sh')
     L.info('Starting scrapy crawl, saving to %s' % (loc))
     L.info('scrapy log location is %s' % (log_loc))
     try:
-        subprocess.run(['scrapy', 'crawl', 'JsonldSpider',
-                        '--set=STORE_PATH=%s' % loc,
-                        '--logfile=%s' % log_loc],
+        subprocess.run(['nohup', 'bash', str(script_loc)],
                         check=True)
         L.info('scrapy crawl complete.')
     except Exception as e:
@@ -325,6 +351,22 @@ def create_names_xml(loc: str, node_id: str, names: dict):
         L.debug('XML path: %s' % fn)
         files.append(fn)
     return files
+
+def write_sync_script(loc: str, node_id: str):
+    """
+    Write a script to sync the member node to the CN.
+
+    :param str loc: Location of the member node directory
+    :param str node_id: Node identifier (e.g. ``"urn:node:OPENTOPO"``)
+    """
+    sf = Path(f'{loc}/sync_content.sh')
+    with open(str(sf), 'w') as f:
+        f.write(SYNC_CONTENT_SCRIPT % node_id)
+    try:
+        os.chmod(str(sf), 0o755)
+    except Exception as e:
+        L.error('Error changing permissions on sync script: %s' % e)
+        exit(1)
 
 def write_cmd_to(fn, cmd, desc=None, mode='a'):
     """

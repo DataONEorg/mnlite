@@ -66,25 +66,53 @@ APPROVE_SCRIPT_LOC = '/usr/local/bin/dataone-approve-node'
 The location of the Hazelcast node approval script.
 """
 
+SYNC_CONTENT_SCRIPT = """
+#!/bin/bash
+
+NODE="%s"
+
+HOME_DIR="/home/mnlite"
+MNLITE_DIR="${HOME_DIR}/WORK/mnlite"
+NODE_DIR="${MNLITE_DIR}/instance/nodes/${NODE}"
+
+ENV_DIR="${HOME_DIR}/.virtualenvs/mnlite"
+LOG_DIR="/var/log/mnlite"
+
+cd "${MNLITE_DIR}"
+source "${ENV_DIR}/bin/activate"
+LOG_FILE="${LOG_DIR}/${NODE}-crawl.log"
+logger "Start crawl on: ${NODE} logfile: ${LOG_FILE}"
+scrapy crawl --logfile=${LOG_FILE} JsonldSpider -s STORE_PATH=${NODE_DIR}
+logger "End crawl on ${NODE}"
+"""
+
 HELP_TEXT = """DataONE member node onboard script
 %s NCEAS/Ian Nesbitt
 
 Usage: cli [ OPTIONS ]
 where OPTIONS := {
+    -v | --verbose
+            increase verbosity
+    -h | --help
+            display this help message
+    -l | --load=[ FILE ]
+            initialize a new member node from a json file
+    -i | --init
+            initialize a new member node from scratch
     -c | --check=[ NUMBER ]
             number of random metadata files to check for schema.org compliance
     -d | --dump=[ FILE ]
             dump default member node json file to configure manually
-    -h | --help
-            display this help message
-    -i | --init
-            initialize a new member node from scratch
-    -l | --load=[ FILE ]
-            initialize a new member node from a json file
     -P | --production
             run this script in production mode (uses the D1 cn API in searches)
     -L | --local
             run this script in local mode (will not scrape the remote site for new metadata)
+    -S | --sync-content
+            run the content sync script
+    -C | --chain-check
+            attempt to repair the version chains between the node and the CN
+    -K | --chain-link
+            attempt version chain repair from a CSV mapping file (old_id,new_id)
 }
 """ % __version__
 """
@@ -122,6 +150,11 @@ FILL_FIELDS = [
 ]
 
 SITEMAP_URLS = []
+
+DEFAULT_SETTINGS = {
+    "AUTOTHROTTLE_TARGET_CONCURRENCY": 1.5,
+    "LOG_LEVEL": "DEBUG"
+}
 
 SCHEDULES = {
     # monthly on the 1st at 00:30

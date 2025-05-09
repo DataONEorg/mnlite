@@ -369,7 +369,7 @@ class OPersist(object):
         fldr_dest, sha256, fn_dest = self._ostore.addFilePath(
             fname, hash=hashes["sha256"], metadata=blob_metadata
         )
-        self._L.info("Adding database entry...")
+        self._L.debug("Adding database entry...")
         if source is None:
             source = os.path.abspath(fname)
         # Add to database
@@ -474,7 +474,10 @@ class OPersist(object):
             if date_uploaded is None:
                 the_thing.date_uploaded = utils.dtnow()
             if alt_identifiers is not None:
-                self.identifiers = alt_identifiers
+                # remove duplicates
+                alt_identifiers = list(set(alt_identifiers))
+                current_identifiers = list(the_thing.identifiers)
+                the_thing.identifiers = list(set(alt_identifiers + current_identifiers))
             if access_rules is None:
                 the_thing.access_policy.append(self.getPublicReadAccessRule())
             else:
@@ -482,6 +485,7 @@ class OPersist(object):
             self._L.debug(the_thing)
             self._session.add(the_thing)
             self.commit()
+            self._L.info(f"Persisted {identifier}")
             return the_thing
         except sqlalchemy.exc.OperationalError as e:
             # this situation denotes a database read/write issue
@@ -660,7 +664,24 @@ class OPersist(object):
             nadded += 1
         return nadded
 
-    def setObsoletes(self, sid, pid):
+    def resetModDate(self, sha256):
+        """
+        Given a PID, reset the modification date.
+        This useful for getting the CN to re-harvest and/or re-index the object.
+
+        Args:
+            sha256: PID of the object that is being updated
+
+        Returns:
+            str, the PID of the object being updated
+        """
+        assert self._session is not None
+        thing = self.getThingPID(sha256)
+        thing.date_modified = utils.dtnow()
+        self.commit()
+        return thing.identifier
+
+    def setFirstObjectObsoletes(self, sid, pid):
         """
         Given a schema.org series ID, set the obsoletes field of the first
         matching object in the SO series to the provided PID (presumably an
@@ -683,6 +704,66 @@ class OPersist(object):
         thing.date_modified = utils.dtnow()
         self.commit()
         return thing.identifier
+
+    def setObsoletes(self, new, old):
+        """
+        Given two PIDs, set the obsoletes field of the object with the new PID
+        to the old PID.
+
+        Args:
+            new: PID of the object that is obsoleting
+            old: PID of the object being obsoleted
+
+        Returns:
+            str, the PID of the object being obsoleted
+        """
+        assert self._session is not None
+        thing = self.getThingPID(new)
+        thing.obsoletes = old
+        thing.date_modified = utils.dtnow()
+        self.commit()
+        return thing.identifier
+
+    def setObsoletedBy(self, old, new):
+        """
+        Given two PIDs, set the obsoleted_by field of the object with the old PID
+        to the new PID.
+
+        Args:
+            old: PID of the object being obsoleted
+            new: PID of the object that is obsoleting
+
+        Returns:
+            str, the PID of the object being obsoleted
+        """
+        assert self._session is not None
+        thing = self.getThingPID(old)
+        thing.obsoleted_by = new
+        thing.date_modified = utils.dtnow()
+        self.commit()
+        return thing.identifier
+
+    def setObsolescenceRelationship(self, old, new):
+        """
+        Given two PIDs, set the obsoletes and obsoleted_by fields of the objects
+        to each other.
+
+        Args:
+            old: PID of the object being obsoleted
+            new: PID of the object that is obsoleting
+
+        Returns:
+            tuple, (str, str), the PIDs of the objects being obsoleted and obsoleting
+        """
+        assert self._session is not None
+        thing_old = self.getThingPID(old)
+        thing_new = self.getThingPID(new)
+        thing_old.obsoleted_by = new
+        thing_new.obsoletes = old
+        thing_old.date_modified = utils.dtnow()
+        thing_new.date_modified = utils.dtnow()
+        self.commit()
+        return thing_old.identifier, thing_new.identifier
 
     def contentAbsPath(self, content_path):
         return os.path.abspath(os.path.join(self._blob_path, content_path))
@@ -740,8 +821,45 @@ class OPersist(object):
         return Q.order_by(models.thing.Thing.date_modified.desc())
 
     def getThingsIdentifier(self, identifier):
-        # TODO: match PID or SID or related identifiers, order by date_modified
-        pass
+        # match PID or SID or related identifiers, order by date_modified
+        assert self._session is not None
+        Q = self._session.query(models.thing.Thing).filter(
+            sqlalchemy.or_(
+                models.thing.Thing.identifiers.contains(identifier),
+                models.thing.Thing.series_id == identifier,
+                models.thing.Thing.identifier == identifier,
+            )
+        )
+        return Q.order_by(models.thing.Thing.date_modified.desc())
+
+    def getThingsSIDOrAltIdentifier(self, series_id, alt_ids:list=[]):
+        """
+        Get the most recent object in the series or with an alt identifier.
+        
+        Args:
+            series_id: Series ID or PID of the object in the SO database
+            alt_ids: List of alternative identifiers to match (limit 1000)
+
+        Returns:
+            A singular Thing, the most recent object in the series or with a matching alt identifier
+        """
+        # match SID or identifiers, minus obsoleted datasets, order by date_modified
+        assert self._session is not None
+        Q = self._session.query(models.thing.Thing).filter(
+            sqlalchemy.and_(
+                # exclude obsoleted datasets
+                models.thing.Thing.obsoleted_by == None,
+                # and match SID or alt identifiers
+                sqlalchemy.or_(
+                    models.thing.Thing.identifiers.contains(series_id),
+                    models.thing.Thing.series_id == series_id,
+                    sqlalchemy.or_(
+                        *[models.thing.Thing.identifiers.contains(alt_id) for alt_id in (alt_ids[:1000] if isinstance(alt_ids, list) else [])]
+                    ),
+                ),
+            )
+        )
+        return Q.order_by(models.thing.Thing.date_modified.desc()).first()
 
     def countThings(self):
         Q = self._session.query(models.thing.Thing)
@@ -753,6 +871,10 @@ class OPersist(object):
         stats["count"] = Q.count()
         newest = Q.order_by(models.thing.Thing.date_uploaded.desc()).limit(1).first()
         oldest = Q.order_by(models.thing.Thing.date_uploaded.asc()).limit(1).first()
-        stats["newest"] = utils.datetimeToJsonStr(newest.date_uploaded)
-        stats["oldest"] = utils.datetimeToJsonStr(oldest.date_uploaded)
+        if newest:
+            stats["newest"] = utils.datetimeToJsonStr(newest.date_uploaded)
+            stats["oldest"] = utils.datetimeToJsonStr(oldest.date_uploaded)
+        else:
+            stats["newest"] = ''
+            stats["oldest"] = ''
         return stats

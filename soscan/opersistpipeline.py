@@ -12,6 +12,8 @@ source: str = None
 """
 
 import os
+import json
+from pathlib import Path
 import logging
 import opersist
 import opersist.utils
@@ -20,12 +22,20 @@ import scrapy.exceptions
 
 
 class OPersistPipeline:
-    def __init__(self, fs_path):
+    def __init__(self, fs_path, **kwargs):
         self._op = opersist.OPersist(fs_path)
         self.logger = logging.getLogger("OPersistPipeline")
+        self.dedup_nodes = []
+        if kwargs.get("dedup_nodes", False):
+            self.logger.debug(f"Deduplication nodes: {kwargs['dedup_nodes']}")
+            dedup_nodes = 0
+            for n in kwargs["dedup_nodes"]:
+                self.dedup_nodes.append(opersist.OPersist(n))
+                dedup_nodes += 1
+            self.logger.info(f"Added {dedup_nodes} deduplication node(s)")
 
     @classmethod
-    def from_crawler(cls, crawler):
+    def from_crawler(cls, crawler, **kwargs):
         # db_url = crawler.settings.get("DATABASE_URL", None)
         # return cls(db_url)
         fs_path = crawler.settings.get("STORE_PATH", None)
@@ -33,15 +43,44 @@ class OPersistPipeline:
             raise Exception("STORE_PATH configuration is required!")
         if not os.path.exists(fs_path):
             raise ValueError(f"STORE_PATH {fs_path} not found.")
-        return cls(fs_path)
+        mn_settings = Path(f'{fs_path}/settings.json')
+        # add deduplication nodes
+        kwargs["dedup_nodes"] = []
+        if mn_settings.exists():
+            with open(mn_settings) as cs:
+                _cs: dict = json.loads(cs.read())
+            for s in _cs:
+                if s == "dedup_nodes":
+                    if isinstance(_cs[s], list):
+                        for n in _cs[s]:
+                            if Path(n).exists():
+                                kwargs["dedup_nodes"].append(n)
+                            else:
+                                raise ValueError(f"Deduplication node directory {n} not found.")
+                    else:
+                        if Path(_cs[s]).exists():
+                            kwargs["dedup_nodes"].append(_cs[s])
+                        else:
+                            raise ValueError(f"Deduplication node directory {_cs[s]} not found.")
+        return cls(fs_path, **kwargs)
 
     def open_spider(self, spider):
         self.logger.debug("open_spider")
         self._op.open(allow_create=True)
+        self.logger.debug(f"OPersist {self._op} opened")
+        for dedup_node in self.dedup_nodes:
+            dedup_node.open(allow_create=False)
+            dedup_node_name = Path(dedup_node.fs_path).name
+            self.logger.debug(f"Deduplication node {dedup_node_name} opened")
 
     def close_spider(self, spider):
         self.logger.debug("close_spider")
         self._op.close()
+        self.logger.debug("OPersist connection closed")
+        for dedup_node in self.dedup_nodes:
+            dedup_node.close()
+            dedup_node_name = Path(dedup_node.fs_path).name
+            self.logger.debug(f"Deduplication node {dedup_node_name} closed")
 
     def process_item(self, item, spider):
         try:
@@ -56,7 +95,7 @@ class OPersistPipeline:
                     f"Found existing entry:\n{item['url']}\n{checksum_sha256}\n{existing.series_id}\n{existing.file_name}\n==="
                 )
                 raise scrapy.exceptions.DropItem(
-                    f"Item already in store:\n{item['url']} sha256:{checksum_sha256}"
+                    f"Item already in store: {item['url']} sha256:{checksum_sha256}"
                 )
 
             identifier = item["identifier"]
@@ -79,12 +118,31 @@ class OPersistPipeline:
             }
             obsoletes = None
 
+            # Check for duplicates in deduplication nodes
+            for dedup_node in self.dedup_nodes:
+                dedup_node: opersist.OPersist
+                dedup_node_name = Path(dedup_node.fs_path).name
+                self.logger.debug(f"Checking for duplicates in {dedup_node_name}")
+                self.logger.debug(f"series_id: {series_id}")
+                self.logger.debug(f"alt_identifiers: {alt_identifiers}")
+                existing = dedup_node.getThingsSIDOrAltIdentifier(series_id=series_id, alt_ids=alt_identifiers)
+                if existing is not None:
+                    self.logger.debug(
+                        f"Found existing entry in dedup node {dedup_node_name}:\n{item['url']}\n{checksum_sha256}\n{existing.series_id}\n{existing.identifiers}\n{existing.file_name}\n==="
+                    )
+                    raise scrapy.exceptions.DropItem(
+                        f"Item already in dedup node {dedup_node_name}: {item['url']} sha256:{checksum_sha256}"
+                    )
+                self.logger.debug(
+                    f"No existing entry matching the above identifiers in dedup node {dedup_node_name}"
+                )
+
             # TODO: Set these values from configuration for the data source
             submitter = None
             owner = None
             access_rules = None
 
-            self.logger.info("Persisting %s", identifier)
+            self.logger.debug("Persisting %s", identifier)
 
             res = self._op.addThingBytes(
                 _canonical,
@@ -103,7 +161,11 @@ class OPersistPipeline:
                 date_uploaded=item.get("time_loc", None),
             )
 
+        except scrapy.exceptions.DropItem as e:
+            # passing the dedup DropItem to up to the spider
+            raise scrapy.exceptions.DropItem(e)
         except Exception as e:
             #self.logger.error(f"{repr(e)}: {e}")
             self.logger.error(f"Exception: {e}")
+            return
         return item

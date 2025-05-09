@@ -43,6 +43,8 @@ def run(cfg):
     loc = utils.node_path(nodedir=end_node_subj)
     # initialize a repository there (step 5)
     utils.init_repo(loc)
+    # write a default settings file in the repo directory
+    utils.write_settings(loc)
     names = {}
     for f in ('default_owner', 'default_submitter', 'contact_subject'):
         # add a subject for owner and submitter (may not be necessary if they exist already)
@@ -62,6 +64,8 @@ def run(cfg):
                              name=end_node_subj)
     # restart the mnlite process to pick up the new node.json (step 9)
     utils.restart_mnlite()
+    # write the sync script (for step 10)
+    utils.write_sync_script(loc, end_node_subj)
     # run scrapy to harvest metadata (step 10)
     if not cfg['local']:
         utils.harvest_data(loc, end_node_subj)
@@ -134,6 +138,54 @@ def check_chains(cfg, sids):
     L.info('Done.')
 
 
+def link_chains(cfg, links):
+    """
+    Link the version chains of the metadata records on the CN indicated in the config.
+    If a file is provided, link the version chains of the SIDs in the file.
+
+    :param dict cfg: Dict containing config variables
+    :param list links: List of links to link the version chains of
+    """
+    # auth
+    if not cfg['token']:
+        cfg['token'] = os.environ.get('D1_AUTH_TOKEN')
+    if not cfg['token']:
+        print('Your DataONE auth token is missing. Please enter it here and/or store it in the env variable "D1_AUTH_TOKEN".')
+        cfg['token'] = info_chx.req_input('Please enter your DataONE authentication token: ')
+        os.environ['D1_AUTH_TOKEN'] = cfg['token']
+    fields = utils.load_json(cfg['json_file'])
+    L.info('Initializing client...')
+    client = cn.init_client(cn_url=cfg['cn_url'], auth_token=cfg['token'])
+    end_node_subj = fields['node']['node_id'].split(':')[-1]
+    L.info(f'Using node {end_node_subj}')
+    if f'urn:node:{end_node_subj}' in cn.node_list(client):
+        L.info(f'Node {end_node_subj} was found on the CN.')
+    else:
+        L.error(f'Node {end_node_subj} was not found on the CN. Please register the node before attempting to suture version chains.')
+        exit(1)
+    loc = utils.node_path(nodedir=end_node_subj)
+    L.info(f'Loading OPersist database: {loc}')
+    op: OPersist = getOpersistInstance(loc)
+    L.info('OPersist database loaded.')
+    numsids = len(links)
+    L.info(f'Linking version chains for {numsids} SIDs.')
+    repairs = 0
+    num = 1
+    for link in links:
+        numstr = f'{num}/{numsids}'
+        old_id, new_id = link[0], link[1].strip("\n")
+        L.info(f'Attempting to link {new_id} to {old_id}.')
+        if cn.chain_link(new_id, old_id, op, client, numstr):
+            repairs += 1
+        else:
+            L.info(f'No repairs made for {link}.')
+        num += 1
+    L.info(f'Repairs completed: {repairs}; attempted: {num}. Closing connections...')
+    op.close()
+    client._session.close()
+    L.info('Done.')
+
+
 def main():
     """
     Uses getopt to set config values in order to call
@@ -143,10 +195,10 @@ def main():
     :rtype: dict
     """
     # get arguments
-    chain_check = False
+    chain_check, chain_link = False, False
     try:
-        opts = getopt.getopt(sys.argv[1:], 'hiPvLd:l:c:C:',
-            ['help', 'init', 'production', 'verbose', 'local' 'dump=', 'load=', 'check=', 'chain-check=']
+        opts = getopt.getopt(sys.argv[1:], 'hiPvLSd:l:c:C:K:',
+            ['help', 'init', 'production', 'verbose', 'local', 'sync-content', 'dump=', 'load=', 'check=', 'chain-check=']
             )[0]
     except Exception as e:
         L.error('Error: %s' % e)
@@ -157,6 +209,8 @@ def main():
             # help
             print(HELP_TEXT)
             exit(0)
+        if o in ('-v', '--verbose'):
+            L.setLevel('DEBUG')
         if o in ('-i', '--init'):
             # do data gathering
             CFG['info'] = 'user'
@@ -205,6 +259,18 @@ def main():
             except FileNotFoundError:
                 L.error('File %s not found.' % a)
                 exit(1)
+        if o in ('-K', '--chain-link'):
+            chain_link = True
+            try:
+                with open(a, 'r') as f:
+                    links_csv = f.readlines()
+            except FileNotFoundError:
+                L.error('File %s not found.' % a)
+                exit(1)
+            links = []
+            for l in links_csv:
+                links.append(l.split(','))
+            L.info(f'Links list length: {len(links)}.')
     L.info('running mnonboard in %s mode.\n\
 data gathering from: %s\n\
 cn_url: %s\n\
@@ -213,7 +279,9 @@ metadata files to check: %s' % (CFG['mode'],
                                 CFG['cn_url'],
                                 CFG['check_files']))
     try:
-        if chain_check:
+        if chain_link:
+            link_chains(CFG, links)
+        elif chain_check:
             check_chains(CFG, sids)
         else:
             run(CFG)

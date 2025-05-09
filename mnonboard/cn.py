@@ -119,11 +119,11 @@ def cn_subj_lookup(subj, cn_url='https://cn.dataone.org/cn', debug=False, client
         # Get records
         L.info('Starting record lookup for %s from %s' % (subj, cn_url))
         subject = client.getSubjectInfo(subj)
-        r = subject.content()[0].content()
-        name = '%s %s' % (r[1], r[2])
+        client._session.close()
+        r = subject.content()
+        name = f'{r[0].content()} {r[1].content()}' # first last
         L.info('Name associated with record %s found in %s: %s.' % (subj, cn_url, name))
         rt = name if not debug else r
-        client._session.close()
         return rt
     except exceptions.NotFound as e:
         estrip = str(e).split('<description>')[1].split('</description>')[0]
@@ -237,6 +237,13 @@ def chain_check(sid, op: OPersist, client: CoordinatingNodeClient_2_0, numstr: s
     ``obsoletes`` property of the first object in the OPersist database to the
     CN object.
 
+    .. note::
+
+        This function is meant to be used in cases where a definitive link between
+        old and new version chain objects is not known. In cases where a repository
+        provides a version map (CSV or similar) that dictates relationships,
+        please use :py:func:`chain_link`.
+
     :param str sid: The series ID
     :param OPersist op: The OPersist database instance
     :param d1_client.cnclient.CoordinatingNodeClient_2_0 client: The client to use for the CN query
@@ -279,11 +286,78 @@ def chain_check(sid, op: OPersist, client: CoordinatingNodeClient_2_0, numstr: s
         L.info(f'({numstr}) {sid} Setting obsoletedBy property of {cn_head_obj.identifier.value()} to {first_opersist.identifier}.')
         client.setObsoletedBy(pid=cn_head_obj.identifier.value(),
                               obsoletedByPid=first_opersist.identifier)
-    except Exception as e:
-        L.error(repr(e))
+    except exceptions.NotAuthorized as e:
+        L.error("Received NotAuthorized: %s" % e)
         return
     # Set the obsoletes property of the first OPersist object in the chain
     L.info(f'({numstr}) {sid} Setting obsoletes property of {first_opersist.identifier} to {cn_head_obj.identifier.value()}.')
     op.setObsoletes(sid, cn_head_obj.identifier.value())
+    L.info(f'({numstr}) {sid} Done.')
+    return True
+
+def chain_link(sid: str, old_id: str, op: OPersist, client: CoordinatingNodeClient_2_0, numstr: str):
+    """
+    Add an obsoletes relationship to the first object in an OPersist version chain
+    where the relationship to the old CN object is known.
+    
+    :param str sid: The series ID
+    :param str old_id: The old CN object ID
+    :param OPersist op: The OPersist database instance
+    :param d1_client.cnclient.CoordinatingNodeClient_2_0 client: The client to use for the CN query
+    :param str numstr: The number of the current operation
+    :returns: True if the operation was successful, False otherwise
+    :rtype: bool
+    """
+
+    L = logging.getLogger(__name__)
+    L.info(f"({numstr}) {sid} Getting OPersist version chain...")
+    first_opersist = op.getThingPIDorFirstSeriesObj(sid)
+    if not first_opersist:
+        L.error(f"({numstr}) {sid} No OPersist object found with SID {sid}.")
+        return False
+    L.info(f"({numstr}) {sid} Found first OPersist object in the series: {first_opersist.identifier}")
+    op_chain = op.getThingsSID(sid)
+    L.info(f'({numstr}) {sid} Found {op_chain.count()} series objects in the OPersist database.')
+    # get the CN objects
+    L.info(f"({numstr}) {sid} Getting CN head object...")
+    try:
+        cn_head_obj = client.getSystemMetadata(old_id)
+    except exceptions.NotFound as e:
+        L.error(f"({numstr}) {old_id} No systemMetadata found for this PID on the CN.")
+        return False
+    if cn_head_obj:
+        L.info(f'({numstr}) {sid} Found systemMetadata object: {cn_head_obj.identifier.value()}')
+    # check if the cn object is in opersist
+    if cn_head_obj.obsoletedBy:
+        if first_opersist.obsoletes in cn_head_obj.identifier.value():
+            if cn_head_obj.obsoletedBy.__str__() == first_opersist.identifier:
+                # chain is intact, no action needed
+                L.info(f'({numstr}) {sid} Chain is intact.')
+                return False
+            else:
+                L.error(f'({numstr}) {sid} Version chain link only goes one way! {cn_head_obj.identifier.value()} is not obsoletedBy {first_opersist.identifier}.')
+    else:
+        L.info(f'({numstr}) {sid} No link exists between {first_opersist.identifier} and {cn_head_obj.identifier.value()}.')
+    # Set the obsoletedBy property of the CN object
+    L.info(f'({numstr}) {sid} Attempting repairs...')
+    try:
+        L.info(f'({numstr}) {sid} Setting obsoletedBy property of {cn_head_obj.identifier.value()} to {first_opersist.identifier}.')
+        client.setObsoletedBy(pid=cn_head_obj.identifier.value(),
+                              obsoletedByPid=first_opersist.identifier,
+                              serialVersion=cn_head_obj.serialVersion)
+    except exceptions.NotAuthorized as e:
+        L.error("Received %s" % e)
+        return
+    # Set the obsoletes property of the first OPersist object in the chain
+    L.info(f'({numstr}) {sid} Setting obsoletes property of {first_opersist.identifier} to {cn_head_obj.identifier.value()}.')
+    op.setObsoletes(sid, cn_head_obj.identifier.value())
+    op_old = op.getThingPIDorFirstSeriesObj(old_id)
+    if op_old:
+        L.info(f'({numstr}) {sid} Found old OPersist object: {op_old.identifier}')
+        L.info(f'({numstr}) {sid} Setting obsoletedBy property of {op_old.identifier} to {sid}.')
+        op.setObsoletedBy(old_id, sid)
+        L.info(f'({numstr}) {sid} Done.')
+    else:
+        L.error(f'({numstr}) {sid} No OPersist object found with PID {old_id}.')
     L.info(f'({numstr}) {sid} Done.')
     return True

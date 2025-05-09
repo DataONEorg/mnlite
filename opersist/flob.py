@@ -41,7 +41,7 @@ class FLOB(object):
     def pathFromHash(self, hash: str):
         hash = hash.strip().lower()
         if not self.SHA256_REGEX.match(hash):
-            raise ValueError("String '%s' is not a valid SHA256 hash", hash)
+            raise ValueError(f"String '{hash}' is not a valid SHA256 hash")
         fldr = os.path.join(hash[0], hash[1], hash[2])
         return fldr
 
@@ -89,7 +89,7 @@ class FLOB(object):
         f_base = os.path.join(abs_fldr, hash)
         f_dest = f"{f_base}.{self.EXTENSION}"
         if os.path.exists(f_dest) and not allow_replace:
-            raise ValueError("Entry already exists: %s", hash)
+            raise ValueError(f"opersist.flob.FLOB.addFile - Entry already exists: {hash}")
         with open(f_dest, "wb") as fout:
             fout.write(b)
         if not metadata is None:
@@ -123,7 +123,7 @@ class FLOB(object):
                 nbytes += len(fbuf)
                 fbuf = fh.read(self.BLOCK_SIZE)
         if nbytes <= 0:
-            raise ValueError("No content in provided file hande")
+            raise ValueError("opersist.flob.FLOB.addFile - No content in provided file handle")
         if hash is None:
             hash = sha.hexdigest()
         fldr_dest = self.pathFromHash(hash)
@@ -133,7 +133,7 @@ class FLOB(object):
         f_dest = f"{f_base}.{self.EXTENSION}"
         if os.path.exists(f_dest) and not allow_replace:
             os.unlink(tmpfile_name)
-            raise ValueError("Entry already exists: %s", hash)
+            raise ValueError(f"opersist.flob.FLOB.addFile - Entry already exists: {hash}")
         shutil.move(tmpfile_name, f_dest)
         if not metadata is None:
             with open(f"{f_base}.json", "w") as fout:

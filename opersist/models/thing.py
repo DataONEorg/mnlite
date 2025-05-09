@@ -124,11 +124,11 @@ class Thing(opersist.models.Base):
     )
     # replication_allowed
     replication_allowed = sqlalchemy.Column(
-        sqlalchemy.Boolean, default=True, doc="Replication allowed for this thing"
+        sqlalchemy.Boolean, default=False, doc="Replication allowed for this thing"
     )
     # number_replicas
     number_replicas = sqlalchemy.Column(
-        sqlalchemy.Integer, default=3, doc="Desired number of replicas"
+        sqlalchemy.Integer, default=0, doc="Desired number of replicas"
     )
     # replication_preferred
     replication_preferred = sqlalchemy.Column(
@@ -192,7 +192,7 @@ class Thing(opersist.models.Base):
     @sqlalchemy.orm.validates("identifier", "series_id", "format_id")
     def validate_identifier(self, key, value):
         if value is not None:
-            value = value.strip()
+            value = str(value).strip()
             if opersist.utils.stringHasSpace(value):
                 raise ValueError(f"An identifier must not contain spaces: '{value}'")
             if key == "series_id":
