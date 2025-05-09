@@ -832,7 +832,7 @@ class OPersist(object):
         )
         return Q.order_by(models.thing.Thing.date_modified.desc())
 
-    def getThingsSIDOrAltIdentifier(self, series_id, alt_ids:list[str]=[]):
+    def getThingsSIDOrAltIdentifier(self, series_id, alt_ids:list=[]):
         """
         Get the most recent object in the series or with an alt identifier.
         
