@@ -474,7 +474,10 @@ class OPersist(object):
             if date_uploaded is None:
                 the_thing.date_uploaded = utils.dtnow()
             if alt_identifiers is not None:
-                self.identifiers = alt_identifiers
+                # remove duplicates
+                alt_identifiers = list(set(alt_identifiers))
+                current_identifiers = list(the_thing.identifiers)
+                the_thing.identifiers = list(set(alt_identifiers + current_identifiers))
             if access_rules is None:
                 the_thing.access_policy.append(self.getPublicReadAccessRule())
             else:
@@ -482,7 +485,7 @@ class OPersist(object):
             self._L.debug(the_thing)
             self._session.add(the_thing)
             self.commit()
-            self._L.debug(f"Persisted {identifier}")
+            self._L.info(f"Persisted {identifier}")
             return the_thing
         except sqlalchemy.exc.OperationalError as e:
             # this situation denotes a database read/write issue
@@ -818,8 +821,45 @@ class OPersist(object):
         return Q.order_by(models.thing.Thing.date_modified.desc())
 
     def getThingsIdentifier(self, identifier):
-        # TODO: match PID or SID or related identifiers, order by date_modified
-        pass
+        # match PID or SID or related identifiers, order by date_modified
+        assert self._session is not None
+        Q = self._session.query(models.thing.Thing).filter(
+            sqlalchemy.or_(
+                models.thing.Thing.identifiers.contains(identifier),
+                models.thing.Thing.series_id == identifier,
+                models.thing.Thing.identifier == identifier,
+            )
+        )
+        return Q.order_by(models.thing.Thing.date_modified.desc())
+
+    def getThingsSIDOrAltIdentifier(self, series_id, alt_ids:list=[]):
+        """
+        Get the most recent object in the series or with an alt identifier.
+        
+        Args:
+            series_id: Series ID or PID of the object in the SO database
+            alt_ids: List of alternative identifiers to match (limit 1000)
+
+        Returns:
+            A singular Thing, the most recent object in the series or with a matching alt identifier
+        """
+        # match SID or identifiers, minus obsoleted datasets, order by date_modified
+        assert self._session is not None
+        Q = self._session.query(models.thing.Thing).filter(
+            sqlalchemy.and_(
+                # exclude obsoleted datasets
+                models.thing.Thing.obsoleted_by == None,
+                # and match SID or alt identifiers
+                sqlalchemy.or_(
+                    models.thing.Thing.identifiers.contains(series_id),
+                    models.thing.Thing.series_id == series_id,
+                    sqlalchemy.or_(
+                        *[models.thing.Thing.identifiers.contains(alt_id) for alt_id in (alt_ids[:1000] if isinstance(alt_ids, list) else [])]
+                    ),
+                ),
+            )
+        )
+        return Q.order_by(models.thing.Thing.date_modified.desc()).first()
 
     def countThings(self):
         Q = self._session.query(models.thing.Thing)
