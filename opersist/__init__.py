@@ -485,7 +485,7 @@ class OPersist(object):
             self._L.debug(the_thing)
             self._session.add(the_thing)
             self.commit()
-            self._L.debug(f"Persisted {identifier}")
+            self._L.info(f"Persisted {identifier}")
             return the_thing
         except sqlalchemy.exc.OperationalError as e:
             # this situation denotes a database read/write issue

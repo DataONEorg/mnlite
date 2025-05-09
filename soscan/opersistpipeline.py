@@ -121,11 +121,14 @@ class OPersistPipeline:
             # Check for duplicates in deduplication nodes
             for dedup_node in self.dedup_nodes:
                 dedup_node: opersist.OPersist
+                dedup_node_name = Path(dedup_node.fs_path).name
+                self.logger.debug(f"Checking for duplicates in {dedup_node_name}")
+                self.logger.debug(f"series_id: {series_id}")
+                self.logger.debug(f"alt_identifiers: {alt_identifiers}")
                 existing = dedup_node.getThingsSIDOrAltIdentifier(series_id=series_id, alt_ids=alt_identifiers)
                 if existing is not None:
-                    dedup_node_name = Path(dedup_node.fs_path).name
                     self.logger.debug(
-                        f"Found existing entry in dedup node {dedup_node_name}:\n{item['url']}\n{checksum_sha256}\n{existing.series_id}\n{existing.file_name}\n==="
+                        f"Found existing entry in dedup node {dedup_node_name}:\n{item['url']}\n{checksum_sha256}\n{existing.series_id}\n{existing.identifiers}\n{existing.file_name}\n==="
                     )
                     raise scrapy.exceptions.DropItem(
                         f"Item already in dedup node {dedup_node_name}: {item['url']} sha256:{checksum_sha256}"
