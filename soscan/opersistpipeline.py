@@ -161,6 +161,9 @@ class OPersistPipeline:
                 date_uploaded=item.get("time_loc", None),
             )
 
+        except scrapy.exceptions.DropItem as e:
+            # passing the dedup DropItem to up to the spider
+            raise scrapy.exceptions.DropItem(e)
         except Exception as e:
             #self.logger.error(f"{repr(e)}: {e}")
             self.logger.error(f"Exception: {e}")
