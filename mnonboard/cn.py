@@ -120,9 +120,8 @@ def cn_subj_lookup(subj, cn_url='https://cn.dataone.org/cn', debug=False, client
         L.info('Starting record lookup for %s from %s' % (subj, cn_url))
         subject = client.getSubjectInfo(subj)
         client._session.close()
-        if debug:
-            L.info('Subject content: %s' % subject.content())
-            L.info('Subject content 0 content: %s' % subject.content()[0].content())
+        L.debug('Subject content: %s' % subject.content())
+        L.debug('Subject content 0 content: %s' % subject.content()[0].content())
         r = subject.content()[0].content()  # first record, first content
         name = f'{r[1]} {(r[2])}' # first last
         L.info('Name associated with record %s found in %s: %s.' % (subj, cn_url, name))
