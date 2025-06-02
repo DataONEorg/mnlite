@@ -100,7 +100,7 @@ def get_or_create_subj(loc: str, value: str, client: CoordinatingNodeClient_2_0,
         set_role(loc=loc, title=title, value=value)
     return name
 
-def cn_subj_lookup(subj, cn_url='https://cn.dataone.org/cn', debug=False, client: CoordinatingNodeClient_2_0=None):
+def cn_subj_lookup(subj, cn_url='https://cn.dataone.org/cn', debug=False, client: CoordinatingNodeClient_2_0=None, D1_AUTH_TOKEN=None):
     """
     Use the DataONE API to look up whether a given ORCiD number already exists
     in the system.
@@ -120,11 +120,16 @@ def cn_subj_lookup(subj, cn_url='https://cn.dataone.org/cn', debug=False, client
         L.info('Starting record lookup for %s from %s' % (subj, cn_url))
         subject = client.getSubjectInfo(subj)
         client._session.close()
-        r = subject.content()
-        name = f'{r[0].content()} {r[1].content()}' # first last
+        if debug:
+            L.info('Subject content: %s' % subject.content())
+            L.info('Subject content 0 content: %s' % subject.content()[0].content())
+        r = subject.content()[0].content()  # first record, first content
+        name = f'{r[1]} {(r[2])}' # first last
         L.info('Name associated with record %s found in %s: %s.' % (subj, cn_url, name))
         rt = name if not debug else r
         return rt
+    except IndexError as e:
+        L.warning(f'Caught IndexError while looking up {subj} at {cn_url}: {e}')
     except exceptions.NotFound as e:
         estrip = str(e).split('<description>')[1].split('</description>')[0]
         e = e if debug else estrip
