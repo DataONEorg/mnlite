@@ -1,7 +1,8 @@
 import datetime
 import dateparser
 import json
-import shapely
+import logging
+from math import cos
 
 # raise Exception("don't use this")
 
@@ -57,6 +58,7 @@ class GeoBox(object):
         where south and north are latitude values, and west and east are longitude values.
     """
     def __init__(self, geo: dict = None):
+        self.L = logging.getLogger("GeoBox")
         self.geo = geo
         self.latitudes = []
         self.longitudes = []
@@ -78,11 +80,13 @@ class GeoBox(object):
             str: A string representing the bounding box in the format "south west north east".
         """
         if not self.geo:
+            self.L.warning("GeoBox.compute_box called with no geo data.")
             return None
 
         if "latitude" in self.geo and "longitude" in self.geo:
             # GeoCoordinates are explicitly defined lat lon coordinate pairs, such as
             #   "latitude": 39.3280, "longitude": 120.1633
+            self.L.debug(f"GeoBox: using latitude {self.geo['latitude']} and longitude {self.geo['longitude']}")
             self.latitudes.append(float(self.geo["latitude"]))
             self.longitudes.append(float(self.geo["longitude"]))
         if "point" in self.geo:
@@ -90,8 +94,9 @@ class GeoBox(object):
             #   "point": "39.3280 120.1633"
             # or
             #   "point": "39.3280,120.1633"
-            point = self.geo["point"]
+            point: str = self.geo["point"]
             coords = point.replace(",", " ").split()
+            self.L.debug(f"GeoBox: using point {coords}")
             self.latitudes.append(float(coords[0]))
             self.longitudes.append(float(coords[1]))
         if "box" in self.geo:
@@ -101,6 +106,7 @@ class GeoBox(object):
             #   "box": "39.3280 120.1633,40.445 123.7878"
             box = self.geo["box"]
             coords = box.replace(",", " ").split()
+            self.L.debug(f"GeoBox: using box {coords}")
             self.latitudes.extend([float(coords[0]), float(coords[2])])
             self.longitudes.extend([float(coords[1]), float(coords[3])])
         if "polygon" in self.geo or "line" in self.geo:
@@ -111,6 +117,7 @@ class GeoBox(object):
             # they display differently but can be treated the same way for bounding box computation
             polygon = self.geo["polygon"] if "polygon" in self.geo else self.geo["line"]
             coords = polygon.replace(",", " ").split()
+            self.L.debug(f"GeoBox: using polygon/line {coords}")
             for i in range(0, len(coords), 2):
                 self.latitudes.append(float(coords[i]))
                 self.longitudes.append(float(coords[i + 1]))
@@ -120,6 +127,7 @@ class GeoBox(object):
             #   "circle": "39.3280 120.1633 1000"
             circle = self.geo["circle"]
             coords = circle.replace(",", " ").split()
+            self.L.debug(f"GeoBox: using circle {coords}")
             if len(coords) < 3:
                 raise ValueError("Circle must have at least latitude, longitude, and radius.")
             self.latitudes.append(float(coords[0]))
@@ -129,18 +137,28 @@ class GeoBox(object):
             # The radius is in meters, so we need to convert it to degrees.
             # Approximate conversion: 1 degree latitude = 111 km, 1 degree longitude = 111 km * cos(latitude)
             lat_degree = radius / 111000  # 1 degree latitude is approximately 111 km
-            lon_degree = radius / (111000 * abs(shapely.geometry.Point(float(coords[0]), float(coords[1])).y))
+            lon_degree = radius / (111000 * cos(float(coords[1])))
             self.latitudes.extend([float(coords[0]) - lat_degree, float(coords[0]) + lat_degree])
             self.longitudes.extend([float(coords[1]) - lon_degree, float(coords[1]) + lon_degree])
 
         # If no coordinates were added, return None
         if not self.latitudes or not self.longitudes:
+            self.L.warning("GeoBox.compute_box returning with no valid coordinates.")
             return None
         
+        self.L.debug(f"GeoBox: latitudes {self.latitudes}")
+        self.L.debug(f"GeoBox: longitudes {self.longitudes}")
+
         south = min(self.latitudes)
         north = max(self.latitudes)
         west = min(self.longitudes)
         east = max(self.longitudes)
+
+        self.L.debug(f"Computed south: {south}, west: {west}, north: {north}, east: {east}")
+        # Ensure the bounding box is valid
+        if abs(south) > 90 or abs(north) > 90 or abs(west) > 180 or abs(east) > 180:
+            self.L.warning(f"Bounding box exceeds valid bounds. SWNE: {south} {west} {north} {east}")
+            return None
 
         return f"{south} {west} {north} {east}"
 
