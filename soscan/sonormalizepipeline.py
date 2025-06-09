@@ -4,6 +4,7 @@ import sonormal.normalize
 import json
 import opersist.rdfutils
 from pathlib import Path
+import soscan.utils as utils
 
 def consolidate_list(l: list, sep: str=', '):
     """
@@ -44,6 +45,9 @@ class SoscanNormalizePipeline:
         if 'use_at_id' in kwargs:
             self.use_at_id = kwargs['use_at_id']
             self.logger.debug(f'Using @id as identifier: {self.use_at_id}')
+        if 'convert_geoshapes' in kwargs:
+            self.convert_geoshapes = kwargs['convert_geoshapes']
+            self.logger.debug(f'Using @id as identifier: {self.convert_geoshapes}')
 
     
     @classmethod
@@ -56,6 +60,8 @@ class SoscanNormalizePipeline:
             for s in _cs:
                 if s == 'use_at_id':
                     kwargs['use_at_id'] = _cs[s]
+                if s == 'convert_geoshapes':
+                    kwargs['convert_geoshapes'] = _cs[s]
         return cls(**kwargs)
 
 
@@ -225,4 +231,9 @@ class SoscanNormalizePipeline:
         # Obsoletes is not a property of the retrieved object but instead needs
         # to be inferred from the history associated with the object lineage
         # item["obsoletes"] = None
+
+        # convert alternate geoshapes to boxes
+        if self.convert_geoshapes:
+            item["normalized"] = utils.convert_geoshapes_to_boxes(item["normalized"])
+
         return item
