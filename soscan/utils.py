@@ -1,5 +1,7 @@
 import datetime
 import dateparser
+import json
+import shapely
 
 # raise Exception("don't use this")
 
@@ -39,3 +41,180 @@ def parseDatetimeString(ds):
     if isinstance(ds, bytes):
         ds = ds.decode("utf-8")
     return dateparser.parse(ds, settings={"RETURN_AS_TIMEZONE_AWARE": True})
+
+class GeoBox(object):
+    """
+    A class to compute a bounding box from a GeoShape or GeoCoordinates.
+    Latitude max and min will be used to compute the north and south bounds of the box,
+    and longitude max and min will be used to compute the east and west bounds of the box.
+    No Lat should exceed abs(lat) > 90, and no Lon should exceed abs(lon) > 180.
+
+    Attributes:
+        geo (dict): A dictionary representing a GeoShape or GeoCoordinates.
+    
+    Returns:
+        A "box" string in the format "south west north east"
+        where south and north are latitude values, and west and east are longitude values.
+    """
+    def __init__(self, geo: dict = None):
+        self.geo = geo
+        self.latitudes = []
+        self.longitudes = []
+
+    def set_geo(self, geo: dict):
+        """
+        Set the GeoShape or GeoCoordinates for the bounding box computation.
+
+        Args:
+            geo (dict): A dictionary representing a GeoShape or GeoCoordinates.
+        """
+        self.geo = geo    
+
+    def compute_box(self) -> str:
+        """
+        Compute the bounding box from the GeoShape or GeoCoordinates.
+
+        Returns:
+            str: A string representing the bounding box in the format "south west north east".
+        """
+        if not self.geo:
+            return None
+
+        if "latitude" in self.geo and "longitude" in self.geo:
+            # GeoCoordinates are explicitly defined lat lon coordinate pairs, such as
+            #   "latitude": 39.3280, "longitude": 120.1633
+            self.latitudes.append(float(self.geo["latitude"]))
+            self.longitudes.append(float(self.geo["longitude"]))
+        if "point" in self.geo:
+            # points are lat lon coordinate pairs, such as
+            #   "point": "39.3280 120.1633"
+            # or
+            #   "point": "39.3280,120.1633"
+            point = self.geo["point"]
+            coords = point.replace(",", " ").split()
+            self.latitudes.append(float(coords[0]))
+            self.longitudes.append(float(coords[1]))
+        if "box" in self.geo:
+            # boxes are two lat lon coordinate pairs, such as
+            #   "box": "39.3280 120.1633 40.445 123.7878"
+            # or
+            #   "box": "39.3280 120.1633,40.445 123.7878"
+            box = self.geo["box"]
+            coords = box.replace(",", " ").split()
+            self.latitudes.extend([float(coords[0]), float(coords[2])])
+            self.longitudes.extend([float(coords[1]), float(coords[3])])
+        if "polygon" in self.geo or "line" in self.geo:
+            # polygons and lines are comma or space-separated strings of n lat lon coordinate pairs, such as
+            #   "polygon": "39.3280 120.1633 40.445 123.7878 41 121 39.77 122.42 39.3280 120.1633"
+            # or
+            #   "line": "39.3280 120.1633,40.445 123.7878,41 121,39.77 122.42,39.3280 120.1633"
+            # they display differently but can be treated the same way for bounding box computation
+            polygon = self.geo["polygon"] if "polygon" in self.geo else self.geo["line"]
+            coords = polygon.replace(",", " ").split()
+            for i in range(0, len(coords), 2):
+                self.latitudes.append(float(coords[i]))
+                self.longitudes.append(float(coords[i + 1]))
+        if "circle" in self.geo:
+            # A circle is the circular region of a specified radius centered at a specified latitude and longitude.
+            # A circle is expressed as a pair followed by a radius in meters.
+            #   "circle": "39.3280 120.1633 1000"
+            circle = self.geo["circle"]
+            coords = circle.replace(",", " ").split()
+            if len(coords) < 3:
+                raise ValueError("Circle must have at least latitude, longitude, and radius.")
+            self.latitudes.append(float(coords[0]))
+            self.longitudes.append(float(coords[1]))
+            radius = float(coords[2])
+            # Compute the bounding box for the circle
+            # The radius is in meters, so we need to convert it to degrees.
+            # Approximate conversion: 1 degree latitude = 111 km, 1 degree longitude = 111 km * cos(latitude)
+            lat_degree = radius / 111000  # 1 degree latitude is approximately 111 km
+            lon_degree = radius / (111000 * abs(shapely.geometry.Point(float(coords[0]), float(coords[1])).y))
+            self.latitudes.extend([float(coords[0]) - lat_degree, float(coords[0]) + lat_degree])
+            self.longitudes.extend([float(coords[1]) - lon_degree, float(coords[1]) + lon_degree])
+
+        # If no coordinates were added, return None
+        if not self.latitudes or not self.longitudes:
+            return None
+        
+        south = min(self.latitudes)
+        north = max(self.latitudes)
+        west = min(self.longitudes)
+        east = max(self.longitudes)
+
+        return f"{south} {west} {north} {east}"
+
+    def __str__(self):
+        """
+        String representation of the bounding box.
+
+        Returns:
+            str: A string representing the bounding box in the format "south west north east".
+        """
+        return self.compute_box()
+
+    def __repr__(self):
+        """
+        String representation of the bounding box for debugging.
+
+        Returns:
+            str: A string representing the bounding box in the format "south west north east".
+        """
+        return f"GeoBox({self.compute_box()})"
+    
+    def to_dict(self):
+        """
+        Convert the bounding box to a dictionary format.
+
+        Returns:
+            dict: A dictionary with keys 'south', 'west', 'north', 'east'.
+        """
+        box = self.compute_box()
+        if box is None:
+            return {}
+        south, west, north, east = map(float, box.split())
+        return {
+            "south": south,
+            "west": west,
+            "north": north,
+            "east": east
+        }
+        
+
+def convert_geoshapes_to_boxes(normalized: json):
+    """
+    The DataONE indexing system cannot handle GeoShape types other than boxes.
+    This function will convert GeoShape points, lines, and polygons,
+    as well as GeoCoordinate pairs to box format in a normalized JSON-LD document.
+
+    Args:
+        normalized: normalized dataset
+    Returns: normalized dataset with boxes
+    """
+    spatial_coverage: dict = normalized.get("spatialCoverage")
+    if spatial_coverage is None:
+        return normalized
+    else:
+        geo = spatial_coverage.get("geo", {})
+
+    # Ensure spatial_coverage is a list for uniform processing
+    if not isinstance(geo, list):
+        geo = [geo]
+
+    box = GeoBox()
+    for loc in geo:
+        if isinstance(loc, dict):
+            box.set_geo(loc)
+            box_str = box.compute_box()
+            if box_str:
+                # Update the loc with the computed box
+                loc["box"] = box_str
+        # Remove other geo properties that are not boxes
+        for key in list(loc.keys()):
+            if key not in ["box"]:
+                del loc[key]
+        else:
+            # If the geo entry is not a dict, we can skip it or handle it as needed
+            continue
+
+    return normalized
