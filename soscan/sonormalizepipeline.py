@@ -208,6 +208,15 @@ class SoscanNormalizePipeline:
                 f"Framed dataset:\n{_framed}"
             )
 
+
+        # convert alternate geoshapes to boxes
+        if self.convert_geoshapes:
+            # try:
+            self.logger.debug("Converting geoshapes")
+            item["jsonld"] = utils.convert_geoshapes_to_boxes(item["jsonld"])
+            # except Exception as e:
+            #     self.logger.warning(f"Geoshape conversion failed: {e}")
+
         # TODO: identifiers
         # The process for handling of identifiers needs to be set in configuration
 
@@ -230,9 +239,5 @@ class SoscanNormalizePipeline:
         # Obsoletes is not a property of the retrieved object but instead needs
         # to be inferred from the history associated with the object lineage
         # item["obsoletes"] = None
-
-        # convert alternate geoshapes to boxes
-        if self.convert_geoshapes:
-            item["normalized"] = utils.convert_geoshapes_to_boxes(item["normalized"])
 
         return item

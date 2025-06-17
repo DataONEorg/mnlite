@@ -199,19 +199,19 @@ class GeoBox(object):
         }
         
 
-def convert_geoshapes_to_boxes(normalized: json):
+def convert_geoshapes_to_boxes(jld: json):
     """
     The DataONE indexing system cannot handle GeoShape types other than boxes.
     This function will convert GeoShape points, lines, and polygons,
-    as well as GeoCoordinate pairs to box format in a normalized JSON-LD document.
+    as well as GeoCoordinate pairs to box format in a jld JSON-LD document.
 
     Args:
-        normalized: normalized dataset
-    Returns: normalized dataset with boxes
+        jld: jld dataset
+    Returns: jld dataset with boxes
     """
-    spatial_coverage: dict = normalized.get("spatialCoverage")
+    spatial_coverage: dict = jld.get("spatialCoverage")
     if spatial_coverage is None:
-        return normalized
+        return jld
     else:
         geo = spatial_coverage.get("geo", {})
 
@@ -225,6 +225,7 @@ def convert_geoshapes_to_boxes(normalized: json):
             box.set_geo(loc)
             box_str = box.compute_box()
             if box_str:
+                loc["@type"] = "GeoShape"
                 # Update the loc with the computed box
                 loc["box"] = box_str
         # Remove other geo properties that are not boxes
@@ -235,4 +236,4 @@ def convert_geoshapes_to_boxes(normalized: json):
             # If the geo entry is not a dict, we can skip it or handle it as needed
             continue
 
-    return normalized
+    return jld
