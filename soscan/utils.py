@@ -209,6 +209,8 @@ def convert_geoshapes_to_boxes(jld: json):
         jld: jld dataset
     Returns: jld dataset with boxes
     """
+    L = logging.getLogger("convert_geoshapes_to_boxes")
+
     spatial_coverage: dict = jld.get("spatialCoverage")
     if spatial_coverage is None:
         return jld
@@ -228,6 +230,10 @@ def convert_geoshapes_to_boxes(jld: json):
                 loc["@type"] = "GeoShape"
                 # Update the loc with the computed box
                 loc["box"] = box_str
+            else:
+                # If no valid box could be computed, we can either skip this entry or handle it as needed
+                L.warning("GeoBox.compute_box returned None, skipping this geo entry.")
+                continue
             # Remove other geo properties that are not boxes
             for key in list(loc.keys()):
                 if (key not in ["box"]) and (key not in ["@type"]):
@@ -235,5 +241,8 @@ def convert_geoshapes_to_boxes(jld: json):
         else:
             # If the geo entry is not a dict, we can skip it or handle it as needed
             continue
+    if geo == {}:
+        # If geo is empty after processing, remove it from spatialCoverage
+        del spatial_coverage["geo"]
 
     return jld
