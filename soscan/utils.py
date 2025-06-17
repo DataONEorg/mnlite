@@ -232,7 +232,7 @@ def convert_geoshapes_to_boxes(jld: json):
                 loc["box"] = box_str
             else:
                 # If no valid box could be computed, we can either skip this entry or handle it as needed
-                L.warning("GeoBox.compute_box returned None, skipping this geo entry.")
+                L.debug("GeoBox.compute_box returned None, skipping this geo entry.")
                 continue
             # Remove other geo properties that are not boxes
             for key in list(loc.keys()):
