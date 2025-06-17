@@ -216,6 +216,10 @@ def convert_geoshapes_to_boxes(jld: json):
         return jld
     else:
         geo = spatial_coverage.get("geo", {})
+    if geo is None:
+        # If there is no geo information, we can skip processing
+        L.debug("No geo information found in spatialCoverage, skipping conversion.")
+        return jld
 
     # Ensure spatial_coverage is a list for uniform processing
     if not isinstance(geo, list):
