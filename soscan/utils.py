@@ -228,10 +228,10 @@ def convert_geoshapes_to_boxes(jld: json):
                 loc["@type"] = "GeoShape"
                 # Update the loc with the computed box
                 loc["box"] = box_str
-        # Remove other geo properties that are not boxes
-        for key in list(loc.keys()):
-            if key not in ["box"]:
-                del loc[key]
+            # Remove other geo properties that are not boxes
+            for key in list(loc.keys()):
+                if (key not in ["box"]) and (key not in ["@type"]):
+                    del loc[key]
         else:
             # If the geo entry is not a dict, we can skip it or handle it as needed
             continue
