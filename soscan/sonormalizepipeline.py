@@ -41,11 +41,19 @@ class SoscanNormalizePipeline:
     def __init__(self, **kwargs):
         self.logger = logging.getLogger("SoscanNormalize")
         self.use_at_id = False
+        self.convert_geoshapes = False
+        self.reorder_ids = False
         if 'use_at_id' in kwargs:
             self.use_at_id = kwargs['use_at_id']
             self.logger.debug(f'Using @id as identifier: {self.use_at_id}')
+        if 'convert_geoshapes' in kwargs:
+            self.convert_geoshapes = kwargs['convert_geoshapes']
+            self.logger.debug(f'Converting geoshapes to boxes: {self.convert_geoshapes}')
+        if 'reorder_identifiers' in kwargs:
+            # if reorder_identifiers is set, the script will reorder to prioritize the set string value if found in the identifier
+            self.reorder_ids = kwargs['reorder_identifiers']
+            self.logger.debug(f'Reordering identifiers to prioritize: {self.reorder_ids}')
 
-    
     @classmethod
     def from_crawler(cls, crawler, *args, **kwargs):
         node_path = crawler.settings.get("STORE_PATH", None)
@@ -56,10 +64,14 @@ class SoscanNormalizePipeline:
             for s in _cs:
                 if s == 'use_at_id':
                     kwargs['use_at_id'] = _cs[s]
+                if s == 'convert_geoshapes':
+                    kwargs['convert_geoshapes'] = _cs[s]
+                if s == 'reorder_identifiers':
+                    kwargs['reorder_identifiers'] = _cs[s]
         return cls(**kwargs)
 
 
-    def extract_identifier(self, ids:list, use_at_id:bool):
+    def extract_identifier(self, ids:list, use_at_id:bool, preferred_prefix: str=False):
         """
         Extract the series identifier from a list of identifiers structured like the following.
 
@@ -71,6 +83,13 @@ class SoscanNormalizePipeline:
         The first identifier is the one we should use as the series_id.
         """
         if len(ids) > 0:
+            self.logger.debug(f'Looking up preferred prefix: {preferred_prefix}')
+            if preferred_prefix != False:
+                for id in ids[0]["identifier"]:
+                    self.logger.debug(f'Checking for {preferred_prefix} in identifier: {id}')
+                    if id.startswith(preferred_prefix):
+                        self.logger.debug(f'Found preferred identifier: {id}')
+                        return id
             if len(ids[0]["identifier"]) > 0:
                 return ids[0]["identifier"][0]
             else:
@@ -193,7 +212,18 @@ class SoscanNormalizePipeline:
         ids = []
         try:
             _framed = sonormal.normalize.frameSODataset(normalized, options=options)
-            ids = sonormal.normalize.getDatasetsIdentifiers(_framed)
+            ids = sonormal.normalize.getDatasetsIdentifiers(_framed, prefer_str=self.reorder_ids)
+            if self.reorder_ids != False:
+                self.logger.debug(f'Looking for {self.reorder_ids} in identifier strings')
+                idx = ids[0]['identifier'][0]
+                for id in ids[0]['identifier']:
+                    self.logger.debug(f'Checking for {self.reorder_ids} in identifier: {id}')
+                    if self.reorder_ids in id:
+                        # make this the first item in the list
+                        idx = id
+                        self.logger.debug(f'Found preferred identifier: {idx}')
+                        self.logger.debug(f'Removing existing identifier list: {ids[0]["identifier"]}')
+                ids[0]['identifier'].insert(0, idx)
         except Exception as e:
             raise scrapy.exceptions.DropItem(f"JSON-LD identifier extract failed: {e}")
         if len(ids) < 1:
@@ -207,7 +237,7 @@ class SoscanNormalizePipeline:
 
         # Use the first identifier value provided for series_id
         # PID will be computed from the object checksum
-        item["series_id"] = self.extract_identifier(ids, self.use_at_id)
+        item["series_id"] = self.extract_identifier(ids, self.use_at_id, preferred_prefix=self.reorder_ids)
         item["alt_identifiers"] = self.extract_alt_identifiers(ids, self.use_at_id)
         # if there are no identifiers, we need to drop the item
         if item["series_id"] is None:
