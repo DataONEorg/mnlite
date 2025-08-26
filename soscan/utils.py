@@ -3,6 +3,7 @@ import dateparser
 import json
 import logging
 from math import cos
+import copy
 
 # raise Exception("don't use this")
 
@@ -222,6 +223,7 @@ def convert_geoshapes_to_boxes(jld: json):
         return jld
 
     # Ensure spatial_coverage is a list for uniform processing
+    original_geo = copy.deepcopy(geo)
     if not isinstance(geo, list):
         geo = [geo]
 
@@ -245,8 +247,19 @@ def convert_geoshapes_to_boxes(jld: json):
         else:
             # If the geo entry is not a dict, we can skip it or handle it as needed
             continue
-    if geo == {}:
+    # Remove empty geo node if present
+    # geo is a list of dicts; remove any empty dicts
+    geo = [g for g in geo if g]
+    if not geo:
         # If geo is empty after processing, remove it from spatialCoverage
-        del spatial_coverage["geo"]
-
+        L.debug("Geo node is empty after processing; removing from spatialCoverage.")
+        spatial_coverage.pop("geo", None)
+    else:
+        # If geo is not empty, update spatial_coverage["geo"]
+        # If original geo was a list, keep as list; else, set as single dict
+        spatial_coverage["geo"] = geo
+    L.debug(f"Updated spatialCoverage: {spatial_coverage}")
+    # Update the jld with the modified spatialCoverage
+    jld["spatialCoverage"] = spatial_coverage
+    # Return the modified jld
     return jld
