@@ -5,7 +5,8 @@ https://github.com/scrapy/scrapy/blob/master/scrapy/spiders/sitemap.py
 The sitemap loc lastmod property is provided in the request meta
 """
 
-import os
+from pathlib import Path
+import json
 import re
 import logging
 from scrapy.spiders import Spider
@@ -51,6 +52,23 @@ class LDSitemapSpider(Spider):
         # If set, then don't download the target
         self._count_only = kw.get("count_only", False)
 
+    @classmethod
+    def from_crawler(cls, crawler, *args, **kwargs):
+        """
+        Get the alternate rules from the crawler settings.
+        """
+        node_path = crawler.settings.get("STORE_PATH", False)
+        mn_settings = Path(f'{node_path}/settings.json')
+        if mn_settings.exists():
+            with open(mn_settings) as cs:
+                _cs: dict = json.loads(cs.read())
+            for s in _cs:
+                if s == 'alt_rules':
+                    kwargs['alt_rules'] = _cs[s]
+                if s == 'follow_alternate_links':
+                    cls.sitemap_alternate_links = _cs[s]
+                    kwargs['follow_alternate_links'] = _cs[s]
+        return cls(*args, alt_rules=kwargs.get('alt_rules'), **kwargs)
 
     def start_requests(self):
         for url in self.sitemap_urls:
