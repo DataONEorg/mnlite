@@ -153,6 +153,14 @@ class JsonldSpider(soscan.spiders.ldsitemapspider.LDSitemapSpider):
                 if self.lastmod_filter is not None and ts is not None:
                     if ts > self.lastmod_filter:
                         if self.url_match:
+                            for url in entry.get("alternate", []):
+                                if self.url_match in url:
+                                    entry['loc'] = url
+                                    self.logger.debug(f'Yielding record {i}: {entry}')
+                                    y += 1
+                                    yield entry
+                                else:
+                                    self.logger.debug(f'url_match skipping record {i}: {self.url_match} not in {url}')
                             if self.url_match in entry['loc']:
                                 self.logger.debug(f'Yielding record {i}: {entry}')
                                 y += 1
@@ -167,6 +175,14 @@ class JsonldSpider(soscan.spiders.ldsitemapspider.LDSitemapSpider):
                         self.logger.debug(f'lastmod_filter skipping record {i}: (ts {ts}) {entry}')
                 else:
                     if self.url_match:
+                        for url in entry.get("alternate", []):
+                            if self.url_match in url:
+                                entry['loc'] = url
+                                self.logger.debug(f'Yielding record {i}: {entry}')
+                                y += 1
+                                yield entry
+                            else:
+                                self.logger.debug(f'url_match skipping record {i}: {self.url_match} not in {url}')
                         if self.url_match in entry['loc']:
                             self.logger.debug(f'Yielding record {i}: {entry}')
                             y += 1
