@@ -1,5 +1,9 @@
 import datetime
 import dateparser
+import json
+import logging
+from math import cos, radians
+import copy
 
 # raise Exception("don't use this")
 
@@ -39,3 +43,304 @@ def parseDatetimeString(ds):
     if isinstance(ds, bytes):
         ds = ds.decode("utf-8")
     return dateparser.parse(ds, settings={"RETURN_AS_TIMEZONE_AWARE": True})
+
+class GeoBox(object):
+    """
+    A class to compute a bounding box from a GeoShape or GeoCoordinates.
+    Latitude max and min will be used to compute the north and south bounds of the box,
+    and longitude max and min will be used to compute the east and west bounds of the box.
+    No Lat should exceed abs(lat) > 90, and no Lon should exceed abs(lon) > 180.
+
+    Attributes:
+        geo (dict): A dictionary representing a GeoShape or GeoCoordinates.
+    
+    Returns:
+        A "box" string in the format "south west north east"
+        where south and north are latitude values, and west and east are longitude values.
+    """
+    def __init__(self, geo: dict = None):
+        self.L = logging.getLogger("GeoBox")
+        self.geo = geo
+        self.latitudes = []
+        self.longitudes = []
+        self.crosses_antimeridian = None
+
+    def set_geo(self, geo: dict):
+        """
+        Set the GeoShape or GeoCoordinates for the bounding box computation.
+
+        Args:
+            geo (dict): A dictionary representing a GeoShape or GeoCoordinates.
+        """
+        self.geo = geo    
+
+    def compute_antimeridian_crossing(self) -> bool:
+        """
+        Determine if the bounding box crosses the antimeridian.
+
+        Returns:
+            bool: True if the bounding box crosses the antimeridian, False otherwise.
+        """
+        if not self.geo:
+            self.L.warning("GeoBox.compute_antimeridian_crossing called with no geo data.")
+            return False
+
+        if "box" in self.geo:
+            box = self.geo["box"]
+            coords = box.replace(",", " ").split()
+            if len(coords) != 4:
+                self.L.warning("Box must have exactly four coordinates.")
+                return False
+            west = float(coords[1])
+            east = float(coords[3])
+            if west > east:
+                self.L.debug(f"Box west {west} is greater than east {east}, indicating an antimeridian crossing.")
+                self.crosses_antimeridian = True
+                return True
+        if "circle" in self.geo:
+            circle = self.geo["circle"]
+            coords = circle.replace(",", " ").split()
+            if len(coords) != 3:
+                self.L.warning("Circle must have exactly three coordinates.")
+                return False
+            lat = float(coords[0])
+            lon = float(coords[1])
+            radius = float(coords[2])
+            lon_east = lon + radius / (111000 * cos(radians(lat)))
+            lon_west = lon - radius / (111000 * cos(radians(lat)))
+            # determine if the circle's radius will cross the antimeridian
+            if lon_east > 180 or lon_west < -180:
+                self.crosses_antimeridian = True
+                return True
+        return False
+
+    def compute_box(self) -> str:
+        """
+        Compute the bounding box from the GeoShape or GeoCoordinates.
+
+        Returns:
+            str: A string representing the bounding box in the format "south west north east".
+        """
+        false_west = -180
+        false_east = 180
+        if not self.geo:
+            self.L.warning("GeoBox.compute_box called with no geo data.")
+            return None
+
+        if "latitude" in self.geo and "longitude" in self.geo:
+            # GeoCoordinates are explicitly defined lat lon coordinate pairs, such as
+            #   "latitude": 39.3280, "longitude": 120.1633
+            self.L.debug(f"GeoBox: using latitude {self.geo['latitude']} and longitude {self.geo['longitude']}")
+            self.latitudes.append(float(self.geo["latitude"]))
+            self.longitudes.append(float(self.geo["longitude"]))
+        if "point" in self.geo:
+            # points are lat lon coordinate pairs, such as
+            #   "point": "39.3280 120.1633"
+            # or
+            #   "point": "39.3280,120.1633"
+            point: str = self.geo["point"]
+            coords = point.replace(",", " ").split()
+            self.L.debug(f"GeoBox: using point {coords}")
+            self.latitudes.append(float(coords[0]))
+            self.longitudes.append(float(coords[1]))
+        if "polygon" in self.geo or "line" in self.geo:
+            # polygons and lines are comma or space-separated strings of n lat lon coordinate pairs, such as
+            #   "polygon": "39.3280 120.1633 40.445 123.7878 41 121 39.77 122.42 39.3280 120.1633"
+            # or
+            #   "line": "39.3280 120.1633,40.445 123.7878,41 121,39.77 122.42,39.3280 120.1633"
+            # they display differently but can be treated the same way for bounding box computation
+            polygon = self.geo["polygon"] if "polygon" in self.geo else self.geo["line"]
+            coords = polygon.replace(",", " ").split()
+            self.L.debug(f"GeoBox: using polygon/line {coords}")
+            for i in range(0, len(coords), 2):
+                self.latitudes.append(float(coords[i]))
+                self.longitudes.append(float(coords[i + 1]))
+        if "circle" in self.geo:
+            # A circle is the circular region of a specified radius centered at a specified latitude and longitude.
+            # A circle is expressed as a pair followed by a radius in meters.
+            #   "circle": "39.3280 120.1633 1000"
+            circle = self.geo["circle"]
+            coords = circle.replace(",", " ").split()
+            self.L.debug(f"GeoBox: using circle {coords}")
+            if len(coords) < 3:
+                raise ValueError("Circle must have at least latitude, longitude, and radius.")
+            self.latitudes.append(float(coords[0]))
+            self.longitudes.append(float(coords[1]))
+            radius = float(coords[2])
+            # Compute the bounding box for the circle
+            # The radius is in meters, so we need to convert it to degrees.
+            # Approximate conversion: 1 degree latitude = 111 km, 1 degree longitude = 111 km * cos(latitude)
+            lat_degree = radius / 111000  # 1 degree latitude is approximately 111 km
+            lon_degree = radius / (111000 * cos(radians(float(coords[0]))))  # adjust for latitude variance
+            self.L.debug(f"GeoBox: circle radius {radius} meters is approximately {lat_degree} degrees latitude and {lon_degree} degrees longitude at latitude {coords[0]}")
+            self.latitudes.extend([float(coords[0]) - lat_degree, float(coords[0]) + lat_degree])
+            self.longitudes.extend([float(coords[1]) - lon_degree, float(coords[1]) + lon_degree])
+            self.L.debug(f"GeoBox: circle bounding box latitudes {self.latitudes} and longitudes {self.longitudes}")
+            # determine if the circle's radius will cross the antimeridian
+            south = float(coords[0]) - lat_degree
+            north = float(coords[0]) + lat_degree
+            west = float(coords[1]) - lon_degree
+            east = float(coords[1]) + lon_degree
+            if float(coords[1]) - lon_degree < -180 or float(coords[1]) + lon_degree > 180:
+                self.crosses_antimeridian = True
+                self.L.debug(f"Circle with center {coords[0]} {coords[1]} and radius {radius} crosses the antimeridian; returning east and west boxes.")
+                return (f"{south} {west} {north} {false_east}",f"{south} {false_west} {north} {east}")
+            self.L.debug(f"Circle with center {coords[0]} {coords[1]} and radius {radius} and does not cross the antimeridian.")
+            return (f"{south} {west} {north} {east}",)
+
+        # If no coordinates were added, return None
+        if not self.latitudes or not self.longitudes:
+            self.L.warning("GeoBox.compute_box returning with no valid coordinates.")
+            return None
+        
+        self.L.debug(f"GeoBox: latitudes {self.latitudes}")
+        self.L.debug(f"GeoBox: longitudes {self.longitudes}")
+
+        south = min(self.latitudes)
+        north = max(self.latitudes)
+        west = min(self.longitudes)
+        east = max(self.longitudes)
+
+        if "box" in self.geo:
+            # boxes are two lat lon coordinate pairs, such as
+            #   "box": "39.3280 120.1633 40.445 123.7878"
+            # or
+            #   "box": "39.3280 120.1633,40.445 123.7878"
+            box = self.geo["box"]
+            coords = box.replace(",", " ").split()
+            self.L.debug(f"GeoBox: using box {coords}")
+            self.latitudes.extend([float(coords[0]), float(coords[2])])
+            self.longitudes.extend([float(coords[1]), float(coords[3])])
+            south = coords[0]
+            west = coords[1]
+            north = coords[2]
+            east = coords[3]
+            if not (south < north):
+                self.L.warning(f"Box south {south} is not less than north {north}.")
+                return None
+            if not (west < east):
+                self.L.debug(f"Box west {west} is not less than east {east}.")
+                self.L.debug(f"Assuming box crosses the antimeridian; returning east and west boxes.")
+                self.L.debug(f"Returning two boxes: {south} {west} {north} {false_east}, {south} {false_west} {north} {east}")
+                return (f"{south} {west} {north} {false_east}",f"{south} {false_west} {north} {east}")
+
+        self.L.debug(f"Computed south: {south}, west: {west}, north: {north}, east: {east}")
+        # Ensure the bounding box is valid
+        if abs(south) > 90 or abs(north) > 90 or abs(west) > 180 or abs(east) > 180:
+            self.L.warning(f"Bounding box exceeds valid bounds. SWNE: {south} {west} {north} {east}")
+            return None
+
+        return f"{south} {west} {north} {east}"
+
+    def __str__(self):
+        """
+        String representation of the bounding box.
+
+        Returns:
+            str: A string representing the bounding box in the format "south west north east".
+        """
+        return self.compute_box()
+
+    def __repr__(self):
+        """
+        String representation of the bounding box for debugging.
+
+        Returns:
+            str: A string representing the bounding box in the format "south west north east".
+        """
+        return f"GeoBox({self.compute_box()})"
+    
+    def to_dict(self):
+        """
+        Convert the bounding box to a dictionary format.
+
+        Returns:
+            dict: A dictionary with keys 'south', 'west', 'north', 'east'.
+        """
+        box = self.compute_box()
+        if box is None:
+            return {}
+        south, west, north, east = map(float, box.split())
+        return {
+            "south": south,
+            "west": west,
+            "north": north,
+            "east": east
+        }
+        
+
+def convert_geoshapes_to_boxes(jld: json):
+    """
+    The DataONE indexing system cannot handle GeoShape types other than boxes.
+    This function will convert GeoShape points, lines, and polygons,
+    as well as GeoCoordinate pairs to box format in a jld JSON-LD document.
+
+    Args:
+        jld: jld dataset
+    Returns: jld dataset with boxes
+    """
+    L = logging.getLogger("convert_geoshapes_to_boxes")
+
+    spatial_coverage: dict = jld.get("spatialCoverage")
+    if spatial_coverage is None:
+        return jld
+    else:
+        geo = spatial_coverage.get("geo", {})
+    if geo is None:
+        # If there is no geo information, we can skip processing
+        L.debug("No geo information found in spatialCoverage, skipping conversion.")
+        return jld
+
+    # Ensure spatial_coverage is a list for uniform processing
+    original_geo = copy.deepcopy(geo)
+    if not isinstance(geo, list):
+        geo = [geo]
+
+    box = GeoBox()
+    for loc in geo[:]:
+        if isinstance(loc, dict):
+            box_str, box_str_west, box_str_east = None, None, None
+            box.set_geo(loc)
+            if not box.compute_antimeridian_crossing():
+                box_str = box.compute_box()
+            else:
+                box_str_east, box_str_west = box.compute_box()
+            if box_str:
+                idx = geo.index(loc)
+                if box_str:
+                    geo[idx]["@type"] = "GeoShape"
+                    geo[idx]["box"] = box_str
+                elif box_str_west and box_str_east:
+                    geo[idx]["@type"] = "GeoShape"
+                    geo[idx]["box"] = box_str_east
+                    geo.append({
+                        "@type": "GeoShape",
+                        "box": box_str_west
+                    })
+            else:
+                # If no valid box could be computed, we can either skip this entry or handle it as needed
+                L.debug("GeoBox.compute_box returned None, skipping this geo entry.")
+                continue
+            # Remove other geo properties that are not boxes
+            for key in list(loc.keys()):
+                if (key not in ["box"]) and (key not in ["@type"]):
+                    del loc[key]
+        else:
+            # If the geo entry is not a dict, we can skip it or handle it as needed
+            continue
+    # Remove empty geo node if present
+    # geo is a list of dicts; remove any empty dicts
+    geo = [g for g in geo if g]
+    if not geo:
+        # If geo is empty after processing, remove it from spatialCoverage
+        L.debug("Geo node is empty after processing; removing from spatialCoverage.")
+        spatial_coverage.pop("geo", None)
+    else:
+        # If geo is not empty, update spatial_coverage["geo"]
+        # If original geo was a list, keep as list; else, set as single dict
+        spatial_coverage["geo"] = geo
+    L.debug(f"Updated spatialCoverage: {spatial_coverage}")
+    # Update the jld with the modified spatialCoverage
+    jld["spatialCoverage"] = spatial_coverage
+    # Return the modified jld
+    return jld
