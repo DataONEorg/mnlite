@@ -76,4 +76,4 @@ class SoscanItem(scrapy.Item):
 
     def __repr__(self):
         """Only print out url after exiting the Pipeline"""
-        return repr({"url": self["url"], "alt_identifiers": self["alt_identifiers"], "identifier": self["identifier"]})
+        return repr({"url": self["url"]})
