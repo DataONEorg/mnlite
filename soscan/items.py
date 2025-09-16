@@ -75,5 +75,5 @@ class SoscanItem(scrapy.Item):
     format_id = scrapy.Field()
 
     def __repr__(self):
-        """only print out url after exiting the Pipeline"""
-        return repr({"url": self.url, "alt_identifiers": self.alt_identifiers, "identifier": self.identifier})
+        """Only print out url after exiting the Pipeline"""
+        return repr({"url": self["url"], "alt_identifiers": self["alt_identifiers"], "identifier": self["identifier"]})
