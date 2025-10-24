@@ -44,9 +44,12 @@ class SoscanNormalizePipeline:
         self.use_at_id = False
         self.convert_geoshapes = False
         self.reorder_ids = False
+        self.fallback_to_url = True
         if 'use_at_id' in kwargs:
             self.use_at_id = kwargs['use_at_id']
-            self.logger.debug(f'Using @id as identifier: {self.use_at_id}')
+            if self.use_at_id:
+                self.logger.debug(f'Using @id as identifier: {self.use_at_id}')
+                self.fallback_to_url = False
         if 'convert_geoshapes' in kwargs:
             self.convert_geoshapes = kwargs['convert_geoshapes']
             self.logger.debug(f'Converting geoshapes to boxes: {self.convert_geoshapes}')
@@ -90,6 +93,11 @@ class SoscanNormalizePipeline:
         return obj
 
 
+    def extract_identifier(self, ids:list,
+                           use_at_id:bool,
+                           preferred_prefix: str=False,
+                           fallback_to_url: bool=True,
+                           url: str=None):
         """
         Extract the series identifier from a list of identifiers structured like the following.
 
@@ -103,11 +111,15 @@ class SoscanNormalizePipeline:
         if len(ids) > 0:
             self.logger.debug(f'Looking up preferred prefix: {preferred_prefix}')
             if preferred_prefix != False:
-                for id in ids[0]["identifier"]:
-                    self.logger.debug(f'Checking for {preferred_prefix} in identifier: {id}')
-                    if id.startswith(preferred_prefix):
-                        self.logger.debug(f'Found preferred identifier: {id}')
-                        return id
+                for id in ids:
+                    self.logger.debug(f'Checking for {preferred_prefix} in identifier: {id["identifier"]}')
+                    for idx in id["identifier"]:
+                        if idx.startswith(preferred_prefix):
+                            self.logger.debug(f'Found preferred identifier: {idx}')
+                            return idx
+                if fallback_to_url:
+                    self.logger.debug(f'No preferred identifier found, falling back to url {url}')
+                    return url
             if len(ids[0]["identifier"]) > 0:
                 return ids[0]["identifier"][0]
             else:
@@ -232,16 +244,21 @@ class SoscanNormalizePipeline:
             _framed = sonormal.normalize.frameSODataset(normalized, options=options)
             ids = sonormal.normalize.getDatasetsIdentifiers(_framed, prefer_str=self.reorder_ids)
             if self.reorder_ids != False:
-                self.logger.debug(f'Looking for {self.reorder_ids} in identifier strings')
-                idx = ids[0]['identifier'][0]
-                for id in ids[0]['identifier']:
-                    self.logger.debug(f'Checking for {self.reorder_ids} in identifier: {id}')
-                    if self.reorder_ids in id:
-                        # make this the first item in the list
-                        idx = id
-                        self.logger.debug(f'Found preferred identifier: {idx}')
+                self.logger.debug(f'Looking for {self.reorder_ids} in identifier strings {ids}')
+                if ids[0]['identifier'] is None or len(ids[0]['identifier']) == 0:
+                    idx = None
+                else:
+                    idx = ids[0]['identifier'][0]
+                for id in ids:
+                    for idu in id['identifier']:
+                        self.logger.debug(f'Checking for {self.reorder_ids} in identifier: {idu}')
+                        if self.reorder_ids in idu:
+                            # make this the first item in the list
+                            idx = idu
+                            self.logger.debug(f'Found preferred identifier: {idx}')
                         self.logger.debug(f'Removing existing identifier list: {ids[0]["identifier"]}')
-                ids[0]['identifier'].insert(0, idx)
+                if idx is not None:
+                    ids[0]['identifier'].insert(0, idx)
         except Exception as e:
             raise scrapy.exceptions.DropItem(f"JSON-LD identifier extract failed: {e}")
         if len(ids) < 1:
@@ -265,7 +282,7 @@ class SoscanNormalizePipeline:
 
         # Use the first identifier value provided for series_id
         # PID will be computed from the object checksum
-        item["series_id"] = self.extract_identifier(ids, self.use_at_id, preferred_prefix=self.reorder_ids)
+        item["series_id"] = self.extract_identifier(ids, self.use_at_id, preferred_prefix=self.reorder_ids, fallback_to_url=self.fallback_to_url, url=item["url"])
         item["alt_identifiers"] = self.extract_alt_identifiers(ids, self.use_at_id)
         # if there are no identifiers, we need to drop the item
         if item["series_id"] is None:
