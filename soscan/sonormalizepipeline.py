@@ -72,7 +72,24 @@ class SoscanNormalizePipeline:
         return cls(**kwargs)
 
 
-    def extract_identifier(self, ids:list, use_at_id:bool, preferred_prefix: str=False):
+    def _strip_spaces_for_keys(self, obj, keys=["license", "additionalType"]):
+        if isinstance(obj, dict):
+            for k, v in obj.items():
+                if k in keys:
+                    if isinstance(v, str):
+                        obj[k] = v.replace(" ", "")
+                        self.logger.debug(f'Stripped spaces from key {k}: {obj[k]}')
+                    elif isinstance(v, list):
+                        obj[k] = [s.replace(" ", "") if isinstance(s, str) else s for s in v]
+                        self.logger.debug(f'Stripped spaces from list at key {k}: {obj[k]}')
+                # recurse into all children
+                self._strip_spaces_for_keys(v, keys)
+        elif isinstance(obj, list):
+            for item in obj:
+                self._strip_spaces_for_keys(item, keys)
+        return obj
+
+
         """
         Extract the series identifier from a list of identifiers structured like the following.
 
@@ -241,6 +258,7 @@ class SoscanNormalizePipeline:
             item["jsonld"] = utils.convert_geoshapes_to_boxes(item["jsonld"])
             # except Exception as e:
             #     self.logger.warning(f"Geoshape conversion failed: {e}")
+        item["jsonld"] = self._strip_spaces_for_keys(item["jsonld"])
 
         # TODO: identifiers
         # The process for handling of identifiers needs to be set in configuration
