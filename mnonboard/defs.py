@@ -81,8 +81,24 @@ LOG_DIR="/var/log/mnlite"
 cd "${MNLITE_DIR}"
 source "${ENV_DIR}/bin/activate"
 LOG_FILE="${LOG_DIR}/${NODE}-crawl.log"
+SPIDER_CLASS="$(${ENV_DIR}/bin/python - <<PY
+import json
+from pathlib import Path
+
+settings_path = Path("${NODE_DIR}") / "settings.json"
+spider_name = "JsonldSpider"
+try:
+    if settings_path.exists():
+        with open(settings_path) as src:
+            cfg = json.load(src)
+        spider_name = cfg.get("SPIDER_CLASS", "JsonldSpider")
+except Exception:
+    pass
+print(spider_name)
+PY
+)"
 logger "Start crawl on: ${NODE} logfile: ${LOG_FILE}"
-scrapy crawl --logfile=${LOG_FILE} JsonldSpider -s STORE_PATH=${NODE_DIR}
+scrapy crawl --logfile=${LOG_FILE} ${SPIDER_CLASS} -s STORE_PATH=${NODE_DIR}
 logger "End crawl on ${NODE}"
 """
 
@@ -153,7 +169,8 @@ SITEMAP_URLS = []
 
 DEFAULT_SETTINGS = {
     "AUTOTHROTTLE_TARGET_CONCURRENCY": 1.5,
-    "LOG_LEVEL": "DEBUG"
+    "LOG_LEVEL": "DEBUG",
+    "SPIDER_CLASS": "JsonldSpider",
 }
 
 SCHEDULES = {
