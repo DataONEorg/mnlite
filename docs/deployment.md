@@ -1,6 +1,6 @@
 # MN Lite Operations 
 
-MN Lite collects schema.org content from a source, and registers it in a local sqlite database, do be served via the DataONE API.
+MN Lite collects schema.org content from a source, and registers it in a local sqlite database, to be served via the DataONE API.
 
 Harvesting is implemented as a scrapy crawler[^scrapy]. Given a sitemap, crawls and adds discovered `SO:Dataset` entries to the persistence store.
 
