@@ -107,6 +107,7 @@ class APIJsonldSpider(Spider):
     def from_crawler(cls, crawler, *args, **kwargs):
         node_path = crawler.settings.get("STORE_PATH", None)
         kwargs["store_path"] = node_path
+        settings_override = {}
         if node_path is not None:
             mn_settings = Path(node_path) / "settings.json"
             if mn_settings.exists():
@@ -128,6 +129,8 @@ class APIJsonldSpider(Spider):
                         kwargs[key] = settings_override[key]
         spider = cls(*args, **kwargs)
         spider._set_crawler(crawler)
+        for key, value in settings_override.items():
+            spider.settings.set(key, value, priority="spider")
         return spider
 
     def start_requests(self):
