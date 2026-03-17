@@ -58,7 +58,8 @@ LOG_FILE="${LOG_DIR}/${NODE}-crawl.log"
 mkdir -p ${LOG_DIR}
 touch ${LOG_FILE}
 echo "${date} Start crawl on: ${NODE} logfile: ${LOG_FILE}" >> ${LOG_FILE}
-scrapy crawl --logfile=${LOG_FILE} JsonldSpider -s STORE_PATH=${NODE_DIR}
+SPIDER_CLASS=$(jq -r '.SPIDER_CLASS // "JsonldSpider"' "${NODE_DIR}/settings.json")
+scrapy crawl --logfile=${LOG_FILE} "${SPIDER_CLASS}" -s STORE_PATH=${NODE_DIR}
 echo "${date} End crawl on ${NODE}" >> ${LOG_FILE}
 ```
 
@@ -66,6 +67,7 @@ Settings file (`NODE_DIR/settings.json`):
 
 ```json
 {
+    "SPIDER_CLASS": "JsonldSpider",
     "AUTOTHROTTLE_TARGET_CONCURRENCY": 1,
     "DOWNLOAD_DELAY": 1,
     "LOG_LEVEL": "DEBUG"
