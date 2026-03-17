@@ -297,18 +297,25 @@ class APIJsonldSpider(Spider):
                 f"API records path {self.api_records_path} did not resolve to a list or object: {type(records)}"
             )
 
+        record_count = len(records)
+
         # Capture any top-level @context so it can be injected into records
         # that don't carry their own (e.g. schema.org ItemList APIs).
         top_context = payload.get("@context", None)
 
-        yielded = 0
+        yielded_count = 0
         for record in records:
             item = self._record_to_item(response, record, top_context=top_context)
             if item is not None:
-                yielded += 1
+                yielded_count += 1
                 yield item
 
-        self.logger.info("Processed %s API records from %s", yielded, response.url)
-        next_request = self._next_request(response, payload, yielded)
+        self.logger.info(
+            "Processed %s API records (%s items yielded) from %s",
+            record_count,
+            yielded_count,
+            response.url,
+        )
+        next_request = self._next_request(response, payload, record_count)
         if next_request is not None:
             yield next_request
