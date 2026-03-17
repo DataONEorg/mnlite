@@ -147,3 +147,54 @@ def test_page_param_pagination_increments_until_stop_status():
     stop_page = fake_text_response("https://example.org/api/datasets?page=3", status=404)
     stopped = list(spider.parse_page(stop_page))
     assert stopped == []
+
+
+def test_page_param_pagination_continues_when_all_items_filtered_by_lastmod():
+    spider = soscan.spiders.apijsonldspider.APIJsonldSpider(
+        sitemap_urls=["https://example.org/api/datasets"],
+        api_page_param="page",
+        api_next_path="missing_next",
+        api_records_path="items",
+        api_jsonld_field="jsonld",
+        api_modified_field="modified",
+        lastmod_filter="2026-02-01T00:00:00Z",
+    )
+
+    # All items on this page are older than lastmod_filter and should be skipped,
+    # but pagination via page parameter should still continue to the next page.
+    first_page = fake_json_response(
+        "https://example.org/api/datasets?page=1",
+        {
+            "items": [
+                {
+                    "url": "https://example.org/dataset/old-1",
+                    "modified": "2026-01-01T00:00:00Z",
+                    "jsonld": {
+                        "@context": "https://schema.org",
+                        "@type": "Dataset",
+                        "name": "Old Dataset One",
+                    },
+                },
+                {
+                    "url": "https://example.org/dataset/old-2",
+                    "modified": "2026-01-15T00:00:00Z",
+                    "jsonld": {
+                        "@context": "https://schema.org",
+                        "@type": "Dataset",
+                        "name": "Old Dataset Two",
+                    },
+                },
+            ]
+        },
+    )
+    first_page.meta["api_base_url"] = "https://example.org/api/datasets"
+    first_page.meta["api_page"] = 1
+
+    results = list(spider.parse_page(first_page))
+
+    # No items should be yielded because all were filtered out by lastmod_filter,
+    # but a Request for the next page should still be emitted.
+    assert all(not isinstance(r, dict) or "url" not in r or "Old Dataset" not in str(r) for r in results)
+    assert len(results) == 1
+    assert isinstance(results[0], scrapy.http.Request)
+    assert results[0].url == "https://example.org/api/datasets?page=2"
