@@ -153,6 +153,14 @@ class JsonldSpider(soscan.spiders.ldsitemapspider.LDSitemapSpider):
                 if self.lastmod_filter is not None and ts is not None:
                     if ts > self.lastmod_filter:
                         if self.url_match:
+                            for url in entry.get("alternate", []):
+                                if self.url_match in url:
+                                    entry['loc'] = url
+                                    self.logger.debug(f'Yielding record {i}: {entry}')
+                                    y += 1
+                                    yield entry
+                                else:
+                                    self.logger.debug(f'url_match skipping record {i}: {self.url_match} not in {url}')
                             if self.url_match in entry['loc']:
                                 self.logger.debug(f'Yielding record {i}: {entry}')
                                 y += 1
@@ -167,6 +175,14 @@ class JsonldSpider(soscan.spiders.ldsitemapspider.LDSitemapSpider):
                         self.logger.debug(f'lastmod_filter skipping record {i}: (ts {ts}) {entry}')
                 else:
                     if self.url_match:
+                        for url in entry.get("alternate", []):
+                            if self.url_match in url:
+                                entry['loc'] = url
+                                self.logger.debug(f'Yielding record {i}: {entry}')
+                                y += 1
+                                yield entry
+                            else:
+                                self.logger.debug(f'url_match skipping record {i}: {self.url_match} not in {url}')
                         if self.url_match in entry['loc']:
                             self.logger.debug(f'Yielding record {i}: {entry}')
                             y += 1
@@ -206,12 +222,17 @@ class JsonldSpider(soscan.spiders.ldsitemapspider.LDSitemapSpider):
                 "extractAllScripts": True,
                 "json_parse_strict": json_parse_strict,
             }
-            contenttype = response.headers.get("Content-Type").decode()
+            try:
+                contenttype = response.headers.get("Content-Type").decode()
+            except AttributeError as e:
+                self.logger.warning(f'Could not decode Content-Type header for {response.url}: {e}')
+                contenttype = None
             #self.logger.debug(f'Response Content-Type: {contenttype} from {response.url}')
             if contenttype in ["application/ld+json", "application/octet-stream"]:
                 self.logger.debug(f'Content-Type is "{contenttype}"; assuming json object and loading directly')
                 jsonlds = [json.loads(response.text, strict=options.get("json_parse_strict", False))]
             else:
+                # assume html and try to extract JSON-LD from it
                 jsonlds = pyld.jsonld.load_html(response.body, response.url, None, options)
             # for j_item in jsonld:
             #    item = soscan.items.SoscanItem()

@@ -73,3 +73,7 @@ class SoscanItem(scrapy.Item):
     series_id = scrapy.Field()  # Series ID to be used for the item
     alt_identifiers = scrapy.Field()  # alternative identifiers extracted from the item
     format_id = scrapy.Field()
+
+    def __repr__(self):
+        """Only print out url after exiting the Pipeline"""
+        return repr({"url": self["url"]})

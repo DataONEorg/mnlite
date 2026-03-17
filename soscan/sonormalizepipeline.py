@@ -4,6 +4,7 @@ import sonormal.normalize
 import json
 import opersist.rdfutils
 from pathlib import Path
+import soscan.utils as utils
 
 def consolidate_list(l: list, sep: str=', '):
     """
@@ -41,11 +42,22 @@ class SoscanNormalizePipeline:
     def __init__(self, **kwargs):
         self.logger = logging.getLogger("SoscanNormalize")
         self.use_at_id = False
+        self.convert_geoshapes = False
+        self.reorder_ids = False
+        self.fallback_to_url = True
         if 'use_at_id' in kwargs:
             self.use_at_id = kwargs['use_at_id']
-            self.logger.debug(f'Using @id as identifier: {self.use_at_id}')
+            if self.use_at_id:
+                self.logger.debug(f'Using @id as identifier: {self.use_at_id}')
+                self.fallback_to_url = False
+        if 'convert_geoshapes' in kwargs:
+            self.convert_geoshapes = kwargs['convert_geoshapes']
+            self.logger.debug(f'Converting geoshapes to boxes: {self.convert_geoshapes}')
+        if 'reorder_identifiers' in kwargs:
+            # if reorder_identifiers is set, the script will reorder to prioritize the set string value if found in the identifier
+            self.reorder_ids = kwargs['reorder_identifiers']
+            self.logger.debug(f'Reordering identifiers to prioritize: {self.reorder_ids}')
 
-    
     @classmethod
     def from_crawler(cls, crawler, *args, **kwargs):
         node_path = crawler.settings.get("STORE_PATH", None)
@@ -56,10 +68,36 @@ class SoscanNormalizePipeline:
             for s in _cs:
                 if s == 'use_at_id':
                     kwargs['use_at_id'] = _cs[s]
+                if s == 'convert_geoshapes':
+                    kwargs['convert_geoshapes'] = _cs[s]
+                if s == 'reorder_identifiers':
+                    kwargs['reorder_identifiers'] = _cs[s]
         return cls(**kwargs)
 
 
-    def extract_identifier(self, ids:list, use_at_id:bool):
+    def _strip_spaces_for_keys(self, obj, keys=["license", "additionalType"]):
+        if isinstance(obj, dict):
+            for k, v in obj.items():
+                if k in keys:
+                    if isinstance(v, str):
+                        obj[k] = v.replace(" ", "")
+                        self.logger.debug(f'Stripped spaces from key {k}: {obj[k]}')
+                    elif isinstance(v, list):
+                        obj[k] = [s.replace(" ", "") if isinstance(s, str) else s for s in v]
+                        self.logger.debug(f'Stripped spaces from list at key {k}: {obj[k]}')
+                # recurse into all children
+                self._strip_spaces_for_keys(v, keys)
+        elif isinstance(obj, list):
+            for item in obj:
+                self._strip_spaces_for_keys(item, keys)
+        return obj
+
+
+    def extract_identifier(self, ids:list,
+                           use_at_id:bool,
+                           preferred_prefix: str=False,
+                           fallback_to_url: bool=True,
+                           url: str=None):
         """
         Extract the series identifier from a list of identifiers structured like the following.
 
@@ -71,6 +109,17 @@ class SoscanNormalizePipeline:
         The first identifier is the one we should use as the series_id.
         """
         if len(ids) > 0:
+            self.logger.debug(f'Looking up preferred prefix: {preferred_prefix}')
+            if preferred_prefix != False:
+                for id in ids:
+                    self.logger.debug(f'Checking for {preferred_prefix} in identifier: {id["identifier"]}')
+                    for idx in id["identifier"]:
+                        if idx.startswith(preferred_prefix):
+                            self.logger.debug(f'Found preferred identifier: {idx}')
+                            return idx
+                if fallback_to_url:
+                    self.logger.debug(f'No preferred identifier found, falling back to url {url}')
+                    return url
             if len(ids[0]["identifier"]) > 0:
                 return ids[0]["identifier"][0]
             else:
@@ -129,8 +178,7 @@ class SoscanNormalizePipeline:
         require_identifier = True
 
         jsonld: dict = item["jsonld"]
-        version = jsonld.get('version', None)
-        version = jsonld.get('@version', '1.1') if not version else version
+        version = jsonld.get('@version', '1.1')
         version = '1.0' if version == '1' else version
         jldversion = f'json-ld-{version}'
         self.logger.debug(f"process_item: version {jldversion}")
@@ -194,7 +242,23 @@ class SoscanNormalizePipeline:
         ids = []
         try:
             _framed = sonormal.normalize.frameSODataset(normalized, options=options)
-            ids = sonormal.normalize.getDatasetsIdentifiers(_framed)
+            ids = sonormal.normalize.getDatasetsIdentifiers(_framed, prefer_str=self.reorder_ids)
+            if self.reorder_ids != False:
+                self.logger.debug(f'Looking for {self.reorder_ids} in identifier strings {ids}')
+                if ids[0]['identifier'] is None or len(ids[0]['identifier']) == 0:
+                    idx = None
+                else:
+                    idx = ids[0]['identifier'][0]
+                for id in ids:
+                    for idu in id['identifier']:
+                        self.logger.debug(f'Checking for {self.reorder_ids} in identifier: {idu}')
+                        if self.reorder_ids in idu:
+                            # make this the first item in the list
+                            idx = idu
+                            self.logger.debug(f'Found preferred identifier: {idx}')
+                        self.logger.debug(f'Removing existing identifier list: {ids[0]["identifier"]}')
+                if idx is not None:
+                    ids[0]['identifier'].insert(0, idx)
         except Exception as e:
             raise scrapy.exceptions.DropItem(f"JSON-LD identifier extract failed: {e}")
         if len(ids) < 1:
@@ -203,12 +267,22 @@ class SoscanNormalizePipeline:
                 f"Framed dataset:\n{_framed}"
             )
 
+
+        # convert alternate geoshapes to boxes
+        if self.convert_geoshapes:
+            # try:
+            self.logger.debug("Converting geoshapes")
+            item["jsonld"] = utils.convert_geoshapes_to_boxes(item["jsonld"])
+            # except Exception as e:
+            #     self.logger.warning(f"Geoshape conversion failed: {e}")
+        item["jsonld"] = self._strip_spaces_for_keys(item["jsonld"])
+
         # TODO: identifiers
         # The process for handling of identifiers needs to be set in configuration
 
         # Use the first identifier value provided for series_id
         # PID will be computed from the object checksum
-        item["series_id"] = self.extract_identifier(ids, self.use_at_id)
+        item["series_id"] = self.extract_identifier(ids, self.use_at_id, preferred_prefix=self.reorder_ids, fallback_to_url=self.fallback_to_url, url=item["url"])
         item["alt_identifiers"] = self.extract_alt_identifiers(ids, self.use_at_id)
         # if there are no identifiers, we need to drop the item
         if item["series_id"] is None:
@@ -225,4 +299,5 @@ class SoscanNormalizePipeline:
         # Obsoletes is not a property of the retrieved object but instead needs
         # to be inferred from the history associated with the object lineage
         # item["obsoletes"] = None
+
         return item
