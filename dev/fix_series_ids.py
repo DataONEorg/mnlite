@@ -3,11 +3,11 @@ Supervised normalization of the ``thing`` table in a mnlite sqlite3 database.
 
 Rules:
 1. If ``identifiers`` (JSON list of strings) contains a value starting with
-   ``doi:82144/``, copy the first such value into ``series_id``.
-2. For each row with a ``doi:82144/`` identifier, follow ``obsoletes`` (matched
+   ``doi:10.82144/``, copy the first such value into ``series_id``.
+2. For each row with a ``doi:10.82144/`` identifier, follow ``obsoletes`` (matched
    against the ``identifier`` column) and set the obsoleted row's ``series_id``
    to that row's ``series_id``; repeat along the whole version chain, stopping
-   at a row that itself has a ``doi:82144/`` identifier (it owns its own chain).
+   at a row that itself has a ``doi:10.82144/`` identifier (it owns its own chain).
 3. Otherwise, if a row has no such DOI, was not reached by a version chain, and
    its ``series_id`` starts with ``https``, set ``archived`` = 1.
 4. ``date_modified`` is set to the current time on every changed row.
@@ -22,7 +22,7 @@ import shutil
 import sqlite3
 import sys
 
-DOI_PREFIX = "doi:82144/"
+DOI_PREFIX = "doi:10.82144/"
 
 
 def now_str() -> str:
