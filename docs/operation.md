@@ -94,18 +94,6 @@ Example `node.json` snippet (see above for full example):
 
 Select the spider class in `settings.json`.
 
-### API with explicit "next" URL in response body
-
-```json
-{
-  "SPIDER_CLASS": "APIJsonldSpider",
-  "api_records_path": "items",
-  "api_next_path": "next",
-  "api_jsonld_field": "jsonld",
-  "api_url_field": "url",
-  "api_modified_field": "modified"
-}
-```
 
 ### API with fixed page size and incremental `page` parameter
 
