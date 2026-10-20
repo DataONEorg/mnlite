@@ -1,22 +1,32 @@
 """
 Supervised normalization of the ``thing`` table in a mnlite sqlite3 database.
 
-Rules:
+Only head versions are processed: rows whose ``obsoleted_by`` is NULL/empty.
+Obsoleted rows are never modified, and version chains are not walked.
+
+For each head row:
 1. If ``identifiers`` (JSON list of strings) contains a value starting with
-   ``doi:10.82144/``, copy the first such value into ``series_id``.
-2. For each row with a ``doi:10.82144/`` identifier, follow ``obsoletes`` (matched
-   against the ``identifier`` column) and set the obsoleted row's ``series_id``
-   to that row's ``series_id``; repeat along the whole version chain, stopping
-   at a row that itself has a ``doi:10.82144/`` identifier (it owns its own chain).
-3. Otherwise, if a row has no such DOI, was not reached by a version chain, and
-   its ``series_id`` starts with ``https``, set ``archived`` = 1.
-4. ``date_modified`` is set to the current time on every changed row.
+   ``doi:10.82144/``, the first such value becomes its series_id.
+2. Otherwise, if its series_id starts with ``https``, ``archived`` is set to 1.
+
+The MN API does not allow a series_id to be changed once set, so for rule 1:
+- a head with no series_id has it set in place;
+- a head with a different series_id is left untouched except for
+  obsoleted_by, and a replacement row is inserted: a copy with series_id set
+  to the DOI, ``identifier`` and ``checksum_sha256`` suffixed with ``-<8 hex
+  of sha256 of the new series_id>`` (hash otherwise preserved) and
+  ``obsoletes`` = the old identifier. The old row's ``obsoleted_by`` is set to
+  the new identifier; the replacement is the new head. Access rules are
+  copied. Re-running is a no-op.
+
+``date_modified`` is set to the current time on every changed or new row.
 
 Runs as a dry run unless ``--apply`` is given. Each change is reported and,
 with --apply, confirmed interactively unless ``--yes`` is given.
 """
 import argparse
 import datetime
+import hashlib
 import json
 import shutil
 import sqlite3
@@ -63,7 +73,10 @@ def main() -> int:
     cur = con.cursor()
     ts = now_str()
     prompt = args.apply and not args.yes
-    counts = {"series_id": 0, "archived": 0, "chain_series_id": 0, "skipped": 0}
+    counts = {"series_id": 0, "replaced": 0, "archived": 0, "skipped": 0}
+    has_acl = cur.execute(
+        "SELECT 1 FROM sqlite_master WHERE type='table' AND name='thing_accessrule'"
+    ).fetchone() is not None
 
     def approve(msg: str) -> bool:
         print(msg)
@@ -71,77 +84,90 @@ def main() -> int:
             return True
         return input("  apply? [y/N] ").strip().lower() in ("y", "yes")
 
-    def set_series(pk, old, new, label):
-        if old == new:
-            return False
-        if not approve(f"[{pk[:12]}] {label}: {old!r} -> {new!r}"):
-            counts["skipped"] += 1
-            return False
-        if args.apply:
-            cur.execute(
-                f"UPDATE {t} SET series_id=?, date_modified=? WHERE checksum_sha256=?",
-                (new, ts, pk),
-            )
-        return True
+    def get_by_pk(pk):
+        return cur.execute(f"SELECT * FROM {t} WHERE checksum_sha256=?", (pk,)).fetchone()
 
-    rows = cur.execute(
-        f"SELECT checksum_sha256, identifier, series_id, identifiers, obsoletes, archived FROM {t}"
-    ).fetchall()
+    def get_by_id(ident):
+        return cur.execute(f"SELECT * FROM {t} WHERE identifier=?", (ident,)).fetchone()
+
+    def replace_row(old, target):
+        suffix = "-" + hashlib.sha256(target.encode()).hexdigest()[:8]
+        new_pk = old["checksum_sha256"] + suffix
+        new_id = old["identifier"] + suffix
+        existing = get_by_id(new_id)
+        if existing is not None and existing["series_id"] == target:
+            return  # already replaced by an earlier run
+        if existing is not None or get_by_pk(new_pk):
+            print(f"[{old['checksum_sha256'][:12]}] WARNING {new_id!r} already exists; skipped")
+            counts["skipped"] += 1
+            return
+        if not approve(
+            f"[{old['checksum_sha256'][:12]}] series_id {old['series_id']!r} -> {target!r}: "
+            f"new row {new_id!r} obsoletes {old['identifier']!r}"
+        ):
+            counts["skipped"] += 1
+            return
+        new = dict(old)
+        new.update(
+            checksum_sha256=new_pk,
+            identifier=new_id,
+            series_id=target,
+            obsoletes=old["identifier"],
+            obsoleted_by=None,
+            date_modified=ts,
+        )
+        cols = list(new)
+        cur.execute(
+            f"INSERT INTO {t} ({','.join(cols)}) VALUES ({','.join('?' * len(cols))})",
+            [new[c] for c in cols],
+        )
+        if has_acl:
+            cur.execute(
+                "INSERT INTO thing_accessrule (thing_id, accessrule_id) "
+                "SELECT ?, accessrule_id FROM thing_accessrule WHERE thing_id=?",
+                (new_pk, old["checksum_sha256"]),
+            )
+        cur.execute(
+            f"UPDATE {t} SET obsoleted_by=?, date_modified=? WHERE checksum_sha256=?",
+            (new_id, ts, old["checksum_sha256"]),
+        )
+        counts["replaced"] += 1
 
     try:
-        # Pass 1: DOI rows take their series_id from the DOI
-        doi_rows = []  # (checksum, series_id, obsoletes)
-        non_doi = []
+        rows = cur.execute(
+            f"SELECT * FROM {t} WHERE obsoleted_by IS NULL OR obsoleted_by = ''"
+        ).fetchall()
         for row in rows:
             pk = row["checksum_sha256"]
             dois = [i for i in parse_identifiers(row["identifiers"]) if i.startswith(DOI_PREFIX)]
-            if dois:
-                if set_series(pk, row["series_id"], dois[0], "series_id"):
-                    counts["series_id"] += 1
-                doi_rows.append((pk, dois[0], row["obsoletes"]))
-            else:
-                non_doi.append(row)
-
-        # Pass 2: walk each version chain from the DOI row. Rows reached here
-        # receive the chain's series_id, so they must not be archived below.
-        chained = set()
-        for pk, series, old_id in doi_rows:
-            visited = {pk}
-            while old_id:
-                old = cur.execute(
-                    f"SELECT checksum_sha256, identifier, series_id, identifiers, obsoletes FROM {t} WHERE identifier=?",
-                    (old_id,),
-                ).fetchone()
-                if old is None:
-                    print(f"[{pk[:12]}] WARNING obsoletes {old_id!r} not found; chain ends")
-                    break
-                opk = old["checksum_sha256"]
-                if opk in visited:
-                    print(f"[{pk[:12]}] WARNING cycle at {old_id!r}; chain ends")
-                    break
-                visited.add(opk)
-                if any(i.startswith(DOI_PREFIX) for i in parse_identifiers(old["identifiers"])):
-                    break  # that row owns its own series and chain
-                chained.add(opk)
-                if set_series(opk, old["series_id"], series, "chain series_id"):
-                    counts["chain_series_id"] += 1
-                old_id = old["obsoletes"]
-
-        # Pass 3: archive remaining non-DOI rows that still have an https series_id
-        for row in non_doi:
-            pk = row["checksum_sha256"]
             sid = row["series_id"]
-            if pk in chained or not (sid and sid.startswith("https")) or row["archived"]:
-                continue
-            if approve(f"[{pk[:12]}] archived: {row['archived']!r} -> 1 (series_id {sid!r})"):
-                if args.apply:
+            if dois:
+                target = dois[0]
+                if sid == target:
+                    continue
+                if not row["identifier"]:
+                    print(f"[{pk[:12]}] WARNING no identifier; cannot set series_id")
+                    continue
+                if not sid:
+                    if approve(f"[{pk[:12]}] series_id: {sid!r} -> {target!r}"):
+                        cur.execute(
+                            f"UPDATE {t} SET series_id=?, date_modified=? WHERE checksum_sha256=?",
+                            (target, ts, pk),
+                        )
+                        counts["series_id"] += 1
+                    else:
+                        counts["skipped"] += 1
+                else:
+                    replace_row(row, target)
+            elif sid and sid.startswith("https") and not row["archived"]:
+                if approve(f"[{pk[:12]}] archived: {row['archived']!r} -> 1 (series_id {sid!r})"):
                     cur.execute(
                         f"UPDATE {t} SET archived=1, date_modified=? WHERE checksum_sha256=?",
                         (ts, pk),
                     )
-                counts["archived"] += 1
-            else:
-                counts["skipped"] += 1
+                    counts["archived"] += 1
+                else:
+                    counts["skipped"] += 1
     except (EOFError, KeyboardInterrupt):
         print("\nAborted; rolling back.")
         con.rollback()
