@@ -218,38 +218,36 @@ class OPersist(object):
         Returns:
 
         """
+        # Only the subject string is cached; ORM instances are always
+        # resolved from the current session to avoid identity conflicts.
         subj = subject
-        if isinstance(subject, str):
-            subj = self.getSubject(subject)
+        if not isinstance(subject, str):
+            subj = subject.subject
         self._default_submitter = subj
         conf = self.getConfig()
-        conf["default_submitter"] = subject
+        conf["default_submitter"] = subj
         self.setConfig(conf)
 
     def getDefaultSubmitter(self):
-        if self._default_submitter is not None:
-            return self._default_submitter
-        conf = self.getConfig()
-        subj = conf.get("default_submitter")
-        self._default_submitter = self.getSubject(subj)
-        return self._default_submitter
+        if self._default_submitter is None:
+            conf = self.getConfig()
+            self._default_submitter = conf.get("default_submitter")
+        return self.getSubject(self._default_submitter)
 
     def setDefaultOwner(self, subject):
         subj = subject
-        if isinstance(subject, str):
-            subj = self.getSubject(subject)
+        if not isinstance(subject, str):
+            subj = subject.subject
         self._default_owner = subj
         conf = self.getConfig()
-        conf["default_owner"] = subject
+        conf["default_owner"] = subj
         self.setConfig(conf)
 
     def getDefaultOwner(self):
-        if self._default_owner is not None:
-            return self._default_owner
-        conf = self.getConfig()
-        subj = conf.get("default_owner")
-        self._default_owner = self.getSubject(subj)
-        return self._default_owner
+        if self._default_owner is None:
+            conf = self.getConfig()
+            self._default_owner = conf.get("default_owner")
+        return self.getSubject(self._default_owner)
 
     # ==================================
     # Access Rule operations
