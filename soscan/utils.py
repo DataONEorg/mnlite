@@ -44,6 +44,12 @@ def parseDatetimeString(ds):
         ds = ds.decode("utf-8")
     return dateparser.parse(ds, settings={"RETURN_AS_TIMEZONE_AWARE": True})
 
+def _fmt(v: float) -> str:
+    """Format a float without exponent notation."""
+    out = f"{v:.10f}".rstrip("0").rstrip(".")
+    return "0" if out in ("-0", "") else out
+
+
 class GeoBox(object):
     """
     A class to compute a bounding box from a GeoShape or GeoCoordinates.
@@ -127,6 +133,34 @@ class GeoBox(object):
             self.L.warning("GeoBox.compute_box called with no geo data.")
             return None
 
+        self.latitudes = []
+        self.longitudes = []
+
+        if "box" in self.geo:
+            # boxes are two lat lon coordinate pairs, such as
+            #   "box": "39.3280 120.1633 40.445 123.7878"
+            # Values may use exponent notation (e.g. 1.5E-4), so parse as floats.
+            coords = str(self.geo["box"]).replace(",", " ").split()
+            self.L.debug(f"GeoBox: using box {coords}")
+            try:
+                if len(coords) != 4:
+                    raise ValueError("box must have four values")
+                south, west, north, east = [float(c) for c in coords]
+            except ValueError as e:
+                self.L.warning(f"Invalid box {self.geo['box']}: {e}")
+                return None
+            if abs(south) > 90 or abs(north) > 90 or abs(west) > 180 or abs(east) > 180:
+                self.L.warning(f"Bounding box exceeds valid bounds. SWNE: {south} {west} {north} {east}")
+                return None
+            if not (south <= north):
+                self.L.warning(f"Box south {south} is greater than north {north}.")
+                return None
+            if west > east:
+                self.L.debug("Box crosses the antimeridian; returning east and west boxes.")
+                return (f"{_fmt(south)} {_fmt(west)} {_fmt(north)} {_fmt(false_east)}",
+                        f"{_fmt(south)} {_fmt(false_west)} {_fmt(north)} {_fmt(east)}")
+            return f"{_fmt(south)} {_fmt(west)} {_fmt(north)} {_fmt(east)}"
+
         if "latitude" in self.geo and "longitude" in self.geo:
             # GeoCoordinates are explicitly defined lat lon coordinate pairs, such as
             #   "latitude": 39.3280, "longitude": 120.1633
@@ -184,9 +218,9 @@ class GeoBox(object):
             if float(coords[1]) - lon_degree < -180 or float(coords[1]) + lon_degree > 180:
                 self.crosses_antimeridian = True
                 self.L.debug(f"Circle with center {coords[0]} {coords[1]} and radius {radius} crosses the antimeridian; returning east and west boxes.")
-                return (f"{south} {west} {north} {false_east}",f"{south} {false_west} {north} {east}")
+                return (f"{_fmt(south)} {_fmt(west)} {_fmt(north)} {_fmt(false_east)}",f"{_fmt(south)} {_fmt(false_west)} {_fmt(north)} {_fmt(east)}")
             self.L.debug(f"Circle with center {coords[0]} {coords[1]} and radius {radius} and does not cross the antimeridian.")
-            return (f"{south} {west} {north} {east}",)
+            return f"{_fmt(south)} {_fmt(west)} {_fmt(north)} {_fmt(east)}"
 
         # If no coordinates were added, return None
         if not self.latitudes or not self.longitudes:
@@ -201,36 +235,13 @@ class GeoBox(object):
         west = min(self.longitudes)
         east = max(self.longitudes)
 
-        if "box" in self.geo:
-            # boxes are two lat lon coordinate pairs, such as
-            #   "box": "39.3280 120.1633 40.445 123.7878"
-            # or
-            #   "box": "39.3280 120.1633,40.445 123.7878"
-            box = self.geo["box"]
-            coords = box.replace(",", " ").split()
-            self.L.debug(f"GeoBox: using box {coords}")
-            self.latitudes.extend([float(coords[0]), float(coords[2])])
-            self.longitudes.extend([float(coords[1]), float(coords[3])])
-            south = coords[0]
-            west = coords[1]
-            north = coords[2]
-            east = coords[3]
-            if not (south < north):
-                self.L.warning(f"Box south {south} is not less than north {north}.")
-                return None
-            if not (west < east):
-                self.L.debug(f"Box west {west} is not less than east {east}.")
-                self.L.debug(f"Assuming box crosses the antimeridian; returning east and west boxes.")
-                self.L.debug(f"Returning two boxes: {south} {west} {north} {false_east}, {south} {false_west} {north} {east}")
-                return (f"{south} {west} {north} {false_east}",f"{south} {false_west} {north} {east}")
-
         self.L.debug(f"Computed south: {south}, west: {west}, north: {north}, east: {east}")
         # Ensure the bounding box is valid
         if abs(south) > 90 or abs(north) > 90 or abs(west) > 180 or abs(east) > 180:
             self.L.warning(f"Bounding box exceeds valid bounds. SWNE: {south} {west} {north} {east}")
             return None
 
-        return f"{south} {west} {north} {east}"
+        return f"{_fmt(south)} {_fmt(west)} {_fmt(north)} {_fmt(east)}"
 
     def __str__(self):
         """
@@ -299,28 +310,19 @@ def convert_geoshapes_to_boxes(jld: json):
     box = GeoBox()
     for loc in geo[:]:
         if isinstance(loc, dict):
-            box_str, box_str_west, box_str_east = None, None, None
             box.set_geo(loc)
-            if not box.compute_antimeridian_crossing():
-                box_str = box.compute_box()
-            else:
-                box_str_east, box_str_west = box.compute_box()
-            if box_str:
-                idx = geo.index(loc)
-                if box_str:
-                    geo[idx]["@type"] = "GeoShape"
-                    geo[idx]["box"] = box_str
-                elif box_str_west and box_str_east:
-                    geo[idx]["@type"] = "GeoShape"
-                    geo[idx]["box"] = box_str_east
-                    geo.append({
-                        "@type": "GeoShape",
-                        "box": box_str_west
-                    })
-            else:
-                # If no valid box could be computed, we can either skip this entry or handle it as needed
+            result = box.compute_box()
+            if not result:
                 L.debug("GeoBox.compute_box returned None, skipping this geo entry.")
                 continue
+            if isinstance(result, tuple):
+                boxes = list(result)
+            else:
+                boxes = [result]
+            loc["@type"] = "GeoShape"
+            loc["box"] = boxes[0]
+            for extra in boxes[1:]:
+                geo.append({"@type": "GeoShape", "box": extra})
             # Remove other geo properties that are not boxes
             for key in list(loc.keys()):
                 if (key not in ["box"]) and (key not in ["@type"]):
